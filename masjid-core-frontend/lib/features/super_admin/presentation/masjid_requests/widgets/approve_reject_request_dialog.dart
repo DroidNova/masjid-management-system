@@ -1,0 +1,2 @@
+import 'package:flutter/material.dart';
+Future<String?> showRejectReasonDialog(BuildContext context){final c=TextEditingController();return showDialog<String>(context:context,builder:(x)=>AlertDialog(title:const Text('Reject request'),content:TextField(controller:c,decoration:const InputDecoration(labelText:'Reason'),maxLines:3),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(x,c.text.trim()),child:const Text('Reject'))]));}

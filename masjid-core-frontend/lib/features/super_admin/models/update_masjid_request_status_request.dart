@@ -1,0 +1,1 @@
+class UpdateMasjidRequestStatusRequest { const UpdateMasjidRequestStatusRequest({required this.status,this.reason}); final String status; final String? reason; Map<String,dynamic> toJson()=>{'status':status, if(reason!=null && reason!.isNotEmpty) 'reason':reason, if(reason!=null && reason!.isNotEmpty) 'rejectionReason':reason}; }

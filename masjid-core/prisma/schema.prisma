@@ -1,0 +1,376 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  MASJID_ADMIN
+  IMAM
+  COMMITTEE_MEMBER
+  MEMBER
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PARTIAL
+}
+
+enum ProjectStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum CollectionType {
+  JUMMA_COLLECTION
+  DONATION_BOX
+  RAMADAN_FUND
+  ZAKAT
+  SADAQAH
+  CONSTRUCTION_FUND
+  OTHER
+}
+
+enum ExpenseType {
+  ELECTRICITY_BILL
+  WATER_BILL
+  IMAM_SALARY
+  CLEANING
+  REPAIR
+  CONSTRUCTION
+  OTHER
+}
+
+enum FinanceEntryStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum MasjidStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum MasjidRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  fullName        String
+  email           String?    @unique
+  phone           String?    @unique
+  masjidId        String?    @db.Uuid
+  passwordHash    String
+  status          UserStatus @default(ACTIVE)
+  isEmailVerified Boolean    @default(false)
+  isPhoneVerified Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  userRoles                  UserRole[]
+  sessions                   Session[]
+  createdMasjids             Masjid[]                    @relation("MasjidCreatedBy")
+  imamOfMasjids              Masjid[]                    @relation("MasjidImam")
+  approvedMasjids            Masjid[]                    @relation("MasjidApprovedBy")
+  masjidRegistrationRequests MasjidRegistrationRequest[] @relation("MasjidRequestRequestedBy")
+  reviewedMasjidRequests     MasjidRegistrationRequest[] @relation("MasjidRequestReviewedBy")
+  masjid                     Masjid?                     @relation("MasjidUsers", fields: [masjidId], references: [id])
+  imamSalaries               ImamSalary[]
+  createdCollections         Collection[]                @relation("CollectionCreatedBy")
+  createdExpenses            Expense[]                   @relation("ExpenseCreatedBy")
+
+  @@index([masjidId])
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        RoleName @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @db.Uuid
+  permissionId String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  refreshTokenHash String
+  deviceName       String?
+  ipAddress        String?
+  userAgent        String?
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Masjid {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String
+  village         String?
+  city            String?
+  district        String?
+  state           String?
+  address         String?
+  contactNo       String?
+  description     String?
+  welcomeMsg      String?
+  status          MasjidStatus @default(PENDING)
+  rejectionReason String?
+  approvedAt      DateTime?
+  createdById     String       @db.Uuid
+  imamUserId      String?      @db.Uuid
+  approvedById    String?      @db.Uuid
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  createdBy            User                        @relation("MasjidCreatedBy", fields: [createdById], references: [id])
+  imamUser             User?                       @relation("MasjidImam", fields: [imamUserId], references: [id])
+  approvedBy           User?                       @relation("MasjidApprovedBy", fields: [approvedById], references: [id])
+  namazTime            NamazTime?
+  imamSalaries         ImamSalary[]
+  projects             Project[]
+  announcements        Announcement[]
+  collections          Collection[]
+  expenses             Expense[]
+  registrationRequests MasjidRegistrationRequest[]
+  users                User[]                      @relation("MasjidUsers")
+
+  @@index([createdById])
+  @@index([imamUserId])
+  @@index([status])
+  @@index([approvedById])
+}
+
+model MasjidRegistrationRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  requestedById String? @db.Uuid
+  reviewedById  String? @db.Uuid
+
+  requesterName  String?
+  requesterPhone String?
+  requesterEmail String?
+
+  status MasjidRegistrationStatus @default(PENDING)
+
+  masjidName  String
+  village     String?
+  city        String?
+  district    String?
+  state       String?
+  address     String?
+  contactNo   String?
+  description String?
+  welcomeMsg  String?
+
+  imamName    String?
+  imamEmail   String?
+  imamPhone   String?
+  imamAddress String?
+
+  committeeMembers Json?
+
+  rejectionReason String?
+  reviewedAt      DateTime?
+
+  createdMasjidId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requestedBy   User?   @relation("MasjidRequestRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy    User?   @relation("MasjidRequestReviewedBy", fields: [reviewedById], references: [id])
+  createdMasjid Masjid? @relation(fields: [createdMasjidId], references: [id])
+
+  @@index([requestedById])
+  @@index([reviewedById])
+  @@index([status])
+  @@index([createdMasjidId])
+}
+
+model NamazTime {
+  id        String   @id @default(uuid()) @db.Uuid
+  masjidId  String   @unique @db.Uuid
+  fajr      String?
+  zuhr      String?
+  asr       String?
+  maghrib   String?
+  isha      String?
+  jumma     String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+}
+
+model ImamSalary {
+  id           String        @id @default(uuid()) @db.Uuid
+  masjidId     String        @db.Uuid
+  imamId       String        @db.Uuid
+  month        Int
+  year         Int
+  salaryAmount Decimal       @db.Decimal(12, 2)
+  paidAmount   Decimal       @default(0) @db.Decimal(12, 2)
+  dueAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  status       PaymentStatus @default(UNPAID)
+  paidDate     DateTime?
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  imam   User   @relation(fields: [imamId], references: [id])
+
+  @@unique([masjidId, month, year])
+  @@index([masjidId])
+  @@index([imamId])
+  @@index([status])
+}
+
+model Project {
+  id              String        @id @default(uuid()) @db.Uuid
+  masjidId        String        @db.Uuid
+  title           String
+  description     String?
+  targetAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  collectedAmount Decimal       @default(0) @db.Decimal(12, 2)
+  spentAmount     Decimal       @default(0) @db.Decimal(12, 2)
+  status          ProjectStatus @default(ONGOING)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+
+  @@index([masjidId])
+  @@index([status])
+}
+
+model Announcement {
+  id        String   @id @default(uuid()) @db.Uuid
+  masjidId  String   @db.Uuid
+  title     String
+  message   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+
+  @@index([masjidId])
+  @@index([isActive])
+}
+
+
+model Collection {
+  id          String             @id @default(uuid()) @db.Uuid
+  masjidId    String             @db.Uuid
+  type        CollectionType
+  amount      Decimal            @db.Decimal(12, 2)
+  title       String?
+  description String?
+  collectedAt DateTime           @default(now())
+  status      FinanceEntryStatus @default(ACTIVE)
+  createdById String?            @db.Uuid
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  masjid    Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("CollectionCreatedBy", fields: [createdById], references: [id])
+
+  @@index([masjidId])
+  @@index([type])
+  @@index([status])
+  @@index([collectedAt])
+  @@index([createdById])
+}
+
+model Expense {
+  id          String             @id @default(uuid()) @db.Uuid
+  masjidId    String             @db.Uuid
+  type        ExpenseType
+  amount      Decimal            @db.Decimal(12, 2)
+  title       String?
+  description String?
+  spentAt     DateTime           @default(now())
+  status      FinanceEntryStatus @default(ACTIVE)
+  createdById String?            @db.Uuid
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  masjid    Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+
+  @@index([masjidId])
+  @@index([type])
+  @@index([status])
+  @@index([spentAt])
+  @@index([createdById])
+}
