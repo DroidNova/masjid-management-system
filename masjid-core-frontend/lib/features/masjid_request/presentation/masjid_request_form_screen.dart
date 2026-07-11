@@ -53,7 +53,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   CountryCode _contactCountry = getDefaultCountryCode();
   CountryCode _imamCountry = getDefaultCountryCode();
   bool _isSubmitting = false;
-
+  bool _hasSubmitted = false;
 
   @override
   void initState() {
@@ -117,6 +117,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _hasSubmitted = true);
     if (!_formKey.currentState!.validate()) return;
     if (!_validateMemberPhones()) return;
 
@@ -250,6 +251,9 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
               constraints: const BoxConstraints(maxWidth: 700),
               child: Form(
                 key: _formKey,
+                autovalidateMode: _hasSubmitted
+                    ? AutovalidateMode.onUserInteraction
+                    : AutovalidateMode.disabled,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
