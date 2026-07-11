@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
 import 'package:platform_core_frontend/features/super_admin/data/super_admin_repository.dart';
 import 'package:platform_core_frontend/features/super_admin/models/admin_dashboard_summary.dart';
+import 'package:platform_core_frontend/features/super_admin/presentation/super_admin_tab_controller.dart';
 import 'package:platform_core_frontend/shared/widgets/error_view.dart';
 import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
 
@@ -110,15 +110,15 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             runSpacing: 12,
             children: <Widget>[
               FilledButton(
-                onPressed: () => context.go('/super-admin/requests'),
+                onPressed: () => selectSuperAdminTab(context, 1),
                 child: const Text('Masjid Requests'),
               ),
               FilledButton(
-                onPressed: () => context.go('/super-admin/masjids'),
+                onPressed: () => selectSuperAdminTab(context, 2),
                 child: const Text('Masjids'),
               ),
               FilledButton(
-                onPressed: () => context.go('/super-admin/users'),
+                onPressed: () => selectSuperAdminTab(context, 3),
                 child: const Text('Users'),
               ),
             ],
