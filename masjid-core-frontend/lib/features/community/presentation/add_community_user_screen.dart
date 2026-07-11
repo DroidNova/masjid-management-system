@@ -9,7 +9,10 @@ import 'package:platform_core_frontend/features/community/data/community_reposit
 import 'package:platform_core_frontend/features/community/data/models/create_community_user_request.dart';
 import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:platform_core_frontend/features/community/presentation/widgets/add_user_role_dropdown.dart';
+import 'package:platform_core_frontend/shared/models/country_code.dart';
+import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
 import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
 import 'package:platform_core_frontend/shared/widgets/not_allowed_view.dart';
 
@@ -47,6 +50,7 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   AppUser? _currentUser;
   List<String> _allowedRoles = const <String>[];
   String? _selectedRole;
+  CountryCode _selectedPhoneCountry = getDefaultCountryCode();
   bool _isLoadingUser = true;
   bool _isSaving = false;
 
@@ -87,7 +91,10 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
       final createdUser = await _communityRepository.createMasjidUser(
         CreateCommunityUserRequest(
           fullName: _fullNameController.text,
-          phone: _phoneController.text,
+          phone: normalizePhone(
+            countryCode: _selectedPhoneCountry,
+            nationalNumber: _phoneController.text,
+          ),
           email: _emailController.text,
           role: _selectedRole!,
           masjidId: _masjidIdController.text,
@@ -207,22 +214,14 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            decoration: const InputDecoration(
-              labelText: 'Phone *',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.phone,
+          AppPhoneField(
+            phoneController: _phoneController,
+            initialCountry: _selectedPhoneCountry,
+            onCountryChanged: (country) => _selectedPhoneCountry = country,
+            label: 'Phone',
+            hint: '9876543210',
+            required: true,
             textInputAction: TextInputAction.next,
-            validator: (value) {
-              final phone = value?.trim() ?? '';
-              if (phone.isEmpty) return 'Please enter phone number.';
-              if (phone.length < 10) {
-                return 'Phone number must be at least 10 digits.';
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 16),
           TextFormField(

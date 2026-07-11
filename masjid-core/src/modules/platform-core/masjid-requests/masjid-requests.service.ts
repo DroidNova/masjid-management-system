@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { normalizePhone, getPhoneSearchVariants } from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
@@ -297,7 +298,7 @@ export class MasjidRequestsService {
     return this.db.masjidRegistrationRequest.create({
       data: {
         requesterName: this.nullableString(dto.requesterName),
-        requesterPhone: this.nullableString(dto.requesterPhone),
+        requesterPhone: this.nullablePhone(dto.requesterPhone),
         requesterEmail: this.nullableEmail(dto.requesterEmail),
         masjidName: dto.masjidName,
         village: this.nullableString(dto.village),
@@ -305,12 +306,12 @@ export class MasjidRequestsService {
         district: this.nullableString(dto.district),
         state: this.nullableString(dto.state),
         address: this.nullableString(dto.address),
-        contactNo: this.nullableString(dto.contactNo),
+        contactNo: this.nullablePhone(dto.contactNo),
         description: this.nullableString(dto.description),
         welcomeMsg: this.nullableString(dto.welcomeMsg),
         imamName: this.nullableString(dto.imam?.name),
         imamEmail: this.nullableEmail(dto.imam?.email),
-        imamPhone: this.nullableString(dto.imam?.phone),
+        imamPhone: this.nullablePhone(dto.imam?.phone),
         imamAddress: this.nullableString(dto.imam?.address),
         committeeMembers: this.toCommitteeMembersJson(dto.committeeMembers),
         requestedById: null,
@@ -577,7 +578,7 @@ export class MasjidRequestsService {
     }
 
     const fullName = this.nullableString(request.requesterName);
-    const phone = this.nullableString(request.requesterPhone);
+    const phone = this.nullablePhone(request.requesterPhone);
     const email = this.nullableEmail(request.requesterEmail);
 
     if (!fullName || !phone) {
@@ -603,7 +604,7 @@ export class MasjidRequestsService {
   ): Promise<RequestUser | null> {
     const fullName = this.nullableString(request.imamName);
     const email = this.nullableEmail(request.imamEmail);
-    const phone = this.nullableString(request.imamPhone);
+    const phone = this.nullablePhone(request.imamPhone);
 
     if (!fullName && !email && !phone) {
       return null;
@@ -633,7 +634,7 @@ export class MasjidRequestsService {
 
     for (const member of committeeMembers) {
       const fullName = this.nullableString(member.name);
-      const phone = this.nullableString(member.phone);
+      const phone = this.nullablePhone(member.phone);
 
       if (!fullName && !phone) {
         continue;
@@ -666,7 +667,7 @@ export class MasjidRequestsService {
   ): Promise<RequestUser | null> {
     if (phone) {
       const user = await db.user.findFirst({
-        where: { phone },
+        where: { phone: { in: getPhoneSearchVariants(phone) } },
         select: requestUserSelect,
       });
 
@@ -762,7 +763,7 @@ export class MasjidRequestsService {
     const sanitizedMembers = committeeMembers
       .map((member) => ({
         name: this.nullableString(member.name) ?? undefined,
-        phone: this.nullableString(member.phone) ?? undefined,
+        phone: this.nullablePhone(member.phone) ?? undefined,
       }))
       .filter((member) => member.name || member.phone);
 

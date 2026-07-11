@@ -12,6 +12,7 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { OtpChallengeService } from './services/otp-challenge.service';
+import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 
 type SafeUser = {
   id: string;
@@ -74,7 +75,7 @@ export class AuthService {
   }
 
   async startLogin(loginStartDto: LoginStartDto) {
-    const phone = this.normalizePhone(loginStartDto.phone);
+    const phone = normalizePhone(loginStartDto.phone);
     const user = await this.getUserByPhoneOrThrow(phone);
     this.assertUserActive(user);
 
@@ -99,7 +100,7 @@ export class AuthService {
 
   async verifyPassword(loginPasswordDto: LoginPasswordDto) {
     const invalidCredentialsMessage = 'Invalid phone or password';
-    const phone = this.normalizePhone(loginPasswordDto.phone);
+    const phone = normalizePhone(loginPasswordDto.phone);
     const password =
       typeof loginPasswordDto.password === 'string'
         ? loginPasswordDto.password
@@ -149,7 +150,7 @@ export class AuthService {
     verifyOtpDto: VerifyOtpDto,
     userAgent?: string,
   ): Promise<AuthResponseDto> {
-    const phone = this.normalizePhone(verifyOtpDto.phone);
+    const phone = normalizePhone(verifyOtpDto.phone);
     const challengeId = verifyOtpDto.challengeId.trim();
     const otp = verifyOtpDto.otp.trim();
 
@@ -366,8 +367,8 @@ export class AuthService {
   }
 
   private async getUserByPhoneOrThrow(phone: string): Promise<UserWithAccess> {
-    const user = await this.prisma.user.findUnique({
-      where: { phone },
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: getPhoneSearchVariants(phone) } },
       include: {
         userRoles: {
           include: {
@@ -413,10 +414,6 @@ export class AuthService {
     return user.userRoles.some((userRole) =>
       privilegedRoles.has(userRole.role.name),
     );
-  }
-
-  private normalizePhone(phone: string): string {
-    return typeof phone === 'string' ? phone.trim() : '';
   }
 
   private getMockOtp(): string {
