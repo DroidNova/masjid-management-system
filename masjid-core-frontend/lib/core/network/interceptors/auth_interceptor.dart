@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:platform_core_frontend/core/session/session_expired_handler.dart';
 import 'package:platform_core_frontend/core/storage/token_storage.dart';
 
 class AuthInterceptor extends Interceptor {
@@ -54,6 +55,7 @@ class AuthInterceptor extends Interceptor {
     final refreshed = await _refreshOrWait();
     if (!refreshed) {
       await _clearSession();
+      SessionExpiredHandler.showDialogAndRedirect();
       handler.next(err);
       return;
     }

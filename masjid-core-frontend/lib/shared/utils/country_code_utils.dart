@@ -1,13 +1,7 @@
-import 'dart:ui';
-
-import 'package:flutter/widgets.dart';
 import 'package:platform_core_frontend/shared/constants/country_codes.dart';
 import 'package:platform_core_frontend/shared/models/country_code.dart';
 
-CountryCode getDefaultCountryCode() {
-  final iso = WidgetsBinding.instance.platformDispatcher.locale.countryCode ?? PlatformDispatcher.instance.locale.countryCode;
-  return findByIsoCode(iso) ?? indiaCountryCode;
-}
+CountryCode getDefaultCountryCode() => indiaCountryCode;
 
 CountryCode? findByIsoCode(String? isoCode) {
   final iso = isoCode?.toUpperCase();

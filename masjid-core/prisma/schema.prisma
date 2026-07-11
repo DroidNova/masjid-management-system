@@ -171,21 +171,24 @@ model Session {
 model Masjid {
   id              String       @id @default(uuid()) @db.Uuid
   name            String
-  village         String?
-  city            String?
+  country         String       @default("India")
+  state           String
   district        String?
-  state           String?
-  address         String?
+  locality        String
+  address         String
   contactNo       String?
   description     String?
   welcomeMsg      String?
   status          MasjidStatus @default(PENDING)
   rejectionReason String?
   approvedAt      DateTime?
-  country         String       @default("India")
-  requestedByName String?
-  requestedByPhone String?
+  requestedByName String
+  requestedByPhone String
   requestedByEmail String?
+  imamName        String?
+  imamPhone       String?
+  imamEmail       String?
+  imamAddress     String?
   createdById     String?      @db.Uuid
   imamUserId      String?      @db.Uuid
   approvedById    String?      @db.Uuid
@@ -223,11 +226,10 @@ model MasjidRegistrationRequest {
   status MasjidRegistrationStatus @default(PENDING)
 
   masjidName  String
-  village     String?
-  city        String?
-  district    String?
   country     String @default("India")
   state       String
+  district    String?
+  locality    String
   address     String
   contactNo   String?
   description String?
@@ -236,7 +238,7 @@ model MasjidRegistrationRequest {
   imamName    String
   imamEmail   String?
   imamPhone   String
-  imamAddress String?
+  imamAddress String
 
   committeeMembers Json
 

@@ -43,11 +43,11 @@ export class GetMasjidRequestsQueryDto {
   @IsString()
   masjidName?: string;
 
-  @ApiPropertyOptional({ example: 'Bhopal' })
+  @ApiPropertyOptional({ example: 'Nighasan' })
   @Transform(trimString)
   @IsOptional()
   @IsString()
-  city?: string;
+  locality?: string;
 
   @ApiPropertyOptional({ example: 'Bhopal' })
   @Transform(trimString)

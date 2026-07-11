@@ -4,8 +4,8 @@ class MasjidSummary {
   const MasjidSummary({
     this.id,
     this.name,
-    this.village,
-    this.city,
+    this.country,
+    this.locality,
     this.district,
     this.state,
     this.address,
@@ -19,8 +19,8 @@ class MasjidSummary {
     return MasjidSummary(
       id: parseString(json['id']),
       name: parseString(json['name']),
-      village: parseString(json['village']),
-      city: parseString(json['city']),
+      country: parseString(json['country']),
+      locality: parseString(json['locality']),
       district: parseString(json['district']),
       state: parseString(json['state']),
       address: parseString(json['address']),
@@ -33,8 +33,8 @@ class MasjidSummary {
 
   final String? id;
   final String? name;
-  final String? village;
-  final String? city;
+  final String? country;
+  final String? locality;
   final String? district;
   final String? state;
   final String? address;

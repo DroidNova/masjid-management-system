@@ -8,9 +8,8 @@ class CreateMasjidRequest {
     required this.requesterEmail,
     required this.masjidName,
     required this.country,
-    required this.village,
-    required this.city,
     required this.district,
+    required this.locality,
     required this.state,
     required this.address,
     required this.contactNo,
@@ -25,9 +24,8 @@ class CreateMasjidRequest {
   final String requesterEmail;
   final String masjidName;
   final String country;
-  final String village;
-  final String city;
   final String district;
+  final String locality;
   final String state;
   final String address;
   final String contactNo;
@@ -43,9 +41,8 @@ class CreateMasjidRequest {
     _addIfNotEmpty(json, 'requesterEmail', requesterEmail);
     _addIfNotEmpty(json, 'masjidName', masjidName);
     _addIfNotEmpty(json, 'country', country);
-    _addIfNotEmpty(json, 'village', village);
-    _addIfNotEmpty(json, 'city', city);
     _addIfNotEmpty(json, 'district', district);
+    _addIfNotEmpty(json, 'locality', locality);
     _addIfNotEmpty(json, 'state', state);
     _addIfNotEmpty(json, 'address', address);
     _addIfNotEmpty(json, 'contactNo', contactNo);
@@ -55,6 +52,7 @@ class CreateMasjidRequest {
     _addIfNotEmpty(json, 'imamName', imam.name);
     _addIfNotEmpty(json, 'imamPhone', imam.phone);
     _addIfNotEmpty(json, 'imamEmail', imam.email);
+    _addIfNotEmpty(json, 'imamAddress', imam.address);
 
     final nonEmptyMembers = committeeMembers
         .where((member) => !member.isEmpty)

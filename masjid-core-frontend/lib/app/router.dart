@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
+import 'package:platform_core_frontend/core/session/session_expired_handler.dart';
 import 'package:platform_core_frontend/core/storage/session_storage.dart';
 import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_model.dart';
 import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
@@ -40,6 +41,7 @@ import 'package:platform_core_frontend/features/projects/presentation/project_de
 import 'package:platform_core_frontend/features/splash/presentation/splash_screen.dart';
 
 final GoRouter appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
   routes: <RouteBase>[
     GoRoute(

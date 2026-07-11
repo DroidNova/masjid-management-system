@@ -17,7 +17,7 @@ class MasjidHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = [masjid?.village, masjid?.city, masjid?.district]
+    final location = [masjid?.address, masjid?.locality, masjid?.district, masjid?.state, masjid?.country]
         .where((item) => item != null && item.trim().isNotEmpty)
         .join(', ');
 

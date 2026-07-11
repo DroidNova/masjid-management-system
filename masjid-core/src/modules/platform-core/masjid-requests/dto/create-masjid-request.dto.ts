@@ -5,6 +5,7 @@ import {
   IsArray,
   IsEmail,
   IsOptional,
+  ValidateIf,
   IsString,
   MaxLength,
   MinLength,
@@ -104,26 +105,20 @@ export class CreateMasjidRequestDto {
   @MaxLength(100, { message: 'Country must be 100 characters or less' })
   country!: string;
 
-  @ApiPropertyOptional({ example: 'Village Name', maxLength: 100 })
+  @ApiPropertyOptional({ example: 'District', maxLength: 100, description: 'Required when country is India or IN' })
   @Transform(trimString)
-  @IsOptional()
-  @IsString({ message: 'Village must be a string' })
-  @MaxLength(100, { message: 'Village must be 100 characters or less' })
-  village?: string;
-
-  @ApiPropertyOptional({ example: 'City', maxLength: 100 })
-  @Transform(trimString)
-  @IsOptional()
-  @IsString({ message: 'City must be a string' })
-  @MaxLength(100, { message: 'City must be 100 characters or less' })
-  city?: string;
-
-  @ApiPropertyOptional({ example: 'District', maxLength: 100 })
-  @Transform(trimString)
-  @IsOptional()
+  @ValidateIf((dto: CreateMasjidRequestDto) => ['india', 'in'].includes(String(dto.country ?? '').trim().toLowerCase()))
   @IsString({ message: 'District must be a string' })
+  @MinLength(1, { message: 'District is required for India' })
   @MaxLength(100, { message: 'District must be 100 characters or less' })
   district?: string;
+
+  @ApiProperty({ example: 'Nighasan', maxLength: 100, description: 'City / Village / Town' })
+  @Transform(trimString)
+  @IsString({ message: 'Locality must be a string' })
+  @MinLength(1, { message: 'City / Village / Town is required' })
+  @MaxLength(100, { message: 'Locality must be 100 characters or less' })
+  locality!: string;
 
   @ApiProperty({ example: 'State', maxLength: 100 })
   @Transform(trimString)
@@ -182,6 +177,13 @@ export class CreateMasjidRequestDto {
   @IsEmail({}, { message: 'Imam email must be a valid email address' })
   @MaxLength(255, { message: 'Imam email must be 255 characters or less' })
   imamEmail?: string;
+
+  @ApiProperty({ example: 'Single line imam address', maxLength: 500 })
+  @Transform(trimString)
+  @IsString({ message: 'Imam address must be a string' })
+  @MinLength(1, { message: 'Imam address is required' })
+  @MaxLength(500, { message: 'Imam address must be 500 characters or less' })
+  imamAddress!: string;
 
   @ApiPropertyOptional({ type: ImamDetailsDto, deprecated: true })
   @IsOptional()
