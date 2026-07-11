@@ -40,7 +40,7 @@ npm install
 Create a database for local dev, for example:
 
 ```sql
-CREATE DATABASE platform_core_dev;
+CREATE DATABASE "masjid-management-system";
 ```
 
 Make sure your PostgreSQL user has access to that database.
@@ -52,7 +52,7 @@ Make sure your PostgreSQL user has access to that database.
 Create `.env` in project root:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/platform_core_dev"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/masjid-management-system"
 JWT_ACCESS_SECRET="replace-with-strong-access-secret"
 JWT_REFRESH_SECRET="replace-with-strong-refresh-secret"
 JWT_ACCESS_EXPIRES_IN="15m"

@@ -55,6 +55,12 @@ export class GetMasjidRequestsQueryDto {
   @IsString()
   district?: string;
 
+  @ApiPropertyOptional({ example: 'India' })
+  @Transform(trimString)
+  @IsOptional()
+  @IsString()
+  country?: string;
+
   @ApiPropertyOptional({ example: 'Madhya Pradesh' })
   @Transform(trimString)
   @IsOptional()

@@ -158,6 +158,7 @@ class _AdminMasjidRequestsScreenState
         ),
         Wrap(
           spacing: 8,
+          runSpacing: 8,
           children: <Widget>[
             _statusChip('All', null),
             _statusChip('Pending', 'PENDING'),

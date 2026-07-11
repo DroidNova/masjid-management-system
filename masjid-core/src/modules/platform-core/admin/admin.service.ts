@@ -23,13 +23,14 @@ export class AdminService {
 
   async listUsers(query: ListAdminUsersDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const trimmedSearch = query.search?.trim();
-    const where = trimmedSearch
-      ? {
-          OR: [
+    const where = {} as any;
+
+    if (trimmedSearch) {
+      where.OR = [
             {
               fullName: {
                 contains: trimmedSearch,
@@ -42,9 +43,15 @@ export class AdminService {
             {
               phone: { contains: trimmedSearch, mode: 'insensitive' as const },
             },
-          ],
-        }
-      : {};
+          ];
+    }
+    if (query.status) where.status = query.status;
+    if (query.masjidId) where.masjidId = query.masjidId;
+    if (query.role) {
+      where.userRoles = {
+        some: { role: { name: query.role.trim().toUpperCase() } },
+      };
+    }
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
@@ -58,20 +65,25 @@ export class AdminService {
           email: true,
           phone: true,
           status: true,
+          masjidId: true,
           createdAt: true,
+          masjid: { select: { id: true, name: true } },
+          userRoles: { select: { role: { select: { name: true } } } },
         },
       }),
       this.prisma.user.count({ where }),
     ]);
 
     return {
-      items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / limit)),
-      },
+      items: items.map((user) => ({
+        ...user,
+        roles: user.userRoles.map((userRole) => userRole.role.name),
+        masjidName: user.masjid?.name ?? null,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -151,6 +163,185 @@ export class AdminService {
         email: true,
         phone: true,
         status: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async getDashboardSummary() {
+    const [
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      suspendedUsers,
+      totalMasjids,
+      approvedMasjids,
+      pendingMasjids,
+      suspendedMasjids,
+      pendingRequests,
+      approvedRequests,
+      rejectedRequests,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { status: 'INACTIVE' } }),
+      this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
+      this.prisma.masjid.count(),
+      this.prisma.masjid.count({ where: { status: 'APPROVED' } }),
+      this.prisma.masjid.count({ where: { status: 'PENDING' } }),
+      this.prisma.masjid.count({ where: { status: 'SUSPENDED' } }),
+      this.prisma.masjidRegistrationRequest.count({ where: { status: 'PENDING' } }),
+      this.prisma.masjidRegistrationRequest.count({ where: { status: 'APPROVED' } }),
+      this.prisma.masjidRegistrationRequest.count({ where: { status: 'REJECTED' } }),
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      suspendedUsers,
+      totalMasjids,
+      approvedMasjids,
+      pendingMasjids,
+      suspendedMasjids,
+      pendingRequests,
+      approvedRequests,
+      rejectedRequests,
+    };
+  }
+
+  async listMasjids(query: {
+    search?: string;
+    status?: string;
+    state?: string;
+    country?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Number(query.page ?? 1) || 1;
+    const limit = Math.min(Number(query.limit ?? 20) || 20, 100);
+    const search = query.search?.trim();
+    const where = {} as any;
+
+    if (query.status) where.status = query.status;
+    if (query.state) where.state = { contains: query.state, mode: 'insensitive' };
+    if (query.country) where.country = { contains: query.country, mode: 'insensitive' };
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { state: { contains: search, mode: 'insensitive' } },
+        { country: { contains: search, mode: 'insensitive' } },
+        { contactNo: { contains: search, mode: 'insensitive' } },
+        { requestedByName: { contains: search, mode: 'insensitive' } },
+        { requestedByPhone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.masjid.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          country: true,
+          village: true,
+          city: true,
+          district: true,
+          state: true,
+          address: true,
+          contactNo: true,
+          description: true,
+          welcomeMsg: true,
+          status: true,
+          requestedByName: true,
+          requestedByPhone: true,
+          requestedByEmail: true,
+          imamUserId: true,
+          imamUser: { select: { id: true, fullName: true, phone: true, email: true } },
+          _count: { select: { users: true } },
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.masjid.count({ where }),
+    ]);
+
+    return {
+      items: items.map((masjid) => ({
+        ...masjid,
+        imamName: masjid.imamUser?.fullName ?? null,
+        usersCount: masjid._count.users,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getMasjidById(id: string) {
+    const masjid = await this.prisma.masjid.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        village: true,
+        city: true,
+        district: true,
+        state: true,
+        address: true,
+        contactNo: true,
+        description: true,
+        welcomeMsg: true,
+        status: true,
+        rejectionReason: true,
+        requestedByName: true,
+        requestedByPhone: true,
+        requestedByEmail: true,
+        imamUserId: true,
+        imamUser: { select: { id: true, fullName: true, phone: true, email: true } },
+        _count: { select: { users: true } },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!masjid) throw new NotFoundException('Masjid not found');
+
+    return {
+      ...masjid,
+      imamName: masjid.imamUser?.fullName ?? null,
+      usersCount: masjid._count.users,
+    };
+  }
+
+  async updateMasjidStatus(id: string, dto: { status: string; reason?: string }) {
+    const masjid = await this.prisma.masjid.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!masjid) throw new NotFoundException('Masjid not found');
+
+    return this.prisma.masjid.update({
+      where: { id },
+      data: {
+        status: dto.status as any,
+        rejectionReason: dto.reason?.trim() || null,
+      },
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        state: true,
+        address: true,
+        contactNo: true,
+        status: true,
+        rejectionReason: true,
         updatedAt: true,
       },
     });

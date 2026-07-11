@@ -55,7 +55,7 @@ class SuperAdminRepository {
 
   Future<AdminUserModel> updateUserRoles(String id, List<String> roles) async {
     final updated = AdminUserModel.fromJson(
-      await _api.updateUserRoles(id, <String, dynamic>{'roles': roles}),
+      await _api.updateUserRoles(id, <String, dynamic>{'roleNames': roles}),
     );
     AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
       AppDataScope.adminUsers,
@@ -147,23 +147,6 @@ class SuperAdminRepository {
   }
 
   Future<AdminDashboardSummary> getDashboardSummary() async {
-    final users = await getUsers();
-    final masjids = await getMasjids();
-    final pending = await getMasjidRequests(status: 'PENDING');
-    final approved = await getMasjidRequests(status: 'APPROVED');
-    final rejected = await getMasjidRequests(status: 'REJECTED');
-    int countUsers(String status) => users.items
-        .where((user) => user.status?.toUpperCase() == status)
-        .length;
-    return AdminDashboardSummary(
-      totalUsers: users.total,
-      activeUsers: countUsers('ACTIVE'),
-      inactiveUsers: countUsers('INACTIVE'),
-      suspendedUsers: countUsers('SUSPENDED'),
-      totalMasjids: masjids.total,
-      pendingRequests: pending.total,
-      approvedRequests: approved.total,
-      rejectedRequests: rejected.total,
-    );
+    return AdminDashboardSummary.fromJson(await _api.getDashboardSummary());
   }
 }
