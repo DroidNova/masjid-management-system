@@ -29,8 +29,22 @@ String getReadableErrorMessage(
       (combined.contains('email') && combined.contains('exists'))) {
     return 'Email already exists.';
   }
-  if (combined.contains('bad_request') || combined.contains('400')) {
+  if (combined.contains('masjid_request_already_reviewed')) {
+    return 'This request has already been reviewed.';
+  }
+  if (combined.contains('validation_error') ||
+      combined.contains('bad_request') ||
+      combined.contains('400')) {
     return 'Please check the entered details.';
+  }
+  if (error is DioException && error.type == DioExceptionType.connectionTimeout) {
+    return 'Connection timed out. Please try again.';
+  }
+  if (error is DioException && error.type == DioExceptionType.receiveTimeout) {
+    return 'Server took too long to respond. Please try again.';
+  }
+  if (error is DioException && error.type == DioExceptionType.connectionError) {
+    return 'Network error. Please check your internet connection.';
   }
 
   final cleaned = rawMessage?.replaceFirst('Exception: ', '').trim();

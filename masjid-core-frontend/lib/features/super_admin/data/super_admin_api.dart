@@ -14,6 +14,14 @@ class SuperAdminApi {
 
   final ApiClient _apiClient;
 
+
+  Future<Map<String, dynamic>> getDashboardSummary() {
+    return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
+      key: 'GET:/admin/dashboard/summary',
+      request: () => _getMap('/admin/dashboard/summary'),
+    );
+  }
+
   Future<AdminListResult> getUsers({
     String? search,
     String? status,
@@ -101,15 +109,15 @@ class SuperAdminApi {
       'limit': limit,
     });
     return ApiRequestCoordinator.instance.run<AdminListResult>(
-      key: _requestKey('/masjids', query),
-      request: () => _getList('/masjids', query),
+      key: _requestKey('/admin/masjids', query),
+      request: () => _getList('/admin/masjids', query),
     );
   }
 
   Future<Map<String, dynamic>> getMasjid(String id) {
     return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
-      key: 'GET:/masjids/$id',
-      request: () => _getMap('/masjids/$id'),
+      key: 'GET:/admin/masjids/$id',
+      request: () => _getMap('/admin/masjids/$id'),
     );
   }
 
@@ -117,7 +125,7 @@ class SuperAdminApi {
     String id,
     Map<String, dynamic> data,
   ) {
-    return _patchMap('/masjids/$id/status', data);
+    return _patchMap('/admin/masjids/$id/status', data);
   }
 
   Future<AdminListResult> _getList(
@@ -201,7 +209,15 @@ class SuperAdminApi {
     if (data is Map<String, dynamic>) {
       final total = data['total'] ?? data['count'];
       if (total is int) return total;
-      return int.tryParse(total?.toString() ?? '') ?? 0;
+      final parsedTotal = int.tryParse(total?.toString() ?? '');
+      if (parsedTotal != null) return parsedTotal;
+      final meta = data['meta'];
+      if (meta is Map<String, dynamic>) {
+        final metaTotal = meta['total'];
+        if (metaTotal is int) return metaTotal;
+        return int.tryParse(metaTotal?.toString() ?? '') ?? 0;
+      }
+      return 0;
     }
     return 0;
   }

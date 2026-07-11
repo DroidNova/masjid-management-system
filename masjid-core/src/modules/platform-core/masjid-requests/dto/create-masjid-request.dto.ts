@@ -160,10 +160,34 @@ export class CreateMasjidRequestDto {
   @MaxLength(500, { message: 'Welcome message must be 500 characters or less' })
   welcomeMsg?: string;
 
-  @ApiProperty({ type: ImamDetailsDto })
+  @ApiProperty({ example: 'Imam Name', maxLength: 150 })
+  @Transform(trimString)
+  @IsString({ message: 'Imam name must be a string' })
+  @MinLength(1, { message: 'Imam name is required' })
+  @MaxLength(150, { message: 'Imam name must be 150 characters or less' })
+  imamName!: string;
+
+  @ApiProperty({ example: '9876543210', maxLength: 20 })
+  @Transform(trimString)
+  @IsString({ message: 'Imam phone must be a string' })
+  @MinLength(1, { message: 'Imam phone is required' })
+  @MaxLength(20, { message: 'Imam phone must be 20 characters or less' })
+  imamPhone!: string;
+
+  @ApiPropertyOptional({ example: 'imam@example.com', maxLength: 255 })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsOptional()
+  @IsEmail({}, { message: 'Imam email must be a valid email address' })
+  @MaxLength(255, { message: 'Imam email must be 255 characters or less' })
+  imamEmail?: string;
+
+  @ApiPropertyOptional({ type: ImamDetailsDto, deprecated: true })
+  @IsOptional()
   @ValidateNested()
   @Type(() => ImamDetailsDto)
-  imam!: ImamDetailsDto;
+  imam?: ImamDetailsDto;
 
   @ApiProperty({ type: [CommitteeMemberDto] })
   @IsArray({ message: 'Committee members must be an array' })

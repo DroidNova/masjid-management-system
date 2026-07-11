@@ -300,8 +300,11 @@ export class MasjidRequestsService {
   }
 
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
+    const imamName = dto.imamName ?? dto.imam?.name;
+    const imamPhone = dto.imamPhone ?? dto.imam?.phone;
+    const imamEmail = dto.imamEmail ?? dto.imam?.email;
     const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
-    this.assertDistinctImamAndCommitteePhones(normalizePhone(dto.imam.phone), committeeMembers);
+    this.assertDistinctImamAndCommitteePhones(normalizePhone(imamPhone), committeeMembers);
 
     return this.db.masjidRegistrationRequest.create({
       data: {
@@ -318,9 +321,9 @@ export class MasjidRequestsService {
         contactNo: this.normalizeNullablePhone(dto.contactNo),
         description: this.nullableString(dto.description),
         welcomeMsg: this.nullableString(dto.welcomeMsg),
-        imamName: dto.imam.name.trim(),
-        imamEmail: this.nullableEmail(dto.imam.email),
-        imamPhone: normalizePhone(dto.imam.phone),
+        imamName: imamName.trim(),
+        imamEmail: this.nullableEmail(imamEmail),
+        imamPhone: normalizePhone(imamPhone),
         imamAddress: this.nullableString(dto.imam?.address),
         committeeMembers,
         requestedById: null,
@@ -503,6 +506,13 @@ export class MasjidRequestsService {
       };
     }
 
+    if (query.country) {
+      where.country = {
+        contains: query.country,
+        mode: 'insensitive',
+      };
+    }
+
     if (query.state) {
       where.state = {
         contains: query.state,
@@ -523,6 +533,7 @@ export class MasjidRequestsService {
         'city',
         'district',
         'state',
+        'country',
         'contactNo',
         'requesterPhone',
       ].map((field) => ({

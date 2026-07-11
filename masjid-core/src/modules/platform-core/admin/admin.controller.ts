@@ -170,3 +170,50 @@ export class AdminController {
     return this.adminService.assignRoles(id, dto, request.user);
   }
 }
+
+@ApiTags('Admin Dashboard')
+@ApiBearerAuth('bearer')
+@Controller('admin/dashboard')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+export class AdminDashboardController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Get('summary')
+  @Permissions('users.read')
+  @ApiOperation({ summary: 'Get optimized super admin dashboard summary' })
+  getSummary() {
+    return this.adminService.getDashboardSummary();
+  }
+}
+
+@ApiTags('Admin Masjids')
+@ApiBearerAuth('bearer')
+@Controller('admin/masjids')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+export class AdminMasjidsController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Get()
+  @Permissions('users.read')
+  @ApiOperation({ summary: 'Get masjids with pagination and filters' })
+  listMasjids(@Query() query: Record<string, string>) {
+    return this.adminService.listMasjids(query);
+  }
+
+  @Get(':id')
+  @Permissions('users.read')
+  @ApiOperation({ summary: 'Get masjid details by id' })
+  getMasjid(@Param('id') id: string) {
+    return this.adminService.getMasjidById(id);
+  }
+
+  @Patch(':id/status')
+  @Permissions('users.update')
+  @ApiOperation({ summary: 'Update masjid status' })
+  updateMasjidStatus(
+    @Param('id') id: string,
+    @Body() dto: { status: string; reason?: string },
+  ) {
+    return this.adminService.updateMasjidStatus(id, dto);
+  }
+}
