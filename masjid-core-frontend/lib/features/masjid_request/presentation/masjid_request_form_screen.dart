@@ -34,6 +34,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _districtController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController(text: 'India');
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _contactNoController = TextEditingController();
   final TextEditingController _welcomeMsgController = TextEditingController();
@@ -62,6 +63,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     _cityController.dispose();
     _districtController.dispose();
     _stateController.dispose();
+    _countryController.dispose();
     _addressController.dispose();
     _contactNoController.dispose();
     _welcomeMsgController.dispose();
@@ -125,6 +127,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       city: _cityController.text,
       district: _districtController.text,
       state: _stateController.text,
+      country: _countryController.text,
       address: _addressController.text,
       contactNo: _contactNoController.text.trim().isEmpty
           ? ''
@@ -253,7 +256,13 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         AppPhoneField(
                           phoneController: _requesterPhoneController,
                           initialCountry: _requesterPhoneCountry,
-                          onCountryChanged: (country) => _requesterPhoneCountry = country,
+                          onCountryChanged: (country) {
+                            _requesterPhoneCountry = country;
+                            if (_countryController.text.trim().isEmpty ||
+                                _countryController.text.trim() == 'India') {
+                              _countryController.text = country.name;
+                            }
+                          },
                           label: 'Your Phone',
                           hint: '9876543210',
                           required: true,
@@ -297,14 +306,22 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         ),
                         AppTextField(
                           controller: _stateController,
-                          label: 'State',
+                          label: 'State *',
                           textInputAction: TextInputAction.next,
+                          validator: (value) => _requiredValidator(value, 'State'),
+                        ),
+                        AppTextField(
+                          controller: _countryController,
+                          label: 'Country *',
+                          textInputAction: TextInputAction.next,
+                          validator: (value) => _requiredValidator(value, 'Country'),
                         ),
                         AppTextField(
                           controller: _addressController,
-                          label: 'Address',
+                          label: 'Address *',
                           maxLines: 2,
                           textInputAction: TextInputAction.newline,
+                          validator: (value) => _requiredValidator(value, 'Address'),
                         ),
                         AppPhoneField(
                           phoneController: _contactNoController,

@@ -1,8 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { normalizePhone, getPhoneSearchVariants } from '../../../common/utils/phone.util';
+import { normalizePhone } from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
@@ -14,12 +13,6 @@ import {
   MasjidRequestStatusActionDto,
   UpdateMasjidRequestStatusDto,
 } from './dto/update-masjid-request-status.dto';
-
-const MASJID_ADMIN_ROLE = 'MASJID_ADMIN';
-const IMAM_ROLE = 'IMAM';
-const COMMITTEE_MEMBER_ROLE = 'COMMITTEE_MEMBER';
-const TEMPORARY_USER_PASSWORD = '12345678';
-const BCRYPT_SALT_ROUNDS = 10;
 
 enum MasjidRegistrationRequestStatus {
   PENDING = 'PENDING',
@@ -38,10 +31,6 @@ type BasicUser = {
   phone: string | null;
 };
 
-type RequestUser = BasicUser & {
-  masjidId: string | null;
-};
-
 type CreatedMasjid = {
   id: string;
   name: string;
@@ -58,16 +47,17 @@ type MasjidRequestRecord = {
   id: string;
   requestedById: string | null;
   reviewedById: string | null;
-  requesterName: string | null;
-  requesterPhone: string | null;
+  requesterName: string;
+  requesterPhone: string;
   requesterEmail: string | null;
   status: string;
   masjidName: string;
   village: string | null;
   city: string | null;
   district: string | null;
-  state: string | null;
-  address: string | null;
+  state: string;
+  country: string;
+  address: string;
   contactNo: string | null;
   description: string | null;
   welcomeMsg: string | null;
@@ -86,23 +76,19 @@ type MasjidRequestRecord = {
   createdMasjid?: CreatedMasjid | null;
 };
 
-type RoleName =
-  | typeof MASJID_ADMIN_ROLE
-  | typeof IMAM_ROLE
-  | typeof COMMITTEE_MEMBER_ROLE;
-
 type RequestCreateData = {
   requestedById?: string | null;
-  requesterName?: string | null;
-  requesterPhone?: string | null;
+  requesterName: string;
+  requesterPhone: string;
   requesterEmail?: string | null;
   status: MasjidRegistrationRequestStatus;
   masjidName: string;
   village?: string | null;
   city?: string | null;
   district?: string | null;
-  state?: string | null;
-  address?: string | null;
+  state: string;
+  country: string;
+  address: string;
   contactNo?: string | null;
   description?: string | null;
   welcomeMsg?: string | null;
@@ -121,29 +107,21 @@ type RequestUpdateData = {
   createdMasjidId?: string | null;
 };
 
-type UserCreateData = {
-  fullName: string;
-  email?: string | null;
-  phone?: string | null;
-  passwordHash: string;
-  status: string;
-};
-
-type UserUpdateData = {
-  masjidId?: string | null;
-};
-
 type MasjidCreateData = {
   name: string;
   village?: string | null;
   city?: string | null;
   district?: string | null;
-  state?: string | null;
-  address?: string | null;
+  state: string;
+  country: string;
+  address: string;
   contactNo?: string | null;
   description?: string | null;
   welcomeMsg?: string | null;
-  createdById: string;
+  requestedByName: string;
+  requestedByPhone: string;
+  requestedByEmail?: string | null;
+  createdById?: string | null;
   imamUserId?: string | null;
   status?: MasjidStatus;
   approvedById?: string;
@@ -175,44 +153,6 @@ type MasjidRequestDelegate = {
   }): Promise<MasjidRequestRecord>;
 };
 
-type UserDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser | null>;
-  findFirst(args: {
-    where: Record<string, unknown>;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser | null>;
-  create(args: {
-    data: UserCreateData;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser>;
-  update(args: {
-    where: { id: string };
-    data: UserUpdateData;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser>;
-};
-
-type RoleDelegate = {
-  findFirst(args: {
-    where: { name: string };
-    select: { id: true };
-  }): Promise<{ id: string } | null>;
-};
-
-type UserRoleDelegate = {
-  findFirst(args: {
-    where: { userId: string; roleId: string };
-    select: { id: true };
-  }): Promise<{ id: string } | null>;
-  create(args: {
-    data: { userId: string; roleId: string };
-    select: { id: true };
-  }): Promise<{ id: string }>;
-};
-
 type MasjidDelegate = {
   create(args: {
     data: MasjidCreateData;
@@ -222,9 +162,6 @@ type MasjidDelegate = {
 
 type MasjidRequestsPrismaDelegate = {
   masjidRegistrationRequest: MasjidRequestDelegate;
-  user: UserDelegate;
-  role: RoleDelegate;
-  userRole: UserRoleDelegate;
   masjid: MasjidDelegate;
   $transaction<T>(
     callback: (tx: MasjidRequestsPrismaDelegate) => Promise<T>,
@@ -236,11 +173,6 @@ const basicUserSelect = {
   fullName: true,
   email: true,
   phone: true,
-} as const;
-
-const requestUserSelect = {
-  ...basicUserSelect,
-  masjidId: true,
 } as const;
 
 const createdMasjidSelect = {
@@ -263,6 +195,7 @@ const masjidRequestListSelect = {
   city: true,
   district: true,
   state: true,
+  country: true,
   address: true,
   contactNo: true,
   description: true,
@@ -297,15 +230,16 @@ export class MasjidRequestsService {
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
     return this.db.masjidRegistrationRequest.create({
       data: {
-        requesterName: this.nullableString(dto.requesterName),
-        requesterPhone: this.nullablePhone(dto.requesterPhone),
+        requesterName: this.requiredString(dto.requesterName, 'Requester name'),
+        requesterPhone: normalizePhone(dto.requesterPhone),
         requesterEmail: this.nullableEmail(dto.requesterEmail),
         masjidName: dto.masjidName,
         village: this.nullableString(dto.village),
         city: this.nullableString(dto.city),
         district: this.nullableString(dto.district),
-        state: this.nullableString(dto.state),
-        address: this.nullableString(dto.address),
+        state: this.requiredString(dto.state, 'State'),
+        country: this.requiredString(dto.country, 'Country'),
+        address: this.requiredString(dto.address, 'Address'),
         contactNo: this.nullablePhone(dto.contactNo),
         description: this.nullableString(dto.description),
         welcomeMsg: this.nullableString(dto.welcomeMsg),
@@ -378,8 +312,7 @@ export class MasjidRequestsService {
       const request = await this.findByIdOrThrow(id, tx);
       this.assertCanApprove(request);
 
-      const requesterUser = await this.resolveRequesterAdminUser(request, tx);
-      const imamUser = await this.createOrFindImamUser(request, tx);
+      const now = new Date();
       const masjid = await tx.masjid.create({
         data: {
           name: request.masjidName,
@@ -387,36 +320,30 @@ export class MasjidRequestsService {
           city: request.city,
           district: request.district,
           state: request.state,
+          country: request.country,
           address: request.address,
           contactNo: request.contactNo,
           description: request.description,
           welcomeMsg: request.welcomeMsg,
-          createdById: requesterUser.id,
-          imamUserId: imamUser?.id ?? null,
+          requestedByName: request.requesterName,
+          requestedByPhone: request.requesterPhone,
+          requestedByEmail: request.requesterEmail,
+          createdById: null,
+          imamUserId: null,
           status: MasjidStatus.APPROVED,
           approvedById: actor.id,
-          approvedAt: new Date(),
+          approvedAt: now,
           rejectionReason: null,
         },
         select: createdMasjidSelect,
       });
-
-      await this.linkUserToMasjid(requesterUser.id, masjid.id, tx);
-      await this.assignRoleToUser(requesterUser.id, MASJID_ADMIN_ROLE, tx);
-
-      if (imamUser) {
-        await this.linkUserToMasjid(imamUser.id, masjid.id, tx);
-        await this.assignRoleToUser(imamUser.id, IMAM_ROLE, tx);
-      }
-
-      await this.createOrLinkCommitteeMembers(request, masjid.id, tx);
 
       return tx.masjidRegistrationRequest.update({
         where: { id: request.id },
         data: {
           status: MasjidRegistrationRequestStatus.APPROVED,
           reviewedById: actor.id,
-          reviewedAt: new Date(),
+          reviewedAt: now,
           createdMasjidId: masjid.id,
           rejectionReason: null,
         },
@@ -562,197 +489,6 @@ export class MasjidRequestsService {
     }
   }
 
-  private async resolveRequesterAdminUser(
-    request: MasjidRequestRecord,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser> {
-    if (request.requestedById) {
-      const requestedBy = await db.user.findUnique({
-        where: { id: request.requestedById },
-        select: requestUserSelect,
-      });
-
-      if (requestedBy) {
-        return requestedBy;
-      }
-    }
-
-    const fullName = this.nullableString(request.requesterName);
-    const phone = this.nullablePhone(request.requesterPhone);
-    const email = this.nullableEmail(request.requesterEmail);
-
-    if (!fullName || !phone) {
-      throw new ApiException(
-        'Requester contact details are required to approve this masjid request',
-        HttpStatus.BAD_REQUEST,
-        ERROR_CODES.MASJID_REQUEST_REQUESTER_DETAILS_REQUIRED,
-      );
-    }
-
-    const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
-
-    if (existingUser) {
-      return existingUser;
-    }
-
-    return this.createTemporaryUser({ fullName, email, phone }, db);
-  }
-
-  private async createOrFindImamUser(
-    request: MasjidRequestRecord,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser | null> {
-    const fullName = this.nullableString(request.imamName);
-    const email = this.nullableEmail(request.imamEmail);
-    const phone = this.nullablePhone(request.imamPhone);
-
-    if (!fullName && !email && !phone) {
-      return null;
-    }
-
-    const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
-
-    if (existingUser) {
-      return existingUser;
-    }
-
-    if (!fullName) {
-      return null;
-    }
-
-    return this.createTemporaryUser({ fullName, email, phone }, db);
-  }
-
-  private async createOrLinkCommitteeMembers(
-    request: MasjidRequestRecord,
-    masjidId: string,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<void> {
-    const committeeMembers = this.parseCommitteeMembers(
-      request.committeeMembers,
-    );
-
-    for (const member of committeeMembers) {
-      const fullName = this.nullableString(member.name);
-      const phone = this.nullablePhone(member.phone);
-
-      if (!fullName && !phone) {
-        continue;
-      }
-
-      let user = phone
-        ? await this.findUserByPhoneOrEmail(phone, null, db)
-        : null;
-
-      if (!user && fullName) {
-        user = await this.createTemporaryUser(
-          { fullName, email: null, phone },
-          db,
-        );
-      }
-
-      if (!user) {
-        continue;
-      }
-
-      await this.linkUserToMasjid(user.id, masjidId, db);
-      await this.assignRoleToUser(user.id, COMMITTEE_MEMBER_ROLE, db);
-    }
-  }
-
-  private async findUserByPhoneOrEmail(
-    phone: string | null,
-    email: string | null,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser | null> {
-    if (phone) {
-      const user = await db.user.findFirst({
-        where: { phone: { in: getPhoneSearchVariants(phone) } },
-        select: requestUserSelect,
-      });
-
-      if (user) {
-        return user;
-      }
-    }
-
-    if (email) {
-      return db.user.findFirst({
-        where: { email },
-        select: requestUserSelect,
-      });
-    }
-
-    return null;
-  }
-
-  private async createTemporaryUser(
-    data: { fullName: string; email: string | null; phone: string | null },
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser> {
-    // TODO: Replace temporary password with OTP/email/SMS invitation before production.
-    const passwordHash = await bcrypt.hash(
-      TEMPORARY_USER_PASSWORD,
-      BCRYPT_SALT_ROUNDS,
-    );
-
-    return db.user.create({
-      data: {
-        fullName: data.fullName,
-        email: data.email,
-        phone: data.phone,
-        passwordHash,
-        status: 'ACTIVE',
-      },
-      select: requestUserSelect,
-    });
-  }
-
-  private async linkUserToMasjid(
-    userId: string,
-    masjidId: string,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser> {
-    return db.user.update({
-      where: { id: userId },
-      data: { masjidId },
-      select: requestUserSelect,
-    });
-  }
-
-  private async assignRoleToUser(
-    userId: string,
-    roleName: RoleName,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<void> {
-    const role = await db.role.findFirst({
-      where: { name: roleName },
-      select: { id: true },
-    });
-
-    if (!role) {
-      throw new ApiException(
-        `${roleName} role was not found`,
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.ROLE_NOT_FOUND,
-      );
-    }
-
-    const existingUserRole = await db.userRole.findFirst({
-      where: { userId, roleId: role.id },
-      select: { id: true },
-    });
-
-    if (existingUserRole) {
-      return;
-    }
-
-    await db.userRole.create({
-      data: { userId, roleId: role.id },
-      select: { id: true },
-    });
-  }
-
   private toCommitteeMembersJson(
     committeeMembers?: CommitteeMemberDto[],
   ): CommitteeMember[] | null {
@@ -799,6 +535,24 @@ export class MasjidRequestsService {
 
     const trimmed = value.trim();
     return trimmed || null;
+  }
+
+
+  private requiredString(value: unknown, label: string): string {
+    const text = this.nullableString(value as string | null);
+    if (!text) {
+      throw new ApiException(
+        `${label} is required`,
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+    return text;
+  }
+
+  private nullablePhone(value: unknown): string | null {
+    const text = this.nullableString(value as string | null);
+    return text ? normalizePhone(text) : null;
   }
 
   private nullableEmail(value?: string | null): string | null {

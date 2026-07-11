@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -69,6 +70,7 @@ export class CreateMasjidRequestDto {
   @ApiProperty({ example: 'Person Name', minLength: 2, maxLength: 150 })
   @Transform(trimString)
   @IsString({ message: 'Requester name must be a string' })
+  @IsNotEmpty({ message: 'Requester name is required' })
   @MinLength(2, { message: 'Requester name must be at least 2 characters' })
   @MaxLength(150, { message: 'Requester name must be 150 characters or less' })
   requesterName!: string;
@@ -76,6 +78,7 @@ export class CreateMasjidRequestDto {
   @ApiProperty({ example: '9876543210', maxLength: 20 })
   @Transform(trimString)
   @IsString({ message: 'Requester phone must be a string' })
+  @IsNotEmpty({ message: 'Requester phone is required' })
   @MinLength(5, { message: 'Requester phone must be at least 5 characters' })
   @MaxLength(20, { message: 'Requester phone must be 20 characters or less' })
   requesterPhone!: string;
@@ -92,6 +95,7 @@ export class CreateMasjidRequestDto {
   @ApiProperty({ example: 'Jama Masjid', minLength: 2, maxLength: 150 })
   @Transform(trimString)
   @IsString({ message: 'Masjid name must be a string' })
+  @IsNotEmpty({ message: 'Masjid name is required' })
   @MinLength(2, { message: 'Masjid name must be at least 2 characters' })
   @MaxLength(150, { message: 'Masjid name must be 150 characters or less' })
   masjidName!: string;
@@ -117,19 +121,26 @@ export class CreateMasjidRequestDto {
   @MaxLength(100, { message: 'District must be 100 characters or less' })
   district?: string;
 
-  @ApiPropertyOptional({ example: 'State', maxLength: 100 })
+  @ApiProperty({ example: 'State', maxLength: 100 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'State must be a string' })
+  @IsNotEmpty({ message: 'State is required' })
   @MaxLength(100, { message: 'State must be 100 characters or less' })
-  state?: string;
+  state!: string;
 
-  @ApiPropertyOptional({ example: 'Address', maxLength: 500 })
+  @ApiProperty({ example: 'India', maxLength: 100 })
   @Transform(trimString)
-  @IsOptional()
+  @IsString({ message: 'Country must be a string' })
+  @IsNotEmpty({ message: 'Country is required' })
+  @MaxLength(100, { message: 'Country must be 100 characters or less' })
+  country!: string;
+
+  @ApiProperty({ example: 'Address', maxLength: 500 })
+  @Transform(trimString)
   @IsString({ message: 'Address must be a string' })
+  @IsNotEmpty({ message: 'Address is required' })
   @MaxLength(500, { message: 'Address must be 500 characters or less' })
-  address?: string;
+  address!: string;
 
   @ApiPropertyOptional({ example: '9876543210', maxLength: 20 })
   @Transform(trimString)

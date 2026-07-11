@@ -102,7 +102,11 @@ type MasjidProfileRecord = {
   city: string | null;
   district: string | null;
   state: string | null;
+  country: string | null;
   address: string | null;
+  requestedByName: string | null;
+  requestedByPhone: string | null;
+  requestedByEmail: string | null;
   contactNo: string | null;
   description: string | null;
   welcomeMsg: string | null;
@@ -160,7 +164,11 @@ const masjidProfileSelect = {
   city: true,
   district: true,
   state: true,
+  country: true,
   address: true,
+  requestedByName: true,
+  requestedByPhone: true,
+  requestedByEmail: true,
   contactNo: true,
   description: true,
   welcomeMsg: true,

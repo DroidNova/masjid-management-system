@@ -174,21 +174,25 @@ model Masjid {
   village         String?
   city            String?
   district        String?
-  state           String?
-  address         String?
+  state           String
+  country         String
+  address         String
   contactNo       String?
   description     String?
   welcomeMsg      String?
+  requestedByName  String
+  requestedByPhone String
+  requestedByEmail String?
   status          MasjidStatus @default(PENDING)
   rejectionReason String?
   approvedAt      DateTime?
-  createdById     String       @db.Uuid
+  createdById     String?      @db.Uuid
   imamUserId      String?      @db.Uuid
   approvedById    String?      @db.Uuid
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  createdBy            User                        @relation("MasjidCreatedBy", fields: [createdById], references: [id])
+  createdBy            User?                       @relation("MasjidCreatedBy", fields: [createdById], references: [id])
   imamUser             User?                       @relation("MasjidImam", fields: [imamUserId], references: [id])
   approvedBy           User?                       @relation("MasjidApprovedBy", fields: [approvedById], references: [id])
   namazTime            NamazTime?
@@ -212,8 +216,8 @@ model MasjidRegistrationRequest {
   requestedById String? @db.Uuid
   reviewedById  String? @db.Uuid
 
-  requesterName  String?
-  requesterPhone String?
+  requesterName  String
+  requesterPhone String
   requesterEmail String?
 
   status MasjidRegistrationStatus @default(PENDING)
@@ -222,8 +226,9 @@ model MasjidRegistrationRequest {
   village     String?
   city        String?
   district    String?
-  state       String?
-  address     String?
+  state       String
+  country     String
+  address     String
   contactNo   String?
   description String?
   welcomeMsg  String?
