@@ -4,7 +4,10 @@ import 'package:platform_core_frontend/features/masjid_request/data/masjid_reque
 import 'package:platform_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/models/imam_input.dart';
+import 'package:platform_core_frontend/shared/models/country_code.dart';
+import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
 import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
 
 class MasjidRequestFormScreen extends StatefulWidget {
@@ -44,6 +47,9 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   late final MasjidRequestRepository _repository =
       widget._repository ?? MasjidRequestRepository();
 
+  CountryCode _requesterCountry = getDefaultCountryCode();
+  CountryCode _contactCountry = getDefaultCountryCode();
+  CountryCode _imamCountry = getDefaultCountryCode();
   bool _isSubmitting = false;
 
   @override
@@ -109,7 +115,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   CreateMasjidRequest _buildRequest() {
     return CreateMasjidRequest(
       requesterName: _requesterNameController.text,
-      requesterPhone: _requesterPhoneController.text,
+      requesterPhone: normalizePhone(countryCode: _requesterCountry, nationalNumber: _requesterPhoneController.text),
       requesterEmail: _requesterEmailController.text,
       masjidName: _masjidNameController.text,
       village: _villageController.text,
@@ -117,20 +123,20 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       district: _districtController.text,
       state: _stateController.text,
       address: _addressController.text,
-      contactNo: _contactNoController.text,
+      contactNo: _contactNoController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _contactCountry, nationalNumber: _contactNoController.text),
       description: _descriptionController.text,
       welcomeMsg: _welcomeMsgController.text,
       imam: ImamInput(
         name: _imamNameController.text,
         email: _imamEmailController.text,
-        phone: _imamPhoneController.text,
+        phone: _imamPhoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _imamCountry, nationalNumber: _imamPhoneController.text),
         address: _imamAddressController.text,
       ),
       committeeMembers: _committeeMembers
           .map(
             (member) => CommitteeMemberInput(
               name: member.nameController.text,
-              phone: member.phoneController.text,
+              phone: member.phoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: member.countryCode, nationalNumber: member.phoneController.text),
             ),
           )
           .toList(),
@@ -226,16 +232,13 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           validator: (value) =>
                               _requiredValidator(value, 'Your name'),
                         ),
-                        AppTextField(
-                          controller: _requesterPhoneController,
+                        AppPhoneField(
+                          phoneController: _requesterPhoneController,
+                          initialCountry: _requesterCountry,
+                          onCountryChanged: (country) => _requesterCountry = country,
                           label: 'Your Phone *',
-                          keyboardType: TextInputType.phone,
+                          isRequired: true,
                           textInputAction: TextInputAction.next,
-                          validator: (value) => _phoneValidator(
-                            value,
-                            'Your phone',
-                            required: true,
-                          ),
                         ),
                         AppTextField(
                           controller: _requesterEmailController,
@@ -284,13 +287,13 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           maxLines: 2,
                           textInputAction: TextInputAction.newline,
                         ),
-                        AppTextField(
-                          controller: _contactNoController,
+                        AppPhoneField(
+                          phoneController: _contactNoController,
+                          initialCountry: _contactCountry,
+                          onCountryChanged: (country) => _contactCountry = country,
                           label: 'Contact Number',
-                          keyboardType: TextInputType.phone,
+                          isRequired: false,
                           textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              _phoneValidator(value, 'Contact number'),
                         ),
                         AppTextField(
                           controller: _welcomeMsgController,
@@ -315,13 +318,13 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           label: 'Imam Name',
                           textInputAction: TextInputAction.next,
                         ),
-                        AppTextField(
-                          controller: _imamPhoneController,
+                        AppPhoneField(
+                          phoneController: _imamPhoneController,
+                          initialCountry: _imamCountry,
+                          onCountryChanged: (country) => _imamCountry = country,
                           label: 'Imam Phone',
-                          keyboardType: TextInputType.phone,
+                          isRequired: false,
                           textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              _phoneValidator(value, 'Imam phone'),
                         ),
                         AppTextField(
                           controller: _imamEmailController,
@@ -359,10 +362,6 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                             member: _committeeMembers[index],
                             index: index,
                             onRemove: () => _removeCommitteeMember(index),
-                            phoneValidator: (value) => _phoneValidator(
-                              value,
-                              'Member phone',
-                            ),
                           ),
                         AppButton(
                           label: '+ Add Committee Member',
@@ -430,13 +429,11 @@ class _CommitteeMemberFields extends StatelessWidget {
     required this.member,
     required this.index,
     required this.onRemove,
-    required this.phoneValidator,
   });
 
   final _CommitteeMemberControllers member;
   final int index;
   final VoidCallback onRemove;
-  final FormFieldValidator<String> phoneValidator;
 
   @override
   Widget build(BuildContext context) {
@@ -464,12 +461,12 @@ class _CommitteeMemberFields extends StatelessWidget {
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 14),
-        AppTextField(
-          controller: member.phoneController,
+        AppPhoneField(
+          phoneController: member.phoneController,
+          initialCountry: member.countryCode,
+          onCountryChanged: (country) => member.countryCode = country,
           label: 'Member Phone',
-          keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.next,
-          validator: phoneValidator,
         ),
         const Divider(height: 28),
       ],
@@ -480,6 +477,7 @@ class _CommitteeMemberFields extends StatelessWidget {
 class _CommitteeMemberControllers {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  CountryCode countryCode = getDefaultCountryCode();
 
   void dispose() {
     nameController.dispose();

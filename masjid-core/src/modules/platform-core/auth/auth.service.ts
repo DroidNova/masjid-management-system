@@ -12,6 +12,7 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { OtpChallengeService } from './services/otp-challenge.service';
+import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 
 type SafeUser = {
   id: string;
@@ -366,8 +367,9 @@ export class AuthService {
   }
 
   private async getUserByPhoneOrThrow(phone: string): Promise<UserWithAccess> {
-    const user = await this.prisma.user.findUnique({
-      where: { phone },
+    const phoneVariants = getPhoneSearchVariants(phone);
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: phoneVariants } },
       include: {
         userRoles: {
           include: {
@@ -416,7 +418,7 @@ export class AuthService {
   }
 
   private normalizePhone(phone: string): string {
-    return typeof phone === 'string' ? phone.trim() : '';
+    return normalizePhone(phone);
   }
 
   private getMockOtp(): string {

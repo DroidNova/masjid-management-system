@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
@@ -297,7 +298,7 @@ export class MasjidRequestsService {
     return this.db.masjidRegistrationRequest.create({
       data: {
         requesterName: this.nullableString(dto.requesterName),
-        requesterPhone: this.nullableString(dto.requesterPhone),
+        requesterPhone: this.normalizeNullablePhone(dto.requesterPhone),
         requesterEmail: this.nullableEmail(dto.requesterEmail),
         masjidName: dto.masjidName,
         village: this.nullableString(dto.village),
@@ -305,12 +306,12 @@ export class MasjidRequestsService {
         district: this.nullableString(dto.district),
         state: this.nullableString(dto.state),
         address: this.nullableString(dto.address),
-        contactNo: this.nullableString(dto.contactNo),
+        contactNo: this.normalizeNullablePhone(dto.contactNo),
         description: this.nullableString(dto.description),
         welcomeMsg: this.nullableString(dto.welcomeMsg),
         imamName: this.nullableString(dto.imam?.name),
         imamEmail: this.nullableEmail(dto.imam?.email),
-        imamPhone: this.nullableString(dto.imam?.phone),
+        imamPhone: this.normalizeNullablePhone(dto.imam?.phone),
         imamAddress: this.nullableString(dto.imam?.address),
         committeeMembers: this.toCommitteeMembersJson(dto.committeeMembers),
         requestedById: null,
@@ -666,7 +667,7 @@ export class MasjidRequestsService {
   ): Promise<RequestUser | null> {
     if (phone) {
       const user = await db.user.findFirst({
-        where: { phone },
+        where: { phone: { in: getPhoneSearchVariants(phone) } },
         select: requestUserSelect,
       });
 
@@ -752,6 +753,12 @@ export class MasjidRequestsService {
     });
   }
 
+
+  private normalizeNullablePhone(value: unknown): string | null {
+    const phone = this.nullableString(value);
+    return phone ? normalizePhone(phone) : null;
+  }
+
   private toCommitteeMembersJson(
     committeeMembers?: CommitteeMemberDto[],
   ): CommitteeMember[] | null {
@@ -762,7 +769,7 @@ export class MasjidRequestsService {
     const sanitizedMembers = committeeMembers
       .map((member) => ({
         name: this.nullableString(member.name) ?? undefined,
-        phone: this.nullableString(member.phone) ?? undefined,
+        phone: this.normalizeNullablePhone(member.phone) ?? undefined,
       }))
       .filter((member) => member.name || member.phone);
 
@@ -785,7 +792,7 @@ export class MasjidRequestsService {
             : undefined,
         phone:
           typeof member.phone === 'string'
-            ? (this.nullableString(member.phone) ?? undefined)
+            ? (this.normalizeNullablePhone(member.phone) ?? undefined)
             : undefined,
       }))
       .filter((member) => member.name || member.phone);

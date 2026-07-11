@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -38,9 +37,6 @@ export class CreateMasjidUserDto {
   @IsString({ message: 'Phone must be a string' })
   @MinLength(6, { message: 'Phone must be at least 6 characters' })
   @MaxLength(20, { message: 'Phone must be 20 characters or less' })
-  @Matches(/^\+?[1-9]\d{5,19}$/, {
-    message: 'Phone must be a valid international phone number',
-  })
   phone!: string;
 
   @ApiPropertyOptional({

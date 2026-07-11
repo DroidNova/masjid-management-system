@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:platform_core_frontend/shared/models/country_code.dart';
+import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
+import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
 
 class LoginPhoneScreen extends StatefulWidget {
   const LoginPhoneScreen({super.key, AuthRepository? authRepository})
@@ -19,6 +20,7 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   final TextEditingController _phoneController = TextEditingController();
   late final AuthRepository _authRepository =
       widget._authRepository ?? AuthRepository();
+  CountryCode _selectedCountry = getDefaultCountryCode();
   bool _isLoading = false;
 
   @override
@@ -28,12 +30,14 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   }
 
   Future<void> _continue() async {
-    final phone = _phoneController.text;
+    final nationalPhone = _phoneController.text.trim();
 
-    if (phone.length != 10) {
-      _showError('Enter a valid 10 digit phone number');
+    if (nationalPhone.isEmpty || nationalPhone.length < (_selectedCountry.minLength ?? 6) || nationalPhone.length > (_selectedCountry.maxLength ?? 15)) {
+      _showError('Enter a valid phone number');
       return;
     }
+
+    final phone = normalizePhone(countryCode: _selectedCountry, nationalNumber: nationalPhone);
 
     setState(() => _isLoading = true);
 
@@ -114,16 +118,14 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  AppTextField(
-                    controller: _phoneController,
+                  AppPhoneField(
+                    phoneController: _phoneController,
+                    initialCountry: _selectedCountry,
+                    onCountryChanged: (country) => _selectedCountry = country,
                     label: 'Phone number',
                     hint: '9876543210',
-                    keyboardType: TextInputType.phone,
+                    isRequired: true,
                     textInputAction: TextInputAction.done,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
-                    ],
                   ),
                   const SizedBox(height: 24),
                   AppButton(

@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -336,11 +337,11 @@ export class MasjidsService {
       );
     }
 
-    const phone = dto.phone.trim();
+    const phone = normalizePhone(dto.phone);
     const email = dto.email?.trim().toLowerCase() || null;
 
-    const existingByPhone = await this.prisma.user.findUnique({
-      where: { phone },
+    const existingByPhone = await this.prisma.user.findFirst({
+      where: { phone: { in: getPhoneSearchVariants(phone) } },
       select: { id: true },
     });
 
