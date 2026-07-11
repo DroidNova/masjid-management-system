@@ -5,7 +5,6 @@ import {
   IsArray,
   IsEmail,
   IsOptional,
-  ValidateIf,
   IsString,
   MaxLength,
   MinLength,
@@ -107,9 +106,8 @@ export class CreateMasjidRequestDto {
 
   @ApiPropertyOptional({ example: 'District', maxLength: 100, description: 'Required when country is India or IN' })
   @Transform(trimString)
-  @ValidateIf((dto: CreateMasjidRequestDto) => ['india', 'in'].includes(String(dto.country ?? '').trim().toLowerCase()))
+  @IsOptional()
   @IsString({ message: 'District must be a string' })
-  @MinLength(1, { message: 'District is required for India' })
   @MaxLength(100, { message: 'District must be 100 characters or less' })
   district?: string;
 

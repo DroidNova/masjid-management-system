@@ -303,6 +303,13 @@ export class MasjidRequestsService {
     const imamName = dto.imamName ?? dto.imam?.name;
     const imamPhone = dto.imamPhone ?? dto.imam?.phone;
     const imamEmail = dto.imamEmail ?? dto.imam?.email;
+    if (this.isIndia(dto.country) && !this.nullableString(dto.district)) {
+      throw new ApiException(
+        'District is required for India',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
     const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
     this.assertDistinctImamAndCommitteePhones(normalizePhone(imamPhone), committeeMembers);
 
