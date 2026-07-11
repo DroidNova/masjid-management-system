@@ -62,8 +62,7 @@ type MasjidRequestRecord = {
   requesterEmail: string | null;
   status: string;
   masjidName: string;
-  village: string | null;
-  city: string | null;
+  locality: string;
   district: string | null;
   country: string;
   state: string;
@@ -97,8 +96,7 @@ type RequestCreateData = {
   requesterEmail?: string | null;
   status: MasjidRegistrationRequestStatus;
   masjidName: string;
-  village?: string | null;
-  city?: string | null;
+  locality: string;
   district?: string | null;
   country: string;
   state: string;
@@ -109,7 +107,7 @@ type RequestCreateData = {
   imamName: string;
   imamEmail?: string | null;
   imamPhone: string;
-  imamAddress?: string | null;
+  imamAddress: string;
   committeeMembers: CommitteeMember[];
 };
 
@@ -135,8 +133,7 @@ type UserUpdateData = {
 
 type MasjidCreateData = {
   name: string;
-  village?: string | null;
-  city?: string | null;
+  locality: string;
   district?: string | null;
   country: string;
   state: string;
@@ -148,6 +145,10 @@ type MasjidCreateData = {
   requestedByPhone?: string | null;
   requestedByEmail?: string | null;
   createdById?: string | null;
+  imamName?: string | null;
+  imamPhone?: string | null;
+  imamEmail?: string | null;
+  imamAddress?: string | null;
   imamUserId?: string | null;
   status?: MasjidStatus;
   approvedById?: string;
@@ -263,8 +264,7 @@ const masjidRequestListSelect = {
   requesterEmail: true,
   status: true,
   masjidName: true,
-  village: true,
-  city: true,
+  locality: true,
   district: true,
   country: true,
   state: true,
@@ -303,6 +303,13 @@ export class MasjidRequestsService {
     const imamName = dto.imamName ?? dto.imam?.name;
     const imamPhone = dto.imamPhone ?? dto.imam?.phone;
     const imamEmail = dto.imamEmail ?? dto.imam?.email;
+    if (this.isIndia(dto.country) && !this.nullableString(dto.district)) {
+      throw new ApiException(
+        'District is required for India',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
     const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
     this.assertDistinctImamAndCommitteePhones(normalizePhone(imamPhone), committeeMembers);
 
@@ -313,9 +320,8 @@ export class MasjidRequestsService {
         requesterEmail: this.nullableEmail(dto.requesterEmail),
         masjidName: dto.masjidName,
         country: dto.country.trim(),
-        village: this.nullableString(dto.village),
-        city: this.nullableString(dto.city),
-        district: this.nullableString(dto.district),
+        locality: dto.locality.trim(),
+        district: this.isIndia(dto.country) ? dto.district!.trim() : this.nullableString(dto.district),
         state: dto.state.trim(),
         address: dto.address.trim(),
         contactNo: this.normalizeNullablePhone(dto.contactNo),
@@ -324,7 +330,7 @@ export class MasjidRequestsService {
         imamName: imamName.trim(),
         imamEmail: this.nullableEmail(imamEmail),
         imamPhone: normalizePhone(imamPhone),
-        imamAddress: this.nullableString(dto.imam?.address),
+        imamAddress: dto.imamAddress.trim(),
         committeeMembers,
         requestedById: null,
         status: MasjidRegistrationRequestStatus.PENDING,
@@ -394,8 +400,7 @@ export class MasjidRequestsService {
       const masjid = await tx.masjid.create({
         data: {
           name: request.masjidName,
-          village: request.village,
-          city: request.city,
+          locality: request.locality,
           district: request.district,
           country: request.country,
           state: request.state,
@@ -406,6 +411,10 @@ export class MasjidRequestsService {
           requestedByName: request.requesterName,
           requestedByPhone: request.requesterPhone,
           requestedByEmail: request.requesterEmail,
+          imamName: request.imamName,
+          imamPhone: request.imamPhone,
+          imamEmail: request.imamEmail,
+          imamAddress: request.imamAddress,
           createdById: actor.id,
           imamUserId: imamUser?.id ?? null,
           status: MasjidStatus.APPROVED,
@@ -492,9 +501,9 @@ export class MasjidRequestsService {
       };
     }
 
-    if (query.city) {
-      where.city = {
-        contains: query.city,
+    if (query.locality) {
+      where.locality = {
+        contains: query.locality,
         mode: 'insensitive',
       };
     }
@@ -530,7 +539,8 @@ export class MasjidRequestsService {
     if (query.search) {
       where.OR = [
         'masjidName',
-        'city',
+        'address',
+        'locality',
         'district',
         'state',
         'country',
@@ -749,6 +759,10 @@ export class MasjidRequestsService {
     });
   }
 
+
+  private isIndia(country: string): boolean {
+    return ['india', 'in'].includes(country.trim().toLowerCase());
+  }
 
   private normalizeNullablePhone(value: unknown): string | null {
     const phone = typeof value === 'string' ? this.nullableString(value) : null;

@@ -19,8 +19,8 @@ type DecimalLike =
 type DashboardMasjid = {
   id: string;
   name: string;
-  village: string | null;
-  city: string | null;
+  country: string | null;
+  locality: string | null;
   district: string | null;
   state: string | null;
   address: string | null;
@@ -156,8 +156,8 @@ const basicUserSelect = {
 const dashboardMasjidSelect = {
   id: true,
   name: true,
-  village: true,
-  city: true,
+  country: true,
+  locality: true,
   district: true,
   state: true,
   address: true,

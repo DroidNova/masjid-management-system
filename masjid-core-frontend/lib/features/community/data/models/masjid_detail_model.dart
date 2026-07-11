@@ -2,8 +2,8 @@ class MasjidDetailModel {
   const MasjidDetailModel({
     required this.id,
     required this.name,
-    this.village,
-    this.city,
+    this.country,
+    this.locality,
     this.district,
     this.state,
     this.address,
@@ -19,8 +19,8 @@ class MasjidDetailModel {
     return MasjidDetailModel(
       id: _string(json['id']),
       name: _string(json['name'], fallback: 'Masjid'),
-      village: _optionalString(json['village']),
-      city: _optionalString(json['city']),
+      country: _optionalString(json['country']),
+      locality: _optionalString(json['locality']),
       district: _optionalString(json['district']),
       state: _optionalString(json['state']),
       address: _optionalString(json['address']),
@@ -35,8 +35,8 @@ class MasjidDetailModel {
 
   final String id;
   final String name;
-  final String? village;
-  final String? city;
+  final String? country;
+  final String? locality;
   final String? district;
   final String? state;
   final String? address;

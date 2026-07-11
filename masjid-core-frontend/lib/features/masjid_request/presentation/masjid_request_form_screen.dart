@@ -32,8 +32,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   final TextEditingController _requesterPhoneController = TextEditingController();
   final TextEditingController _requesterEmailController = TextEditingController();
   final TextEditingController _masjidNameController = TextEditingController();
-  final TextEditingController _villageController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _localityController = TextEditingController();
   final TextEditingController _districtController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -68,8 +67,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     _requesterPhoneController.dispose();
     _requesterEmailController.dispose();
     _masjidNameController.dispose();
-    _villageController.dispose();
-    _cityController.dispose();
+    _localityController.dispose();
     _districtController.dispose();
     _stateController.dispose();
     _addressController.dispose();
@@ -162,9 +160,8 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       requesterEmail: _requesterEmailController.text,
       masjidName: _masjidNameController.text,
       country: _masjidCountry.name,
-      village: _villageController.text,
-      city: _cityController.text,
-      district: _districtController.text,
+      district: _masjidCountry.isoCode == 'IN' ? _districtController.text : '',
+      locality: _localityController.text,
       state: _stateController.text,
       address: _addressController.text,
       contactNo: _contactNoController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _contactCountry, nationalNumber: _contactNoController.text),
@@ -286,6 +283,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                             setState(() {
                               _masjidCountry = country;
                               _stateController.clear();
+                              _districtController.clear();
                             });
                           },
                         ),
@@ -312,15 +310,29 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                             validator: (value) =>
                                 _requiredValidator(value, 'State'),
                           ),
-                        if (_stateController.text.trim().isNotEmpty)
+                        if (_masjidCountry.isoCode == 'IN')
                           AppTextField(
-                            controller: _addressController,
-                            label: 'Address *',
-                            maxLines: 2,
-                            textInputAction: TextInputAction.newline,
+                            controller: _districtController,
+                            label: 'District *',
+                            textInputAction: TextInputAction.next,
                             validator: (value) =>
-                                _requiredValidator(value, 'Address'),
+                                _requiredValidator(value, 'District'),
                           ),
+                        AppTextField(
+                          controller: _localityController,
+                          label: 'City / Village / Town *',
+                          textInputAction: TextInputAction.next,
+                          validator: (value) =>
+                              _requiredValidator(value, 'City / Village / Town'),
+                        ),
+                        AppTextField(
+                          controller: _addressController,
+                          label: 'Address *',
+                          maxLines: 2,
+                          textInputAction: TextInputAction.newline,
+                          validator: (value) =>
+                              _requiredValidator(value, 'Address'),
+                        ),
                         AppPhoneField(
                           phoneController: _contactNoController,
                           initialCountry: _contactCountry,
@@ -401,9 +413,11 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         ),
                         AppTextField(
                           controller: _imamAddressController,
-                          label: 'Imam Address',
+                          label: 'Imam Address *',
                           maxLines: 2,
                           textInputAction: TextInputAction.newline,
+                          validator: (value) =>
+                              _requiredValidator(value, 'Imam address'),
                         ),
                       ],
                     ),

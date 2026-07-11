@@ -151,7 +151,7 @@ class _AdminMasjidRequestsScreenState
             controller: _searchController,
             decoration: const InputDecoration(
               labelText: 'Search requests',
-              hintText: 'Search by masjid, city, district, state, or phone',
+              hintText: 'Search by masjid, locality, district, state, or phone',
             ),
             onChanged: _onSearchChanged,
           ),

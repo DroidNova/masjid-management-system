@@ -215,6 +215,8 @@ export class AdminService {
     status?: string;
     state?: string;
     country?: string;
+    district?: string;
+    locality?: string;
     page?: number;
     limit?: number;
   }) {
@@ -226,11 +228,16 @@ export class AdminService {
     if (query.status) where.status = query.status;
     if (query.state) where.state = { contains: query.state, mode: 'insensitive' };
     if (query.country) where.country = { contains: query.country, mode: 'insensitive' };
+    if (query.district) where.district = { contains: query.district, mode: 'insensitive' };
+    if (query.locality) where.locality = { contains: query.locality, mode: 'insensitive' };
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { state: { contains: search, mode: 'insensitive' } },
         { country: { contains: search, mode: 'insensitive' } },
+        { district: { contains: search, mode: 'insensitive' } },
+        { locality: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } },
         { contactNo: { contains: search, mode: 'insensitive' } },
         { requestedByName: { contains: search, mode: 'insensitive' } },
         { requestedByPhone: { contains: search, mode: 'insensitive' } },
@@ -247,8 +254,7 @@ export class AdminService {
           id: true,
           name: true,
           country: true,
-          village: true,
-          city: true,
+          locality: true,
           district: true,
           state: true,
           address: true,
@@ -289,8 +295,7 @@ export class AdminService {
         id: true,
         name: true,
         country: true,
-        village: true,
-        city: true,
+        locality: true,
         district: true,
         state: true,
         address: true,

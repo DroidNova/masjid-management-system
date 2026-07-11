@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:platform_core_frontend/core/session/session_expired_handler.dart';
 import 'package:platform_core_frontend/core/storage/session_storage.dart';
 import 'package:platform_core_frontend/core/storage/token_storage.dart';
 
@@ -55,6 +56,7 @@ class AuthInterceptor extends Interceptor {
       final newAccessToken = await _refreshAccessToken();
       if (newAccessToken == null || newAccessToken.isEmpty) {
         await _clearLocalSession();
+        SessionExpiredHandler.showDialogAndRedirect();
         handler.next(_sessionExpiredError(options));
         return;
       }
@@ -75,6 +77,7 @@ class AuthInterceptor extends Interceptor {
       handler.resolve(response);
     } catch (_) {
       await _clearLocalSession();
+      SessionExpiredHandler.showDialogAndRedirect();
       handler.next(_sessionExpiredError(options));
     }
   }

@@ -9,10 +9,11 @@ class MasjidInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = [
-      masjid.village,
-      masjid.city,
+      masjid.address,
+      masjid.locality,
       masjid.district,
       masjid.state,
+      masjid.country,
     ].where((value) => value != null && value.trim().isNotEmpty).join(', ');
 
     return Card(
