@@ -23,7 +23,7 @@ Without it, migrations, seed scripts, and runtime DB access cannot work.
 ### Example
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/platform_core_dev"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/masjid-management-system"
 ```
 
 ---

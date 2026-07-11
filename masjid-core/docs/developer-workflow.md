@@ -70,12 +70,12 @@ If `.env.example` does not exist in your clone, create `.env` manually with the 
 ### Step 4: Configure PostgreSQL
 Create a local database (example):
 ```sql
-CREATE DATABASE platform_core_dev;
+CREATE DATABASE "masjid-management-system";
 ```
 
 Set `DATABASE_URL` in `.env`, for example:
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/platform_core_dev"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/masjid-management-system"
 ```
 
 ### Step 5: Generate Prisma client
