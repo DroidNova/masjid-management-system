@@ -15,7 +15,6 @@ import {
   UpdateMasjidRequestStatusDto,
 } from './dto/update-masjid-request-status.dto';
 
-const MASJID_ADMIN_ROLE = 'MASJID_ADMIN';
 const IMAM_ROLE = 'IMAM';
 const COMMITTEE_MEMBER_ROLE = 'COMMITTEE_MEMBER';
 const TEMPORARY_USER_PASSWORD = '12345678';
@@ -66,8 +65,9 @@ type MasjidRequestRecord = {
   village: string | null;
   city: string | null;
   district: string | null;
-  state: string | null;
-  address: string | null;
+  country: string;
+  state: string;
+  address: string;
   contactNo: string | null;
   description: string | null;
   welcomeMsg: string | null;
@@ -87,30 +87,30 @@ type MasjidRequestRecord = {
 };
 
 type RoleName =
-  | typeof MASJID_ADMIN_ROLE
   | typeof IMAM_ROLE
   | typeof COMMITTEE_MEMBER_ROLE;
 
 type RequestCreateData = {
   requestedById?: string | null;
-  requesterName?: string | null;
-  requesterPhone?: string | null;
+  requesterName: string;
+  requesterPhone: string;
   requesterEmail?: string | null;
   status: MasjidRegistrationRequestStatus;
   masjidName: string;
   village?: string | null;
   city?: string | null;
   district?: string | null;
-  state?: string | null;
-  address?: string | null;
+  country: string;
+  state: string;
+  address: string;
   contactNo?: string | null;
   description?: string | null;
   welcomeMsg?: string | null;
-  imamName?: string | null;
+  imamName: string;
   imamEmail?: string | null;
-  imamPhone?: string | null;
+  imamPhone: string;
   imamAddress?: string | null;
-  committeeMembers?: CommitteeMember[] | null;
+  committeeMembers: CommitteeMember[];
 };
 
 type RequestUpdateData = {
@@ -138,12 +138,17 @@ type MasjidCreateData = {
   village?: string | null;
   city?: string | null;
   district?: string | null;
-  state?: string | null;
-  address?: string | null;
+  country: string;
+  state: string;
+  address: string;
   contactNo?: string | null;
   description?: string | null;
   welcomeMsg?: string | null;
-  createdById: string;
+  country: string;
+  requestedByName?: string | null;
+  requestedByPhone?: string | null;
+  requestedByEmail?: string | null;
+  createdById?: string | null;
   imamUserId?: string | null;
   status?: MasjidStatus;
   approvedById?: string;
@@ -262,6 +267,7 @@ const masjidRequestListSelect = {
   village: true,
   city: true,
   district: true,
+  country: true,
   state: true,
   address: true,
   contactNo: true,
@@ -295,25 +301,29 @@ export class MasjidRequestsService {
   }
 
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
+    const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
+    this.assertDistinctImamAndCommitteePhones(normalizePhone(dto.imam.phone), committeeMembers);
+
     return this.db.masjidRegistrationRequest.create({
       data: {
-        requesterName: this.nullableString(dto.requesterName),
-        requesterPhone: this.normalizeNullablePhone(dto.requesterPhone),
+        requesterName: dto.requesterName.trim(),
+        requesterPhone: normalizePhone(dto.requesterPhone),
         requesterEmail: this.nullableEmail(dto.requesterEmail),
         masjidName: dto.masjidName,
+        country: dto.country.trim(),
         village: this.nullableString(dto.village),
         city: this.nullableString(dto.city),
         district: this.nullableString(dto.district),
-        state: this.nullableString(dto.state),
-        address: this.nullableString(dto.address),
+        state: dto.state.trim(),
+        address: dto.address.trim(),
         contactNo: this.normalizeNullablePhone(dto.contactNo),
         description: this.nullableString(dto.description),
         welcomeMsg: this.nullableString(dto.welcomeMsg),
-        imamName: this.nullableString(dto.imam?.name),
-        imamEmail: this.nullableEmail(dto.imam?.email),
-        imamPhone: this.normalizeNullablePhone(dto.imam?.phone),
+        imamName: dto.imam.name.trim(),
+        imamEmail: this.nullableEmail(dto.imam.email),
+        imamPhone: normalizePhone(dto.imam.phone),
         imamAddress: this.nullableString(dto.imam?.address),
-        committeeMembers: this.toCommitteeMembersJson(dto.committeeMembers),
+        committeeMembers,
         requestedById: null,
         status: MasjidRegistrationRequestStatus.PENDING,
       },
@@ -378,7 +388,6 @@ export class MasjidRequestsService {
       const request = await this.findByIdOrThrow(id, tx);
       this.assertCanApprove(request);
 
-      const requesterUser = await this.resolveRequesterAdminUser(request, tx);
       const imamUser = await this.createOrFindImamUser(request, tx);
       const masjid = await tx.masjid.create({
         data: {
@@ -386,12 +395,16 @@ export class MasjidRequestsService {
           village: request.village,
           city: request.city,
           district: request.district,
+          country: request.country,
           state: request.state,
           address: request.address,
           contactNo: request.contactNo,
           description: request.description,
           welcomeMsg: request.welcomeMsg,
-          createdById: requesterUser.id,
+          requestedByName: request.requesterName,
+          requestedByPhone: request.requesterPhone,
+          requestedByEmail: request.requesterEmail,
+          createdById: actor.id,
           imamUserId: imamUser?.id ?? null,
           status: MasjidStatus.APPROVED,
           approvedById: actor.id,
@@ -400,9 +413,6 @@ export class MasjidRequestsService {
         },
         select: createdMasjidSelect,
       });
-
-      await this.linkUserToMasjid(requesterUser.id, masjid.id, tx);
-      await this.assignRoleToUser(requesterUser.id, MASJID_ADMIN_ROLE, tx);
 
       if (imamUser) {
         await this.linkUserToMasjid(imamUser.id, masjid.id, tx);
@@ -562,42 +572,6 @@ export class MasjidRequestsService {
     }
   }
 
-  private async resolveRequesterAdminUser(
-    request: MasjidRequestRecord,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser> {
-    if (request.requestedById) {
-      const requestedBy = await db.user.findUnique({
-        where: { id: request.requestedById },
-        select: requestUserSelect,
-      });
-
-      if (requestedBy) {
-        return requestedBy;
-      }
-    }
-
-    const fullName = this.nullableString(request.requesterName);
-    const phone = this.nullableString(request.requesterPhone);
-    const email = this.nullableEmail(request.requesterEmail);
-
-    if (!fullName || !phone) {
-      throw new ApiException(
-        'Requester contact details are required to approve this masjid request',
-        HttpStatus.BAD_REQUEST,
-        ERROR_CODES.MASJID_REQUEST_REQUESTER_DETAILS_REQUIRED,
-      );
-    }
-
-    const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
-
-    if (existingUser) {
-      return existingUser;
-    }
-
-    return this.createTemporaryUser({ fullName, email, phone }, db);
-  }
-
   private async createOrFindImamUser(
     request: MasjidRequestRecord,
     db: MasjidRequestsPrismaDelegate,
@@ -606,8 +580,12 @@ export class MasjidRequestsService {
     const email = this.nullableEmail(request.imamEmail);
     const phone = this.nullableString(request.imamPhone);
 
-    if (!fullName && !email && !phone) {
-      return null;
+    if (!fullName || !phone) {
+      throw new ApiException(
+        'Imam name and phone are required to approve this masjid request',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
     }
 
     const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
@@ -631,6 +609,14 @@ export class MasjidRequestsService {
     const committeeMembers = this.parseCommitteeMembers(
       request.committeeMembers,
     );
+
+    if (!committeeMembers.length) {
+      throw new ApiException(
+        'At least one committee member is required',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
 
     for (const member of committeeMembers) {
       const fullName = this.nullableString(member.name);
@@ -759,21 +745,39 @@ export class MasjidRequestsService {
     return phone ? normalizePhone(phone) : null;
   }
 
-  private toCommitteeMembersJson(
-    committeeMembers?: CommitteeMemberDto[],
-  ): CommitteeMember[] | null {
-    if (!committeeMembers?.length) {
-      return null;
+  private normalizeCommitteeMembers(
+    committeeMembers: CommitteeMemberDto[],
+  ): CommitteeMember[] {
+    return committeeMembers.map((member) => ({
+      name: member.name.trim(),
+      phone: normalizePhone(member.phone),
+    }));
+  }
+
+  private assertDistinctImamAndCommitteePhones(
+    imamPhone: string,
+    committeeMembers: CommitteeMember[],
+  ): void {
+    const seenCommitteePhones = new Set<string>();
+
+    for (const member of committeeMembers) {
+      const phone = normalizePhone(member.phone ?? '');
+      if (phone === imamPhone) {
+        throw new ApiException(
+          'Imam cannot also be a committee member.',
+          HttpStatus.BAD_REQUEST,
+          ERROR_CODES.BAD_REQUEST,
+        );
+      }
+      if (seenCommitteePhones.has(phone)) {
+        throw new ApiException(
+          'Committee member mobile number is duplicated.',
+          HttpStatus.BAD_REQUEST,
+          ERROR_CODES.BAD_REQUEST,
+        );
+      }
+      seenCommitteePhones.add(phone);
     }
-
-    const sanitizedMembers = committeeMembers
-      .map((member) => ({
-        name: this.nullableString(member.name) ?? undefined,
-        phone: this.normalizeNullablePhone(member.phone) ?? undefined,
-      }))
-      .filter((member) => member.name || member.phone);
-
-    return sanitizedMembers.length ? sanitizedMembers : null;
   }
 
   private parseCommitteeMembers(value: unknown): CommitteeMember[] {

@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -14,12 +16,12 @@ const trimString = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
 export class ImamDetailsDto {
-  @ApiPropertyOptional({ example: 'Imam Name', maxLength: 150 })
+  @ApiProperty({ example: 'Imam Name', maxLength: 150 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'Imam name must be a string' })
   @MaxLength(150, { message: 'Imam name must be 150 characters or less' })
-  name?: string;
+  @IsNotEmpty({ message: 'Imam name is required' })
+  name!: string;
 
   @ApiPropertyOptional({ example: 'imam@example.com', maxLength: 255 })
   @Transform(({ value }: { value: unknown }) =>
@@ -30,12 +32,12 @@ export class ImamDetailsDto {
   @MaxLength(255, { message: 'Imam email must be 255 characters or less' })
   email?: string;
 
-  @ApiPropertyOptional({ example: '9876543210', maxLength: 20 })
+  @ApiProperty({ example: '9876543210', maxLength: 20 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'Imam phone must be a string' })
+  @IsNotEmpty({ message: 'Imam phone is required' })
   @MaxLength(20, { message: 'Imam phone must be 20 characters or less' })
-  phone?: string;
+  phone!: string;
 
   @ApiPropertyOptional({ example: 'Single line address', maxLength: 500 })
   @Transform(trimString)
@@ -46,23 +48,23 @@ export class ImamDetailsDto {
 }
 
 export class CommitteeMemberDto {
-  @ApiPropertyOptional({ example: 'Committee Member Name', maxLength: 150 })
+  @ApiProperty({ example: 'Committee Member Name', maxLength: 150 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'Committee member name must be a string' })
   @MaxLength(150, {
     message: 'Committee member name must be 150 characters or less',
   })
-  name?: string;
+  @IsNotEmpty({ message: 'Committee member name is required' })
+  name!: string;
 
-  @ApiPropertyOptional({ example: '9876543211', maxLength: 20 })
+  @ApiProperty({ example: '9876543211', maxLength: 20 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'Committee member phone must be a string' })
+  @IsNotEmpty({ message: 'Committee member phone is required' })
   @MaxLength(20, {
     message: 'Committee member phone must be 20 characters or less',
   })
-  phone?: string;
+  phone!: string;
 }
 
 export class CreateMasjidRequestDto {
@@ -96,6 +98,13 @@ export class CreateMasjidRequestDto {
   @MaxLength(150, { message: 'Masjid name must be 150 characters or less' })
   masjidName!: string;
 
+  @ApiProperty({ example: 'India', maxLength: 100 })
+  @Transform(trimString)
+  @IsString({ message: 'Country must be a string' })
+  @IsNotEmpty({ message: 'Country is required' })
+  @MaxLength(100, { message: 'Country must be 100 characters or less' })
+  country!: string;
+
   @ApiPropertyOptional({ example: 'Village Name', maxLength: 100 })
   @Transform(trimString)
   @IsOptional()
@@ -117,19 +126,19 @@ export class CreateMasjidRequestDto {
   @MaxLength(100, { message: 'District must be 100 characters or less' })
   district?: string;
 
-  @ApiPropertyOptional({ example: 'State', maxLength: 100 })
+  @ApiProperty({ example: 'State', maxLength: 100 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'State must be a string' })
+  @IsNotEmpty({ message: 'State is required' })
   @MaxLength(100, { message: 'State must be 100 characters or less' })
-  state?: string;
+  state!: string;
 
-  @ApiPropertyOptional({ example: 'Address', maxLength: 500 })
+  @ApiProperty({ example: 'Address', maxLength: 500 })
   @Transform(trimString)
-  @IsOptional()
   @IsString({ message: 'Address must be a string' })
+  @IsNotEmpty({ message: 'Address is required' })
   @MaxLength(500, { message: 'Address must be 500 characters or less' })
-  address?: string;
+  address!: string;
 
   @ApiPropertyOptional({ example: '9876543210', maxLength: 20 })
   @Transform(trimString)
@@ -152,16 +161,15 @@ export class CreateMasjidRequestDto {
   @MaxLength(500, { message: 'Welcome message must be 500 characters or less' })
   welcomeMsg?: string;
 
-  @ApiPropertyOptional({ type: ImamDetailsDto })
-  @IsOptional()
+  @ApiProperty({ type: ImamDetailsDto })
   @ValidateNested()
   @Type(() => ImamDetailsDto)
-  imam?: ImamDetailsDto;
+  imam!: ImamDetailsDto;
 
-  @ApiPropertyOptional({ type: [CommitteeMemberDto] })
-  @IsOptional()
+  @ApiProperty({ type: [CommitteeMemberDto] })
   @IsArray({ message: 'Committee members must be an array' })
+  @ArrayMinSize(1, { message: 'At least one committee member is required' })
   @ValidateNested({ each: true })
   @Type(() => CommitteeMemberDto)
-  committeeMembers?: CommitteeMemberDto[];
+  committeeMembers!: CommitteeMemberDto[];
 }

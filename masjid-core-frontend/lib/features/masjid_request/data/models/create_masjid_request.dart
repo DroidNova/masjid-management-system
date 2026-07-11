@@ -7,6 +7,7 @@ class CreateMasjidRequest {
     required this.requesterPhone,
     required this.requesterEmail,
     required this.masjidName,
+    required this.country,
     required this.village,
     required this.city,
     required this.district,
@@ -23,6 +24,7 @@ class CreateMasjidRequest {
   final String requesterPhone;
   final String requesterEmail;
   final String masjidName;
+  final String country;
   final String village;
   final String city;
   final String district;
@@ -40,6 +42,7 @@ class CreateMasjidRequest {
     _addIfNotEmpty(json, 'requesterPhone', requesterPhone);
     _addIfNotEmpty(json, 'requesterEmail', requesterEmail);
     _addIfNotEmpty(json, 'masjidName', masjidName);
+    _addIfNotEmpty(json, 'country', country);
     _addIfNotEmpty(json, 'village', village);
     _addIfNotEmpty(json, 'city', city);
     _addIfNotEmpty(json, 'district', district);

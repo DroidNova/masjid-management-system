@@ -4,9 +4,11 @@ import 'package:platform_core_frontend/features/masjid_request/data/masjid_reque
 import 'package:platform_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/models/imam_input.dart';
+import 'package:platform_core_frontend/shared/constants/indian_states.dart';
 import 'package:platform_core_frontend/shared/models/country_code.dart';
 import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:platform_core_frontend/shared/widgets/app_country_dropdown.dart';
 import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
 import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
 
@@ -47,10 +49,18 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   late final MasjidRequestRepository _repository =
       widget._repository ?? MasjidRequestRepository();
 
+  CountryCode _masjidCountry = getDefaultCountryCode();
   CountryCode _requesterCountry = getDefaultCountryCode();
   CountryCode _contactCountry = getDefaultCountryCode();
   CountryCode _imamCountry = getDefaultCountryCode();
   bool _isSubmitting = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _committeeMembers.add(_CommitteeMemberControllers());
+  }
 
   @override
   void dispose() {
@@ -76,8 +86,41 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     super.dispose();
   }
 
+
+  bool _validateMemberPhones() {
+    if (_committeeMembers.isEmpty) {
+      _showError('At least one committee member is required.');
+      return false;
+    }
+
+    final imamPhone = normalizePhone(
+      countryCode: _imamCountry,
+      nationalNumber: _imamPhoneController.text,
+    );
+    final committeePhones = <String>{};
+
+    for (final member in _committeeMembers) {
+      final phone = normalizePhone(
+        countryCode: member.countryCode,
+        nationalNumber: member.phoneController.text,
+      );
+      if (phone == imamPhone) {
+        _showError('Imam cannot also be a committee member.');
+        return false;
+      }
+      if (committeePhones.contains(phone)) {
+        _showError('Committee member mobile number is duplicated.');
+        return false;
+      }
+      committeePhones.add(phone);
+    }
+
+    return true;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_validateMemberPhones()) return;
 
     setState(() => _isSubmitting = true);
 
@@ -118,6 +161,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       requesterPhone: normalizePhone(countryCode: _requesterCountry, nationalNumber: _requesterPhoneController.text),
       requesterEmail: _requesterEmailController.text,
       masjidName: _masjidNameController.text,
+      country: _masjidCountry.name,
       village: _villageController.text,
       city: _cityController.text,
       district: _districtController.text,
@@ -148,6 +192,10 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   }
 
   void _removeCommitteeMember(int index) {
+    if (_committeeMembers.length == 1) {
+      _showError('At least one committee member is required.');
+      return;
+    }
     final member = _committeeMembers.removeAt(index);
     member.dispose();
     setState(() {});
@@ -223,35 +271,6 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                     ),
                     const SizedBox(height: 24),
                     _FormSection(
-                      title: 'Requester Details',
-                      children: <Widget>[
-                        AppTextField(
-                          controller: _requesterNameController,
-                          label: 'Your Name *',
-                          textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              _requiredValidator(value, 'Your name'),
-                        ),
-                        AppPhoneField(
-                          phoneController: _requesterPhoneController,
-                          initialCountry: _requesterCountry,
-                          onCountryChanged: (country) => _requesterCountry = country,
-                          label: 'Your Phone *',
-                          isRequired: true,
-                          textInputAction: TextInputAction.next,
-                        ),
-                        AppTextField(
-                          controller: _requesterEmailController,
-                          label: 'Your Email',
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              _emailValidator(value, 'email address'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _FormSection(
                       title: 'Masjid Details',
                       children: <Widget>[
                         AppTextField(
@@ -261,37 +280,52 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           validator: (value) =>
                               _requiredValidator(value, 'Masjid name'),
                         ),
-                        AppTextField(
-                          controller: _villageController,
-                          label: 'Village',
-                          textInputAction: TextInputAction.next,
+                        AppCountryDropdown(
+                          value: _masjidCountry,
+                          onChanged: (country) {
+                            setState(() {
+                              _masjidCountry = country;
+                              _stateController.clear();
+                            });
+                          },
                         ),
-                        AppTextField(
-                          controller: _cityController,
-                          label: 'City',
-                          textInputAction: TextInputAction.next,
-                        ),
-                        AppTextField(
-                          controller: _districtController,
-                          label: 'District',
-                          textInputAction: TextInputAction.next,
-                        ),
-                        AppTextField(
-                          controller: _stateController,
-                          label: 'State',
-                          textInputAction: TextInputAction.next,
-                        ),
-                        AppTextField(
-                          controller: _addressController,
-                          label: 'Address',
-                          maxLines: 2,
-                          textInputAction: TextInputAction.newline,
-                        ),
+                        if (_masjidCountry.isoCode == 'IN')
+                          DropdownButtonFormField<String>(
+                            value: _stateController.text.isEmpty ? null : _stateController.text,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'State *',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: indianStates
+                                .map((state) => DropdownMenuItem<String>(value: state, child: Text(state)))
+                                .toList(),
+                            onChanged: (state) => setState(() => _stateController.text = state ?? ''),
+                            validator: (value) =>
+                                _requiredValidator(value, 'State'),
+                          )
+                        else
+                          AppTextField(
+                            controller: _stateController,
+                            label: 'State / Province / Region *',
+                            textInputAction: TextInputAction.next,
+                            validator: (value) =>
+                                _requiredValidator(value, 'State'),
+                          ),
+                        if (_stateController.text.trim().isNotEmpty)
+                          AppTextField(
+                            controller: _addressController,
+                            label: 'Address *',
+                            maxLines: 2,
+                            textInputAction: TextInputAction.newline,
+                            validator: (value) =>
+                                _requiredValidator(value, 'Address'),
+                          ),
                         AppPhoneField(
                           phoneController: _contactNoController,
                           initialCountry: _contactCountry,
                           onCountryChanged: (country) => _contactCountry = country,
-                          label: 'Contact Number',
+                          label: 'Phone Number',
                           isRequired: false,
                           textInputAction: TextInputAction.next,
                         ),
@@ -311,19 +345,50 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     _FormSection(
+                      title: 'Requester Details',
+                      children: <Widget>[
+                        AppTextField(
+                          controller: _requesterNameController,
+                          label: 'Requester Name *',
+                          textInputAction: TextInputAction.next,
+                          validator: (value) =>
+                              _requiredValidator(value, 'Your name'),
+                        ),
+                        AppPhoneField(
+                          phoneController: _requesterPhoneController,
+                          initialCountry: _requesterCountry,
+                          onCountryChanged: (country) => _requesterCountry = country,
+                          label: 'Requester Mobile Number *',
+                          isRequired: true,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        AppTextField(
+                          controller: _requesterEmailController,
+                          label: 'Requester Email',
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          validator: (value) =>
+                              _emailValidator(value, 'email address'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _FormSection(
                       title: 'Imam Details',
                       children: <Widget>[
                         AppTextField(
                           controller: _imamNameController,
-                          label: 'Imam Name',
+                          label: 'Imam Name *',
                           textInputAction: TextInputAction.next,
+                          validator: (value) =>
+                              _requiredValidator(value, 'Imam name'),
                         ),
                         AppPhoneField(
                           phoneController: _imamPhoneController,
                           initialCountry: _imamCountry,
                           onCountryChanged: (country) => _imamCountry = country,
-                          label: 'Imam Phone',
-                          isRequired: false,
+                          label: 'Imam Mobile Number *',
+                          isRequired: true,
                           textInputAction: TextInputAction.next,
                         ),
                         AppTextField(
@@ -457,15 +522,22 @@ class _CommitteeMemberFields extends StatelessWidget {
         ),
         AppTextField(
           controller: member.nameController,
-          label: 'Member Name',
+          label: 'Committee Member Name *',
           textInputAction: TextInputAction.next,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Committee member name is required.';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 14),
         AppPhoneField(
           phoneController: member.phoneController,
           initialCountry: member.countryCode,
           onCountryChanged: (country) => member.countryCode = country,
-          label: 'Member Phone',
+          label: 'Committee Member Mobile Number *',
+          isRequired: true,
           textInputAction: TextInputAction.next,
         ),
         const Divider(height: 28),
