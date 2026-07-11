@@ -150,6 +150,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ),
         Wrap(
           spacing: 8,
+          runSpacing: 8,
           children: <Widget>[
             _statusChip('All', null),
             _statusChip('Active', 'ACTIVE'),

@@ -107,6 +107,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           const SizedBox(height: 20),
           Wrap(
             spacing: 12,
+            runSpacing: 12,
             children: <Widget>[
               FilledButton(
                 onPressed: () => context.go('/super-admin/requests'),
