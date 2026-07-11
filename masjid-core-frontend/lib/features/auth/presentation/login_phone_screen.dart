@@ -123,7 +123,6 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
                     initialCountry: _selectedCountry,
                     onCountryChanged: (country) => _selectedCountry = country,
                     label: 'Phone number',
-                    hint: '9876543210',
                     isRequired: true,
                     textInputAction: TextInputAction.done,
                   ),

@@ -144,7 +144,6 @@ type MasjidCreateData = {
   contactNo?: string | null;
   description?: string | null;
   welcomeMsg?: string | null;
-  country: string;
   requestedByName?: string | null;
   requestedByPhone?: string | null;
   requestedByEmail?: string | null;
@@ -741,7 +740,7 @@ export class MasjidRequestsService {
 
 
   private normalizeNullablePhone(value: unknown): string | null {
-    const phone = this.nullableString(value);
+    const phone = typeof value === 'string' ? this.nullableString(value) : null;
     return phone ? normalizePhone(phone) : null;
   }
 

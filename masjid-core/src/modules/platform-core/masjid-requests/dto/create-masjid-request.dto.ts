@@ -4,7 +4,6 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -19,8 +18,8 @@ export class ImamDetailsDto {
   @ApiProperty({ example: 'Imam Name', maxLength: 150 })
   @Transform(trimString)
   @IsString({ message: 'Imam name must be a string' })
+  @MinLength(1, { message: 'Imam name is required' })
   @MaxLength(150, { message: 'Imam name must be 150 characters or less' })
-  @IsNotEmpty({ message: 'Imam name is required' })
   name!: string;
 
   @ApiPropertyOptional({ example: 'imam@example.com', maxLength: 255 })
@@ -35,7 +34,7 @@ export class ImamDetailsDto {
   @ApiProperty({ example: '9876543210', maxLength: 20 })
   @Transform(trimString)
   @IsString({ message: 'Imam phone must be a string' })
-  @IsNotEmpty({ message: 'Imam phone is required' })
+  @MinLength(1, { message: 'Imam phone is required' })
   @MaxLength(20, { message: 'Imam phone must be 20 characters or less' })
   phone!: string;
 
@@ -51,16 +50,16 @@ export class CommitteeMemberDto {
   @ApiProperty({ example: 'Committee Member Name', maxLength: 150 })
   @Transform(trimString)
   @IsString({ message: 'Committee member name must be a string' })
+  @MinLength(1, { message: 'Committee member name is required' })
   @MaxLength(150, {
     message: 'Committee member name must be 150 characters or less',
   })
-  @IsNotEmpty({ message: 'Committee member name is required' })
   name!: string;
 
   @ApiProperty({ example: '9876543211', maxLength: 20 })
   @Transform(trimString)
   @IsString({ message: 'Committee member phone must be a string' })
-  @IsNotEmpty({ message: 'Committee member phone is required' })
+  @MinLength(1, { message: 'Committee member phone is required' })
   @MaxLength(20, {
     message: 'Committee member phone must be 20 characters or less',
   })
@@ -101,7 +100,7 @@ export class CreateMasjidRequestDto {
   @ApiProperty({ example: 'India', maxLength: 100 })
   @Transform(trimString)
   @IsString({ message: 'Country must be a string' })
-  @IsNotEmpty({ message: 'Country is required' })
+  @MinLength(1, { message: 'Country is required' })
   @MaxLength(100, { message: 'Country must be 100 characters or less' })
   country!: string;
 
@@ -129,14 +128,14 @@ export class CreateMasjidRequestDto {
   @ApiProperty({ example: 'State', maxLength: 100 })
   @Transform(trimString)
   @IsString({ message: 'State must be a string' })
-  @IsNotEmpty({ message: 'State is required' })
+  @MinLength(1, { message: 'State is required' })
   @MaxLength(100, { message: 'State must be 100 characters or less' })
   state!: string;
 
   @ApiProperty({ example: 'Address', maxLength: 500 })
   @Transform(trimString)
   @IsString({ message: 'Address must be a string' })
-  @IsNotEmpty({ message: 'Address is required' })
+  @MinLength(1, { message: 'Address is required' })
   @MaxLength(500, { message: 'Address must be 500 characters or less' })
   address!: string;
 
