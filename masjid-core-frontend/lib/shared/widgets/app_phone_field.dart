@@ -93,13 +93,10 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SizedBox(
-          width: 116,
-          child: OutlinedButton(
-            onPressed: widget.enabled ? _selectCountry : null,
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: const Size(0, 56)),
-            child: Text('${_selectedCountry.flagEmoji} ${_selectedCountry.dialCode}', overflow: TextOverflow.ellipsis),
-          ),
+        OutlinedButton(
+          onPressed: widget.enabled ? _selectCountry : null,
+          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10), minimumSize: const Size(0, 56)),
+          child: Text('${_selectedCountry.flagEmoji} ${_selectedCountry.dialCode}'),
         ),
         const SizedBox(width: 8),
         Expanded(

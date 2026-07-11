@@ -193,15 +193,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       AppButton(label: 'Add Project', onPressed: _openAddProject),
                       const SizedBox(height: 16),
                     ],
-                    Wrap(
-                      spacing: 8,
-                      children: <Widget>[
-                        _filterChip('ALL', 'All'),
-                        _filterChip('PLANNED', 'Planned'),
-                        _filterChip('ONGOING', 'Ongoing'),
-                        _filterChip('COMPLETED', 'Completed'),
-                        _filterChip('CANCELLED', 'Cancelled'),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: <Widget>[
+                          _filterChip('ALL', 'All'),
+                          const SizedBox(width: 8),
+                          _filterChip('PLANNED', 'Planned'),
+                          const SizedBox(width: 8),
+                          _filterChip('ONGOING', 'Ongoing'),
+                          const SizedBox(width: 8),
+                          _filterChip('COMPLETED', 'Completed'),
+                          const SizedBox(width: 8),
+                          _filterChip('CANCELLED', 'Cancelled'),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (visibleProjects.isEmpty)
