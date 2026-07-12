@@ -2,7 +2,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
-  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -62,10 +61,6 @@ export class UpdateImamSalaryDto {
   @Min(0, { message: 'Paid amount must be zero or greater' })
   paidAmount?: number;
 
-  @ApiPropertyOptional({ enum: PaymentStatusDto })
-  @IsOptional()
-  @IsEnum(PaymentStatusDto)
-  status?: PaymentStatusDto;
 
   @ApiPropertyOptional({ example: '2026-06-15T00:00:00.000Z', nullable: true })
   @Transform(toOptionalDate)

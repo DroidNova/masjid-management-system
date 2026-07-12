@@ -66,7 +66,6 @@ class _EditImamSalaryScreenState extends State<EditImamSalaryScreen> {
           year: value.year,
           salaryAmount: value.salaryAmount,
           paidAmount: value.paidAmount,
-          status: value.status,
           paidDate: value.paidDate,
           note: value.note,
         ),
@@ -123,9 +122,6 @@ class _EditImamSalaryScreenState extends State<EditImamSalaryScreen> {
         initialYear: salary.year == 0 ? DateTime.now().year : salary.year,
         initialSalaryAmount: salary.salaryAmount,
         initialPaidAmount: salary.paidAmount,
-        initialStatus: imamSalaryStatuses.contains(salary.status)
-            ? salary.status
-            : 'UNPAID',
         initialPaidDate: salary.paidDate,
         initialNote: salary.note,
         isSaving: _isSaving,

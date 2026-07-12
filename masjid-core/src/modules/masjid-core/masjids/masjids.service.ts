@@ -11,6 +11,7 @@ import {
   CreateMasjidUserRoleDto,
 } from './dto/create-masjid-user.dto';
 import { UpdateWelcomeMessageDto } from './dto/update-welcome-message.dto';
+import { MasjidUserStatusDto, UpdateMasjidUserDto, UpdateMasjidUserStatusDto } from './dto/update-masjid-user.dto';
 
 type BasicUser = {
   id: string;
@@ -122,6 +123,8 @@ type MasjidWelcomeRecord = {
 };
 
 type MasjidsUserDelegate = {
+  findUnique(args: { where: { id: string }; select: typeof masjidMemberSelect }): Promise<MasjidMemberRecord | null>;
+  update(args: { where: { id: string }; data: Partial<{ fullName: string; phone: string; email: string | null; status: MasjidUserStatusDto }>; select: typeof masjidMemberSelect }): Promise<MasjidMemberRecord>;
   findMany(args: {
     where: { masjidId: string };
     orderBy: { fullName: 'asc' };
@@ -454,6 +457,63 @@ export class MasjidsService {
     return response;
   }
 
+
+  async updateMyMasjidUser(
+    actor: AuthenticatedUser,
+    userId: string,
+    dto: UpdateMasjidUserDto,
+  ): Promise<MasjidMemberResponse> {
+    const target = await this.ensureCanManageTargetUser(actor, userId);
+    const data: Partial<{ fullName: string; phone: string; email: string | null }> = {};
+
+    if (dto.fullName !== undefined) data.fullName = dto.fullName.trim();
+    if (dto.phone !== undefined) {
+      const phone = normalizePhone(dto.phone);
+      const duplicate = await this.prisma.user.findFirst({
+        where: { phone: { in: getPhoneSearchVariants(phone) }, NOT: { id: target.id } },
+        select: { id: true },
+      });
+      if (duplicate) {
+        throw new ApiException('Phone number already exists', HttpStatus.CONFLICT, ERROR_CODES.PHONE_ALREADY_EXISTS);
+      }
+      data.phone = phone;
+    }
+    if (dto.email !== undefined) {
+      const email = dto.email?.trim().toLowerCase() || null;
+      if (email) {
+        const duplicate = await this.prisma.user.findFirst({
+          where: { email, NOT: { id: target.id } },
+          select: { id: true },
+        });
+        if (duplicate) {
+          throw new ApiException('Email already exists', HttpStatus.CONFLICT, ERROR_CODES.EMAIL_ALREADY_EXISTS);
+        }
+      }
+      data.email = email;
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new ApiException('At least one user field must be provided', HttpStatus.BAD_REQUEST, ERROR_CODES.BAD_REQUEST);
+    }
+
+    const updated = await this.db.user.update({ where: { id: userId }, data, select: masjidMemberSelect });
+    return this.toMasjidMemberResponse(updated);
+  }
+
+  async updateMyMasjidUserStatus(
+    actor: AuthenticatedUser,
+    userId: string,
+    dto: UpdateMasjidUserStatusDto,
+  ): Promise<MasjidMemberResponse> {
+    await this.ensureCanManageTargetUser(actor, userId);
+    const updated = await this.db.user.update({
+      where: { id: userId },
+      data: { status: dto.status },
+      select: masjidMemberSelect,
+    });
+    return this.toMasjidMemberResponse(updated);
+  }
+
   async findMyMasjidUsers(
     actor: AuthenticatedUser,
   ): Promise<MasjidMemberResponse[]> {
@@ -472,6 +532,33 @@ export class MasjidsService {
     });
 
     return users.map((user) => this.toMasjidMemberResponse(user));
+  }
+
+
+  private async ensureCanManageTargetUser(
+    actor: AuthenticatedUser,
+    userId: string,
+  ): Promise<MasjidMemberRecord> {
+    const callerRoles = this.resolveCallerRoles(actor, this.toCurrentUserWithRoles(actor));
+    const target = await this.db.user.findUnique({ where: { id: userId }, select: masjidMemberSelect });
+
+    if (!target) {
+      throw new ApiException('Masjid user not found', HttpStatus.NOT_FOUND, ERROR_CODES.MASJID_USER_NOT_FOUND);
+    }
+
+    const targetRoles = target.userRoles.map((userRole) => userRole.role.name);
+    if (callerRoles.includes('SUPER_ADMIN')) return target;
+
+    if (!actor.masjidId || target.masjidId !== actor.masjidId) {
+      throw new ApiException('You are not allowed to manage this user', HttpStatus.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+    }
+
+    const isOnlyMember = targetRoles.includes('MEMBER') && targetRoles.every((role) => role === 'MEMBER');
+    if (!callerRoles.includes('COMMITTEE_MEMBER') || !isOnlyMember) {
+      throw new ApiException('You are not allowed to manage this user', HttpStatus.FORBIDDEN, ERROR_CODES.FORBIDDEN);
+    }
+
+    return target;
   }
 
   private resolveCallerRoles(

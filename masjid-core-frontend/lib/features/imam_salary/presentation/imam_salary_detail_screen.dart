@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
 import 'package:platform_core_frontend/core/storage/session_storage.dart';
@@ -214,7 +215,7 @@ class _ImamSalaryDetailScreenState extends State<ImamSalaryDetailScreen> {
                           ),
                           _DetailRow(
                             label: 'Paid Date',
-                            value: salary.paidDate ?? 'Not added',
+                            value: formatReadableDate(parseApiDate(salary.paidDate)),
                           ),
                           _DetailRow(
                             label: 'Note',

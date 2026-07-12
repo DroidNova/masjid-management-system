@@ -4,7 +4,6 @@ class CreateImamSalaryRequest {
     required this.year,
     required this.salaryAmount,
     this.paidAmount = 0,
-    this.status = 'UNPAID',
     this.paidDate,
     this.note,
   });
@@ -13,7 +12,6 @@ class CreateImamSalaryRequest {
   final int year;
   final double salaryAmount;
   final double paidAmount;
-  final String status;
   final String? paidDate;
   final String? note;
 
@@ -23,7 +21,6 @@ class CreateImamSalaryRequest {
       'year': year,
       'salaryAmount': salaryAmount,
       'paidAmount': paidAmount,
-      'status': status,
     };
     final trimmedPaidDate = paidDate?.trim();
     if (trimmedPaidDate != null && trimmedPaidDate.isNotEmpty) {

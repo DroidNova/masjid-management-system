@@ -58,14 +58,13 @@ class PermissionHelper {
     required List<String> currentUserRoles,
     required List<String> targetUserRoles,
   }) {
-    if (hasRoleInList(targetUserRoles, superAdmin) || hasRoleInList(targetUserRoles, masjidAdmin)) {
-      return false;
-    }
-    if (hasRoleInList(currentUserRoles, superAdmin) || hasRoleInList(currentUserRoles, masjidAdmin)) {
-      return hasRoleInList(targetUserRoles, imam) || hasRoleInList(targetUserRoles, committeeMember);
-    }
+    if (hasRoleInList(currentUserRoles, superAdmin)) return true;
     if (hasRoleInList(currentUserRoles, committeeMember)) {
-      return hasRoleInList(targetUserRoles, member);
+      return hasRoleInList(targetUserRoles, member) &&
+          !hasRoleInList(targetUserRoles, imam) &&
+          !hasRoleInList(targetUserRoles, committeeMember) &&
+          !hasRoleInList(targetUserRoles, masjidAdmin) &&
+          !hasRoleInList(targetUserRoles, superAdmin);
     }
     return false;
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 
 class FinanceEntryTile extends StatelessWidget {
@@ -37,7 +38,7 @@ class FinanceEntryTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            if (date != null) Text(date!),
+            if (date != null) Text(formatReadableDate(parseApiDate(date))),
             if (description != null) Text(description!),
             if (showStatus) Text('Status: $status'),
           ],
