@@ -25,3 +25,14 @@ DateTime? parseApiDate(dynamic value) {
   if (text.isEmpty) return null;
   return DateTime.tryParse(text);
 }
+
+
+String formatReadableDateTime(DateTime? dateTime, {String nullText = 'Not set'}) {
+  if (dateTime == null) return nullText;
+  final local = dateTime.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final hour12 = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '$day ${_monthLabels[local.month - 1]} ${local.year}, $hour12:$minute $period';
+}

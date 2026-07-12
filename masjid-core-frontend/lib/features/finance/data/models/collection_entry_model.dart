@@ -1,3 +1,4 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
 import 'package:platform_core_frontend/features/finance/data/models/finance_model_parsing.dart';
 
 class CollectionEntryModel {
@@ -9,6 +10,7 @@ class CollectionEntryModel {
     this.description,
     this.collectedAt,
     this.status,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
   });
 
@@ -21,6 +23,7 @@ class CollectionEntryModel {
       description: parseOptionalString(json['description']),
       collectedAt: parseOptionalString(json['collectedAt']),
       status: parseOptionalString(json['status']),
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: parseOptionalString(json['createdAt']),
     );
   }
@@ -32,5 +35,6 @@ class CollectionEntryModel {
   final String? description;
   final String? collectedAt;
   final String? status;
+  final AuditInfo auditInfo;
   final String? createdAt;
 }

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getCreateAuditFields, getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateProjectDto, ProjectStatusDto } from './dto/create-project.dto';
@@ -23,6 +24,10 @@ type ProjectRecord = {
   status: string;
   startDate: Date | null;
   endDate: Date | null;
+  createdById: string | null;
+  createdByName: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -59,6 +64,8 @@ type ProjectWhereInput = {
 
 type ProjectCreateData = {
   masjidId: string;
+  createdById?: string;
+  createdByName?: string;
   title: string;
   description?: string;
   targetAmount?: number;
@@ -99,7 +106,7 @@ type ProjectsProjectDelegate = {
   }): Promise<ProjectRecord | null>;
   update(args: {
     where: { id: string };
-    data: ProjectUpdateData;
+    data: ProjectUpdateData & ReturnType<typeof getUpdateAuditFields>;
     select: typeof projectSelect;
   }): Promise<ProjectRecord>;
 };
@@ -119,6 +126,10 @@ const projectSelect = {
   status: true,
   startDate: true,
   endDate: true,
+  createdById: true,
+  createdByName: true,
+  updatedById: true,
+  updatedByName: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -169,7 +180,7 @@ export class ProjectsService {
     const masjidId = this.getCurrentUserMasjidId(actor);
 
     const project = await this.db.project.create({
-      data: this.buildCreateData(dto, masjidId),
+      data: { ...this.buildCreateData(dto, masjidId), ...getCreateAuditFields(actor) },
       select: projectSelect,
     });
 
@@ -206,7 +217,7 @@ export class ProjectsService {
 
     const project = await this.db.project.update({
       where: { id },
-      data,
+      data: { ...data, ...getUpdateAuditFields(actor) },
       select: projectSelect,
     });
 
@@ -219,7 +230,7 @@ export class ProjectsService {
 
     const project = await this.db.project.update({
       where: { id },
-      data: { status: ProjectStatusDto.CANCELLED },
+      data: { status: ProjectStatusDto.CANCELLED, ...getUpdateAuditFields(actor) },
       select: projectSelect,
     });
 

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getCreateAuditFields, getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -26,6 +27,9 @@ type CollectionRecord = {
   collectedAt: Date;
   status: string;
   createdById: string | null;
+  createdByName: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -46,6 +50,7 @@ type CollectionWhereInput = {
 type CollectionCreateData = {
   masjidId: string;
   createdById: string;
+  createdByName?: string;
   type: CollectionTypeDto;
   amount: number;
   title?: string;
@@ -81,7 +86,7 @@ type CollectionsDelegate = {
   }): Promise<CollectionRecord | null>;
   update(args: {
     where: { id: string };
-    data: CollectionUpdateData;
+    data: CollectionUpdateData & ReturnType<typeof getUpdateAuditFields>;
     select: typeof collectionSelect;
   }): Promise<CollectionRecord>;
 };
@@ -100,6 +105,9 @@ const collectionSelect = {
   collectedAt: true,
   status: true,
   createdById: true,
+  createdByName: true,
+  updatedById: true,
+  updatedByName: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -146,7 +154,7 @@ export class CollectionsService {
     const collection = await this.db.collection.create({
       data: {
         masjidId,
-        createdById: actor.id,
+        ...getCreateAuditFields(actor),
         type: dto.type,
         amount: dto.amount,
         ...(dto.title !== undefined ? { title: dto.title } : {}),
@@ -189,7 +197,7 @@ export class CollectionsService {
 
     const collection = await this.db.collection.update({
       where: { id },
-      data,
+      data: { ...data, ...getUpdateAuditFields(actor) },
       select: collectionSelect,
     });
     return this.toResponse(collection);
@@ -203,7 +211,7 @@ export class CollectionsService {
     await this.ensureCollectionBelongsToMasjid(id, masjidId);
     const collection = await this.db.collection.update({
       where: { id },
-      data: { status: FinanceEntryStatusDto.CANCELLED },
+      data: { status: FinanceEntryStatusDto.CANCELLED, ...getUpdateAuditFields(actor) },
       select: collectionSelect,
     });
     return this.toResponse(collection);

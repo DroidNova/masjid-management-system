@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/widgets/audit_info_button.dart';
 import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:platform_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
@@ -32,6 +33,7 @@ class ProjectCard extends StatelessWidget {
                     ),
                   ),
                   ProjectStatusChip(status: project.status),
+                  AuditInfoButton(auditInfo: project.auditInfo),
                 ],
               ),
               if (project.description != null) ...<Widget>[

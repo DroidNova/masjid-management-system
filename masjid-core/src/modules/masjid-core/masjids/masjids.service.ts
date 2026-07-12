@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -63,6 +64,8 @@ type MasjidMemberRecord = {
   masjidId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  updatedById: string | null;
+  updatedByName: string | null;
   userRoles: UserRoleRecord[];
 };
 
@@ -75,6 +78,8 @@ type MasjidMemberResponse = {
   masjidId: string;
   createdAt: Date;
   updatedAt: Date;
+  updatedById: string | null;
+  updatedByName: string | null;
   roles: string[];
 };
 
@@ -110,6 +115,8 @@ type MasjidProfileRecord = {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  updatedById: string | null;
+  updatedByName: string | null;
   imamUser: BasicUser | null;
   namazTime: NamazTimeRecord | null;
   announcements: AnnouncementRecord[];
@@ -124,7 +131,7 @@ type MasjidWelcomeRecord = {
 
 type MasjidsUserDelegate = {
   findUnique(args: { where: { id: string }; select: typeof masjidMemberSelect }): Promise<MasjidMemberRecord | null>;
-  update(args: { where: { id: string }; data: Partial<{ fullName: string; phone: string; email: string | null; status: MasjidUserStatusDto }>; select: typeof masjidMemberSelect }): Promise<MasjidMemberRecord>;
+  update(args: { where: { id: string }; data: Partial<{ fullName: string; phone: string; email: string | null; status: MasjidUserStatusDto; updatedById: string; updatedByName: string }>; select: typeof masjidMemberSelect }): Promise<MasjidMemberRecord>;
   findMany(args: {
     where: { masjidId: string };
     orderBy: { fullName: 'asc' };
@@ -170,6 +177,8 @@ const masjidProfileSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
+  updatedById: true,
+  updatedByName: true,
   imamUser: { select: basicUserSelect },
   namazTime: {
     select: {
@@ -230,6 +239,8 @@ const masjidMemberSelect = {
   masjidId: true,
   createdAt: true,
   updatedAt: true,
+  updatedById: true,
+  updatedByName: true,
   userRoles: {
     select: {
       role: {
@@ -496,7 +507,7 @@ export class MasjidsService {
       throw new ApiException('At least one user field must be provided', HttpStatus.BAD_REQUEST, ERROR_CODES.BAD_REQUEST);
     }
 
-    const updated = await this.db.user.update({ where: { id: userId }, data, select: masjidMemberSelect });
+    const updated = await this.db.user.update({ where: { id: userId }, data: { ...data, ...getUpdateAuditFields(actor) }, select: masjidMemberSelect });
     return this.toMasjidMemberResponse(updated);
   }
 
@@ -508,7 +519,7 @@ export class MasjidsService {
     await this.ensureCanManageTargetUser(actor, userId);
     const updated = await this.db.user.update({
       where: { id: userId },
-      data: { status: dto.status },
+      data: { status: dto.status, ...getUpdateAuditFields(actor) },
       select: masjidMemberSelect,
     });
     return this.toMasjidMemberResponse(updated);
@@ -668,6 +679,8 @@ export class MasjidsService {
       masjidId: user.masjidId ?? '',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      updatedById: user.updatedById,
+      updatedByName: user.updatedByName,
       roles: user.userRoles.map((userRole) => userRole.role.name),
     };
   }

@@ -86,6 +86,8 @@ model User {
   isPhoneVerified Boolean    @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+  updatedById     String?    @db.Uuid
+  updatedByName   String?
 
   userRoles                  UserRole[]
   sessions                   Session[]
@@ -270,6 +272,10 @@ model NamazTime {
   isha      String?
   jumma     String?
   note      String?
+  createdById String?  @db.Uuid
+  createdByName String?
+  updatedById String?  @db.Uuid
+  updatedByName String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -288,6 +294,10 @@ model ImamSalary {
   status       PaymentStatus @default(UNPAID)
   paidDate     DateTime?
   note         String?
+  createdById String?  @db.Uuid
+  createdByName String?
+  updatedById String?  @db.Uuid
+  updatedByName String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -311,6 +321,10 @@ model Project {
   status          ProjectStatus @default(ONGOING)
   startDate       DateTime?
   endDate         DateTime?
+  createdById String?  @db.Uuid
+  createdByName String?
+  updatedById String?  @db.Uuid
+  updatedByName String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -326,6 +340,10 @@ model Announcement {
   title     String
   message   String
   isActive  Boolean  @default(true)
+  createdById String?  @db.Uuid
+  createdByName String?
+  updatedById String?  @db.Uuid
+  updatedByName String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -346,6 +364,9 @@ model Collection {
   collectedAt DateTime           @default(now())
   status      FinanceEntryStatus @default(ACTIVE)
   createdById String?            @db.Uuid
+  createdByName String?
+  updatedById String?            @db.Uuid
+  updatedByName String?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
@@ -369,6 +390,9 @@ model Expense {
   spentAt     DateTime           @default(now())
   status      FinanceEntryStatus @default(ACTIVE)
   createdById String?            @db.Uuid
+  createdByName String?
+  updatedById String?            @db.Uuid
+  updatedByName String?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 

@@ -1,3 +1,5 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
+
 class NamazTimeModel {
   const NamazTimeModel({
     this.id,
@@ -9,6 +11,7 @@ class NamazTimeModel {
     this.isha,
     this.jumma,
     this.note,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
     this.updatedAt,
   });
@@ -24,6 +27,7 @@ class NamazTimeModel {
       isha: _optionalString(json['isha']),
       jumma: _optionalString(json['jumma']),
       note: _optionalString(json['note']),
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: _optionalString(json['createdAt']),
       updatedAt: _optionalString(json['updatedAt']),
     );
@@ -38,6 +42,7 @@ class NamazTimeModel {
   final String? isha;
   final String? jumma;
   final String? note;
+  final AuditInfo auditInfo;
   final String? createdAt;
   final String? updatedAt;
 }

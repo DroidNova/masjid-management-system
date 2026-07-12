@@ -227,6 +227,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                               description: entry.description,
                               date: entry.collectedAt ?? entry.createdAt,
                               status: entry.status,
+                              auditInfo: entry.auditInfo,
                               isExpense: false,
                             ),
                           )
@@ -247,6 +248,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                               description: entry.description,
                               date: entry.spentAt ?? entry.createdAt,
                               status: entry.status,
+                              auditInfo: entry.auditInfo,
                               isExpense: true,
                             ),
                           )

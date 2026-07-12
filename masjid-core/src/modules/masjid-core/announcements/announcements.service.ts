@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getCreateAuditFields, getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
@@ -13,6 +14,10 @@ type AnnouncementRecord = {
   title: string;
   message: string;
   isActive: boolean;
+  createdById: string | null;
+  createdByName: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -38,6 +43,8 @@ type AnnouncementWhereInput = {
 
 type AnnouncementCreateData = {
   masjidId: string;
+  createdById?: string;
+  createdByName?: string;
   title: string;
   message: string;
   isActive: boolean;
@@ -68,7 +75,7 @@ type AnnouncementsAnnouncementDelegate = {
   }): Promise<{ id: string; masjidId: string } | null>;
   update(args: {
     where: { id: string };
-    data: AnnouncementUpdateData;
+    data: AnnouncementUpdateData & ReturnType<typeof getUpdateAuditFields>;
     select: typeof announcementSelect;
   }): Promise<AnnouncementRecord>;
 };
@@ -83,6 +90,10 @@ const announcementSelect = {
   title: true,
   message: true,
   isActive: true,
+  createdById: true,
+  createdByName: true,
+  updatedById: true,
+  updatedByName: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -140,6 +151,7 @@ export class AnnouncementsService {
     return this.db.announcement.create({
       data: {
         masjidId,
+        ...getCreateAuditFields(actor),
         title: dto.title,
         message: dto.message,
         isActive: dto.isActive ?? true,
@@ -168,7 +180,7 @@ export class AnnouncementsService {
 
     return this.db.announcement.update({
       where: { id },
-      data,
+      data: { ...data, ...getUpdateAuditFields(actor) },
       select: announcementSelect,
     });
   }
@@ -182,7 +194,7 @@ export class AnnouncementsService {
 
     return this.db.announcement.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...getUpdateAuditFields(actor) },
       select: announcementSelect,
     });
   }

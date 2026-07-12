@@ -29,3 +29,35 @@ Masjid responses use only `country`, `state`, `district`, `locality`, and `addre
 - API date-only fields are sent as `yyyy-MM-dd`.
 - Flutter UI displays dates as `dd MMM yyyy` through `formatReadableDate`, for example `15 Jun 2026`.
 - Forms use `AppDateField` and Flutter's built-in Material date picker instead of raw manual ISO date entry.
+
+## Lightweight audit fields
+
+Important records now return lightweight audit snapshot fields in their normal list and detail responses. No separate audit endpoint or extra frontend API call is required.
+
+The following response objects include:
+
+```json
+{
+  "createdById": "8f25c0af-9f1e-4d7d-8a49-2b4b57e2b2b1",
+  "createdByName": "Masjid Admin",
+  "createdAt": "2026-06-15T10:30:00.000Z",
+  "updatedById": "3b4a86d8-5bc3-43e6-b4c6-a9ef90d81b62",
+  "updatedByName": "Committee Member",
+  "updatedAt": "2026-06-16T12:15:00.000Z"
+}
+```
+
+Applies to: Imam Salary, Collection, Expense, Project, Announcement, and NamazTime responses.
+
+Community User list/detail responses include the existing timestamps plus updater snapshot fields:
+
+```json
+{
+  "createdAt": "2026-06-15T10:30:00.000Z",
+  "updatedAt": "2026-06-16T12:15:00.000Z",
+  "updatedById": "3b4a86d8-5bc3-43e6-b4c6-a9ef90d81b62",
+  "updatedByName": "Committee Member"
+}
+```
+
+Sensitive fields such as `passwordHash` and `refreshTokenHash` are not returned in these responses.

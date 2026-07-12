@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getCreateAuditFields, getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { UpsertNamazTimeDto } from './dto/upsert-namaz-time.dto';
@@ -17,6 +18,10 @@ type NamazTimeRecord = {
   isha: string | null;
   jumma: string | null;
   note: string | null;
+  createdById?: string | null;
+  createdByName?: string | null;
+  updatedById?: string | null;
+  updatedByName?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -45,8 +50,8 @@ type NamazTimeDelegate = {
   }): Promise<NamazTimeRecord | null>;
   upsert(args: {
     where: { masjidId: string };
-    create: { masjidId: string } & NamazTimeWriteData;
-    update: NamazTimeWriteData;
+    create: { masjidId: string } & NamazTimeWriteData & ReturnType<typeof getCreateAuditFields>;
+    update: NamazTimeWriteData & ReturnType<typeof getUpdateAuditFields>;
     select: typeof namazTimeSelect;
   }): Promise<NamazTimeRecord>;
 };
@@ -66,6 +71,10 @@ const namazTimeSelect = {
   isha: true,
   jumma: true,
   note: true,
+  createdById: true,
+  createdByName: true,
+  updatedById: true,
+  updatedByName: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -113,8 +122,8 @@ export class NamazTimesService {
 
     return this.db.namazTime.upsert({
       where: { masjidId },
-      create: { masjidId, ...data },
-      update: data,
+      create: { masjidId, ...data, ...getCreateAuditFields(actor) },
+      update: { ...data, ...getUpdateAuditFields(actor) },
       select: namazTimeSelect,
     });
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/widgets/audit_info_button.dart';
 import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
 
 class CommunityUserCard extends StatelessWidget {

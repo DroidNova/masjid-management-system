@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/widgets/audit_info_button.dart';
 import 'package:platform_core_frontend/features/announcements/data/models/announcement_model.dart';
 
 class AnnouncementCard extends StatelessWidget {
@@ -34,6 +35,7 @@ class AnnouncementCard extends StatelessWidget {
                 Chip(
                   label: Text(announcement.isActive ? 'Active' : 'Inactive'),
                 ),
+                AuditInfoButton(auditInfo: announcement.auditInfo),
               ],
             ),
             const SizedBox(height: 8),

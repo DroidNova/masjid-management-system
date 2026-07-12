@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { getCreateAuditFields, getUpdateAuditFields } from '../../../common/utils/audit.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -34,6 +35,10 @@ type ImamSalaryRecord = {
   status: string;
   paidDate: Date | null;
   note: string | null;
+  createdById: string | null;
+  createdByName: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
   createdAt: Date;
   updatedAt: Date;
   imam: BasicUser;
@@ -67,6 +72,8 @@ type ImamSalaryWhereInput = {
 
 type ImamSalaryCreateData = {
   masjidId: string;
+  createdById?: string;
+  createdByName?: string;
   imamId: string;
   month: number;
   year: number;
@@ -115,7 +122,7 @@ type ImamSalariesDelegate = {
   }): Promise<ImamSalaryRecord | null>;
   update(args: {
     where: { id: string };
-    data: ImamSalaryUpdateData;
+    data: ImamSalaryUpdateData & ReturnType<typeof getUpdateAuditFields>;
     select: typeof imamSalarySelect;
   }): Promise<ImamSalaryRecord>;
   delete(args: {
@@ -148,6 +155,10 @@ const imamSalarySelect = {
   status: true,
   paidDate: true,
   note: true,
+  createdById: true,
+  createdByName: true,
+  updatedById: true,
+  updatedByName: true,
   createdAt: true,
   updatedAt: true,
   imam: { select: basicUserSelect },

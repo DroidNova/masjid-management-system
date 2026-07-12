@@ -1,3 +1,5 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
+
 class ProjectModel {
   const ProjectModel({
     required this.id,
@@ -9,6 +11,7 @@ class ProjectModel {
     this.description,
     this.startDate,
     this.endDate,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
     this.updatedAt,
   });
@@ -24,6 +27,7 @@ class ProjectModel {
       status: _string(json['status'], fallback: 'ONGOING'),
       startDate: _optionalString(json['startDate']),
       endDate: _optionalString(json['endDate']),
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: _optionalString(json['createdAt']),
       updatedAt: _optionalString(json['updatedAt']),
     );
@@ -38,6 +42,7 @@ class ProjectModel {
   final String status;
   final String? startDate;
   final String? endDate;
+  final AuditInfo auditInfo;
   final String? createdAt;
   final String? updatedAt;
 

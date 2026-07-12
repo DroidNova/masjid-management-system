@@ -1,3 +1,5 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
+
 class ImamSalaryModel {
   const ImamSalaryModel({
     required this.id,
@@ -11,6 +13,7 @@ class ImamSalaryModel {
     required this.status,
     this.paidDate,
     this.note,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
     this.updatedAt,
     this.imamName,
@@ -29,6 +32,7 @@ class ImamSalaryModel {
   final String status;
   final String? paidDate;
   final String? note;
+  final AuditInfo auditInfo;
   final String? createdAt;
   final String? updatedAt;
   final String? imamName;
@@ -57,6 +61,7 @@ class ImamSalaryModel {
       status: _readString(json['status']) ?? 'UNPAID',
       paidDate: _readString(json['paidDate']),
       note: _readString(json['note']),
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: _readString(json['createdAt']),
       updatedAt: _readString(json['updatedAt']),
       imamName: _readString(imamMap?['fullName']) ?? _readString(imamMap?['name']),

@@ -1,9 +1,12 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
+
 class AnnouncementModel {
   const AnnouncementModel({
     required this.id,
     required this.title,
     required this.message,
     required this.isActive,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
     this.updatedAt,
   });
@@ -14,6 +17,7 @@ class AnnouncementModel {
       title: json['title']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       isActive: json['isActive'] is bool ? json['isActive'] as bool : true,
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: _optionalString(json['createdAt']),
       updatedAt: _optionalString(json['updatedAt']),
     );
@@ -23,6 +27,7 @@ class AnnouncementModel {
   final String title;
   final String message;
   final bool isActive;
+  final AuditInfo auditInfo;
   final String? createdAt;
   final String? updatedAt;
 }

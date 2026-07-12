@@ -1,3 +1,5 @@
+import 'package:platform_core_frontend/shared/models/audit_info.dart';
+
 class CommunityUserModel {
   const CommunityUserModel({
     required this.id,
@@ -9,6 +11,7 @@ class CommunityUserModel {
     this.masjidId,
     this.message,
     this.temporaryPassword,
+    this.auditInfo = const AuditInfo(),
     this.createdAt,
     this.updatedAt,
   });
@@ -26,6 +29,7 @@ class CommunityUserModel {
       roles: (json['roles'] as List<dynamic>? ?? const <dynamic>[])
           .map((role) => role.toString())
           .toList(),
+      auditInfo: AuditInfo.fromJson(json),
       createdAt: _optionalString(json['createdAt']),
       updatedAt: _optionalString(json['updatedAt']),
     );
@@ -40,6 +44,7 @@ class CommunityUserModel {
   final String? message;
   final String? temporaryPassword;
   final List<String> roles;
+  final AuditInfo auditInfo;
   final String? createdAt;
   final String? updatedAt;
 

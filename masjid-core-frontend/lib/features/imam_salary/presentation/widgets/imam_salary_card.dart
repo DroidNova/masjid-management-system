@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/widgets/audit_info_button.dart';
 import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_model.dart';
@@ -36,6 +37,7 @@ class ImamSalaryCard extends StatelessWidget {
                     ),
                   ),
                   ImamSalaryStatusChip(status: salary.status),
+                  AuditInfoButton(auditInfo: salary.auditInfo),
                 ],
               ),
               const SizedBox(height: 12),
