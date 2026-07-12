@@ -6,6 +6,8 @@ import 'package:platform_core_frontend/features/finance/data/models/create_expen
 import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
 import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key, FinanceRepository? financeRepository})
@@ -22,7 +24,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
+  DateTime? _entryDate = DateTime.now();
   late final FinanceRepository _financeRepository =
       widget._financeRepository ?? FinanceRepository();
 
@@ -34,7 +36,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _amountController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _dateController.dispose();
     super.dispose();
   }
 
@@ -50,7 +51,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           amount: double.parse(_amountController.text.trim()),
           title: _titleController.text,
           description: _descriptionController.text,
-          spentAt: _dateController.text,
+          spentAt: formatApiDate(_entryDate),
         ),
       );
 
@@ -135,11 +136,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       textInputAction: TextInputAction.newline,
                     ),
                     const SizedBox(height: 16),
-                    AppTextField(
-                      controller: _dateController,
+                    AppDateField(
                       label: 'Date',
-                      hint: 'YYYY-MM-DD or leave empty',
-                      textInputAction: TextInputAction.done,
+                      selectedDate: _entryDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      required: true,
+                      onDateSelected: (date) => setState(() => _entryDate = date),
                     ),
                     const SizedBox(height: 24),
                     AppButton(

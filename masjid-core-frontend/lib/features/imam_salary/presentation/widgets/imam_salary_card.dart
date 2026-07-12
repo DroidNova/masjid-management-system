@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_model.dart';
 import 'package:platform_core_frontend/features/imam_salary/presentation/widgets/imam_salary_status_chip.dart';
@@ -60,7 +61,7 @@ class ImamSalaryCard extends StatelessWidget {
               ),
               if (salary.paidDate != null) ...<Widget>[
                 const SizedBox(height: 10),
-                Text('Paid date: ${salary.paidDate}'),
+                Text('Paid date: ${formatReadableDate(parseApiDate(salary.paidDate))}'),
               ],
               if (salary.note != null) ...<Widget>[
                 const SizedBox(height: 8),

@@ -4,7 +4,6 @@ class UpdateImamSalaryRequest {
     this.year,
     this.salaryAmount,
     this.paidAmount,
-    this.status,
     this.paidDate,
     this.note,
   });
@@ -13,7 +12,6 @@ class UpdateImamSalaryRequest {
   final int? year;
   final double? salaryAmount;
   final double? paidAmount;
-  final String? status;
   final String? paidDate;
   final String? note;
 
@@ -23,7 +21,6 @@ class UpdateImamSalaryRequest {
     if (year != null) json['year'] = year;
     if (salaryAmount != null) json['salaryAmount'] = salaryAmount;
     if (paidAmount != null) json['paidAmount'] = paidAmount;
-    if (status != null) json['status'] = status;
     final trimmedPaidDate = paidDate?.trim();
     if (trimmedPaidDate != null && trimmedPaidDate.isNotEmpty) {
       json['paidDate'] = trimmedPaidDate;

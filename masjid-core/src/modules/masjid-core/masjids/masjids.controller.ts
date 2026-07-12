@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
   HttpStatus,
   Patch,
   Post,
@@ -21,6 +23,7 @@ import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateMasjidUserDto } from './dto/create-masjid-user.dto';
 import { UpdateWelcomeMessageDto } from './dto/update-welcome-message.dto';
+import { UpdateMasjidUserDto, UpdateMasjidUserStatusDto } from './dto/update-masjid-user.dto';
 import { MasjidsService } from './masjids.service';
 
 type AuthenticatedRequest = {
@@ -88,6 +91,32 @@ export class MasjidsController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.masjidsService.createMyMasjidUser(request.user, dto);
+  }
+
+  @Patch('my/users/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'COMMITTEE_MEMBER')
+  @ApiOperation({ summary: 'Update a user in current masjid' })
+  @ApiBody({ type: UpdateMasjidUserDto })
+  updateMyMasjidUser(
+    @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
+    @Body() dto: UpdateMasjidUserDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.masjidsService.updateMyMasjidUser(request.user, userId, dto);
+  }
+
+  @Patch('my/users/:userId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'COMMITTEE_MEMBER')
+  @ApiOperation({ summary: 'Update a user status in current masjid' })
+  @ApiBody({ type: UpdateMasjidUserStatusDto })
+  updateMyMasjidUserStatus(
+    @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
+    @Body() dto: UpdateMasjidUserStatusDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.masjidsService.updateMyMasjidUserStatus(request.user, userId, dto);
   }
 
   @Get('my/users')

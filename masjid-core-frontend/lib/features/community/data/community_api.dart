@@ -3,6 +3,7 @@ import 'package:platform_core_frontend/core/network/api_client.dart';
 import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:platform_core_frontend/features/community/data/models/create_community_user_request.dart';
 import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:platform_core_frontend/features/community/data/models/update_community_user_request.dart';
 
 class CommunityApi {
   CommunityApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
@@ -40,6 +41,36 @@ class CommunityApi {
       );
       final userData = _extractCreatedUserData(response.data);
       return CommunityUserModel.fromJson(userData);
+    } on DioException catch (error) {
+      throw Exception(_readDioErrorMessage(error));
+    }
+  }
+
+  Future<CommunityUserModel> updateMasjidUser(
+    String userId,
+    UpdateCommunityUserRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.dio.patch<Object?>(
+        '/masjids/my/users/$userId',
+        data: request.toJson(),
+      );
+      return CommunityUserModel.fromJson(_extractMapData(response.data));
+    } on DioException catch (error) {
+      throw Exception(_readDioErrorMessage(error));
+    }
+  }
+
+  Future<CommunityUserModel> updateMasjidUserStatus(
+    String userId,
+    String status,
+  ) async {
+    try {
+      final response = await _apiClient.dio.patch<Object?>(
+        '/masjids/my/users/$userId/status',
+        data: <String, dynamic>{'status': status},
+      );
+      return CommunityUserModel.fromJson(_extractMapData(response.data));
     } on DioException catch (error) {
       throw Exception(_readDioErrorMessage(error));
     }

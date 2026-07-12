@@ -409,7 +409,15 @@ export class ImamSalariesService {
     salaryAmount: number,
     paidAmount: number,
   ): { dueAmount: number; status: PaymentStatusDto } {
-    const dueAmount = Math.max(salaryAmount - paidAmount, 0);
+    if (paidAmount > salaryAmount) {
+      throw new ApiException(
+        'Paid amount cannot be greater than salary amount',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+
+    const dueAmount = salaryAmount - paidAmount;
 
     if (paidAmount === 0) {
       return { dueAmount, status: PaymentStatusDto.UNPAID };

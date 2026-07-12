@@ -9,6 +9,7 @@ import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:platform_core_frontend/features/community/data/community_repository.dart';
 import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:platform_core_frontend/features/community/data/models/update_community_user_request.dart';
 import 'package:platform_core_frontend/features/community/presentation/widgets/community_section.dart';
 import 'package:platform_core_frontend/features/community/presentation/widgets/masjid_info_card.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
@@ -142,10 +143,62 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   List<String> get _currentUserRoles => _currentUser?.roles ?? const <String>[];
 
-  void _showUnavailableUserAction() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('User edit/status API is not available yet.')),
+  void _replaceUser(CommunityUserModel updatedUser) {
+    setState(() {
+      _users = _users
+          .map((user) => user.id == updatedUser.id ? updatedUser : user)
+          .toList();
+    });
+  }
+
+  Future<void> _openEditUser(CommunityUserModel user) async {
+    if (!PermissionHelper.canEditCommunityUser(
+      currentUserRoles: _currentUserRoles,
+      targetUserRoles: user.roles,
+    )) {
+      return;
+    }
+    final result = await showDialog<UpdateCommunityUserRequest>(
+      context: context,
+      builder: (context) => _EditCommunityUserDialog(user: user),
     );
+    if (result == null) return;
+    try {
+      final updated = await _communityRepository.updateMasjidUser(user.id, result);
+      if (!mounted) return;
+      _replaceUser(updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User updated successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_cleanError(error))));
+    }
+  }
+
+  Future<void> _openChangeUserStatus(CommunityUserModel user) async {
+    if (!PermissionHelper.canChangeCommunityUserStatus(
+      currentUserRoles: _currentUserRoles,
+      targetUserRoles: user.roles,
+    )) {
+      return;
+    }
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => _StatusDialog(currentStatus: user.status),
+    );
+    if (result == null) return;
+    try {
+      final updated = await _communityRepository.updateMasjidUserStatus(user.id, result);
+      if (!mounted) return;
+      _replaceUser(updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User status updated successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_cleanError(error))));
+    }
   }
 
   List<CommunityUserModel> get _committeeUsers {
@@ -243,8 +296,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       users: _imamUsers,
                       emptyMessage: 'Imam is not added yet.',
                       currentUserRoles: _currentUserRoles,
-                      onEditUser: (_) => _showUnavailableUserAction(),
-                      onChangeUserStatus: (_) => _showUnavailableUserAction(),
+                      onEditUser: _openEditUser,
+                      onChangeUserStatus: _openChangeUserStatus,
                     ),
                     const SizedBox(height: 12),
                     CommunitySection(
@@ -252,8 +305,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       users: _committeeUsers,
                       emptyMessage: 'No committee members added yet.',
                       currentUserRoles: _currentUserRoles,
-                      onEditUser: (_) => _showUnavailableUserAction(),
-                      onChangeUserStatus: (_) => _showUnavailableUserAction(),
+                      onEditUser: _openEditUser,
+                      onChangeUserStatus: _openChangeUserStatus,
                     ),
                     const SizedBox(height: 12),
                     CommunitySection(
@@ -261,8 +314,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       users: _memberUsers,
                       emptyMessage: 'No members added yet.',
                       currentUserRoles: _currentUserRoles,
-                      onEditUser: (_) => _showUnavailableUserAction(),
-                      onChangeUserStatus: (_) => _showUnavailableUserAction(),
+                      onEditUser: _openEditUser,
+                      onChangeUserStatus: _openChangeUserStatus,
                     ),
                   ],
                 ),
@@ -324,6 +377,76 @@ class _CommunityErrorView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _EditCommunityUserDialog extends StatefulWidget {
+  const _EditCommunityUserDialog({required this.user});
+  final CommunityUserModel user;
+  @override
+  State<_EditCommunityUserDialog> createState() => _EditCommunityUserDialogState();
+}
+
+class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name = TextEditingController(text: widget.user.fullName);
+  late final TextEditingController _phone = TextEditingController(text: widget.user.phone ?? '');
+  late final TextEditingController _email = TextEditingController(text: widget.user.email ?? '');
+
+  @override
+  void dispose() { _name.dispose(); _phone.dispose(); _email.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit user'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TextFormField(controller: _name, decoration: const InputDecoration(labelText: 'Full name *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Full name is required' : null),
+            TextFormField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Phone is required' : null),
+            TextFormField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: () {
+          if (!_formKey.currentState!.validate()) return;
+          Navigator.of(context).pop(UpdateCommunityUserRequest(fullName: _name.text, phone: _phone.text, email: _email.text));
+        }, child: const Text('Save')),
+      ],
+    );
+  }
+}
+
+class _StatusDialog extends StatefulWidget {
+  const _StatusDialog({this.currentStatus});
+  final String? currentStatus;
+  @override
+  State<_StatusDialog> createState() => _StatusDialogState();
+}
+
+class _StatusDialogState extends State<_StatusDialog> {
+  static const _statuses = <String>['ACTIVE', 'INACTIVE', 'SUSPENDED'];
+  late String _status = _statuses.contains(widget.currentStatus) ? widget.currentStatus! : 'ACTIVE';
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Update status'),
+      content: DropdownButtonFormField<String>(
+        value: _status,
+        items: _statuses.map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+        onChanged: (value) => setState(() => _status = value ?? _status),
+      ),
+      actions: <Widget>[
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.of(context).pop(_status), child: const Text('Update')),
+      ],
     );
   }
 }

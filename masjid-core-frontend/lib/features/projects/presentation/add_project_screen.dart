@@ -6,6 +6,8 @@ import 'package:platform_core_frontend/features/projects/data/projects_repositor
 import 'package:platform_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
 import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 
 class AddProjectScreen extends StatefulWidget {
   const AddProjectScreen({super.key, ProjectsRepository? projectsRepository})
@@ -222,18 +224,24 @@ class ProjectFormBody extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
-                  AppTextField(
-                    controller: startDateController,
+                  AppDateField(
                     label: 'Start Date',
-                    hint: 'YYYY-MM-DD or leave empty',
-                    textInputAction: TextInputAction.next,
+                    selectedDate: parseApiDate(startDateController.text),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    onDateSelected: (date) {
+                      startDateController.text = formatApiDate(date) ?? '';
+                    },
                   ),
                   const SizedBox(height: 16),
-                  AppTextField(
-                    controller: endDateController,
+                  AppDateField(
                     label: 'End Date',
-                    hint: 'YYYY-MM-DD or leave empty',
-                    textInputAction: TextInputAction.done,
+                    selectedDate: parseApiDate(endDateController.text),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    onDateSelected: (date) {
+                      endDateController.text = formatApiDate(date) ?? '';
+                    },
                   ),
                   const SizedBox(height: 24),
                   AppButton(

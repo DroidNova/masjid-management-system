@@ -5,6 +5,8 @@ import 'package:platform_core_frontend/features/imam_salary/data/imam_salary_rep
 import 'package:platform_core_frontend/features/imam_salary/models/create_imam_salary_request.dart';
 import 'package:platform_core_frontend/shared/widgets/app_button.dart';
 import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 
 const List<String> imamSalaryStatuses = <String>['UNPAID', 'PARTIAL', 'PAID'];
 const Map<String, String> imamSalaryStatusLabels = <String, String>{
@@ -53,7 +55,6 @@ class _AddImamSalaryScreenState extends State<AddImamSalaryScreen> {
           year: value.year,
           salaryAmount: value.salaryAmount,
           paidAmount: value.paidAmount,
-          status: value.status,
           paidDate: value.paidDate,
           note: value.note,
         ),
@@ -87,7 +88,6 @@ class _AddImamSalaryScreenState extends State<AddImamSalaryScreen> {
         subtitle: 'Enter monthly salary payment details',
         initialMonth: now.month,
         initialYear: now.year,
-        initialStatus: 'UNPAID',
         isSaving: _isSaving,
         buttonLabel: 'Save Salary',
         onSubmit: _submit,
@@ -102,7 +102,6 @@ class ImamSalaryFormValue {
     required this.year,
     required this.salaryAmount,
     required this.paidAmount,
-    required this.status,
     this.paidDate,
     this.note,
   });
@@ -111,7 +110,6 @@ class ImamSalaryFormValue {
   final int year;
   final double salaryAmount;
   final double paidAmount;
-  final String status;
   final String? paidDate;
   final String? note;
 }
@@ -123,7 +121,6 @@ class ImamSalaryFormBody extends StatefulWidget {
     required this.subtitle,
     required this.initialMonth,
     required this.initialYear,
-    required this.initialStatus,
     required this.isSaving,
     required this.buttonLabel,
     required this.onSubmit,
@@ -139,7 +136,6 @@ class ImamSalaryFormBody extends StatefulWidget {
   final int initialYear;
   final double? initialSalaryAmount;
   final double? initialPaidAmount;
-  final String initialStatus;
   final String? initialPaidDate;
   final String? initialNote;
   final bool isSaving;
@@ -153,7 +149,6 @@ class ImamSalaryFormBody extends StatefulWidget {
 class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
   final _formKey = GlobalKey<FormState>();
   late int _month = widget.initialMonth.clamp(1, 12).toInt();
-  late String _status = widget.initialStatus;
   late final TextEditingController _yearController = TextEditingController(
     text: widget.initialYear.toString(),
   );
@@ -163,9 +158,7 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
   late final TextEditingController _paidController = TextEditingController(
     text: _initialAmountText(widget.initialPaidAmount ?? 0),
   );
-  late final TextEditingController _paidDateController = TextEditingController(
-    text: widget.initialPaidDate ?? '',
-  );
+  late DateTime? _paidDate = parseApiDate(widget.initialPaidDate);
   late final TextEditingController _noteController = TextEditingController(
     text: widget.initialNote ?? '',
   );
@@ -184,7 +177,6 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
     _yearController.dispose();
     _salaryController.dispose();
     _paidController.dispose();
-    _paidDateController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -198,7 +190,12 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
 
   double get _salaryAmount => double.tryParse(_salaryController.text.trim()) ?? 0;
   double get _paidAmount => double.tryParse(_paidController.text.trim()) ?? 0;
-  double get _dueAmount => _salaryAmount - _paidAmount;
+  double get _dueAmount => (_salaryAmount - _paidAmount).clamp(0, double.infinity).toDouble();
+  String get _calculatedStatus {
+    if (_paidAmount <= 0) return 'UNPAID';
+    if (_paidAmount >= _salaryAmount && _salaryAmount > 0) return 'PAID';
+    return 'PARTIAL';
+  }
 
   void _handleSubmit() {
     if (!_formKey.currentState!.validate()) return;
@@ -208,8 +205,7 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
         year: int.parse(_yearController.text.trim()),
         salaryAmount: _salaryAmount,
         paidAmount: _paidAmount,
-        status: _status,
-        paidDate: _emptyToNull(_paidDateController.text),
+        paidDate: formatApiDate(_paidDate),
         note: _emptyToNull(_noteController.text),
       ),
     );
@@ -310,26 +306,12 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
                         validator: _optionalNonNegativeAmount,
                       ),
                       const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        value: _status,
-                        decoration: const InputDecoration(labelText: 'Status *'),
-                        items: imamSalaryStatuses
-                            .map(
-                              (status) => DropdownMenuItem<String>(
-                                value: status,
-                                child: Text(imamSalaryStatusLabels[status]!),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: widget.isSaving
-                            ? null
-                            : (value) => setState(() => _status = value ?? _status),
-                      ),
-                      const SizedBox(height: 14),
-                      AppTextField(
-                        controller: _paidDateController,
+                      AppDateField(
                         label: 'Paid Date',
-                        hint: '2026-06-15T00:00:00.000Z',
+                        selectedDate: _paidDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        onDateSelected: (date) => setState(() => _paidDate = date),
                       ),
                       const SizedBox(height: 14),
                       AppTextField(
@@ -340,7 +322,14 @@ class _ImamSalaryFormBodyState extends State<ImamSalaryFormBody> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Due Amount: ${formatRupees(_dueAmount)}',
+                        'Status preview: $_calculatedStatus',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Due Amount preview: ${formatRupees(_dueAmount)}',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

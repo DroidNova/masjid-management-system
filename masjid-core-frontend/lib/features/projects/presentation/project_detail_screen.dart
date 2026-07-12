@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
 import 'package:platform_core_frontend/core/storage/session_storage.dart';
@@ -188,8 +189,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         progressPercentage: project.progressPercentage,
                       ),
                       const Divider(height: 28),
-                      Text('Start Date: ${project.startDate ?? '-'}'),
-                      Text('End Date: ${project.endDate ?? '-'}'),
+                      Text('Start Date: ${formatReadableDate(parseApiDate(project.startDate))}'),
+                      Text('End Date: ${formatReadableDate(parseApiDate(project.endDate))}'),
                       Text('Created: ${project.createdAt ?? '-'}'),
                       if (_canManageProjects) ...<Widget>[
                         const SizedBox(height: 20),
