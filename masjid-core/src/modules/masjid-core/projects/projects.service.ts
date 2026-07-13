@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -125,6 +125,8 @@ const projectSelect = {
 
 @Injectable()
 export class ProjectsService {
+  private readonly logger = new Logger(ProjectsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): ProjectsPrismaDelegate {
@@ -173,6 +175,7 @@ export class ProjectsService {
       select: projectSelect,
     });
 
+    this.logger.log({ message: 'Project created', projectId: project.id, masjidId });
     return this.toProjectResponse(project);
   }
 
@@ -210,6 +213,7 @@ export class ProjectsService {
       select: projectSelect,
     });
 
+    this.logger.log({ message: 'Project updated', projectId: project.id, masjidId });
     return this.toProjectResponse(project);
   }
 
@@ -223,6 +227,7 @@ export class ProjectsService {
       select: projectSelect,
     });
 
+    this.logger.warn({ message: 'Project cancelled', projectId: project.id, masjidId });
     return this.toProjectResponse(project);
   }
 

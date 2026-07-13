@@ -1,7 +1,10 @@
 import 'dotenv/config';
+import { Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+
+const logger = new Logger('BootstrapSuperAdmin');
 
 const REQUIRED_ENV_KEYS = [
   'SUPER_ADMIN_FULL_NAME',
@@ -76,7 +79,7 @@ async function main(): Promise<void> {
         });
       }
 
-      console.log(`Super admin bootstrap skipped: user already exists (${existingUser.id}).`);
+      logger.log(`Super admin bootstrap skipped: user already exists (${existingUser.id}).`);
       return;
     }
 
@@ -97,13 +100,13 @@ async function main(): Promise<void> {
       },
     });
 
-    console.log(`Super admin created successfully (${user.id}).`);
+    logger.log(`Super admin created successfully (${user.id}).`);
   } finally {
     await prisma.$disconnect();
   }
 }
 
 void main().catch((error) => {
-  console.error('Super admin bootstrap failed:', error);
+  logger.error('Super admin bootstrap failed', error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });

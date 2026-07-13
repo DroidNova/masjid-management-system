@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -94,6 +94,8 @@ const announcementOwnershipSelect = {
 
 @Injectable()
 export class AnnouncementsService {
+  private readonly logger = new Logger(AnnouncementsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): AnnouncementsPrismaDelegate {
@@ -137,7 +139,7 @@ export class AnnouncementsService {
   ): Promise<AnnouncementRecord> {
     const masjidId = this.getCurrentUserMasjidId(actor);
 
-    return this.db.announcement.create({
+    const announcement = await this.db.announcement.create({
       data: {
         masjidId,
         title: dto.title,
@@ -146,6 +148,8 @@ export class AnnouncementsService {
       },
       select: announcementSelect,
     });
+    this.logger.log({ message: 'Announcement created', announcementId: announcement.id, masjidId });
+    return announcement;
   }
 
   async update(
@@ -166,11 +170,13 @@ export class AnnouncementsService {
       );
     }
 
-    return this.db.announcement.update({
+    const announcement = await this.db.announcement.update({
       where: { id },
       data,
       select: announcementSelect,
     });
+    this.logger.log({ message: 'Announcement updated', announcementId: announcement.id, masjidId });
+    return announcement;
   }
 
   async deactivate(
@@ -180,11 +186,13 @@ export class AnnouncementsService {
     const masjidId = this.getCurrentUserMasjidId(actor);
     await this.ensureAnnouncementBelongsToMasjid(id, masjidId);
 
-    return this.db.announcement.update({
+    const announcement = await this.db.announcement.update({
       where: { id },
       data: { isActive: false },
       select: announcementSelect,
     });
+    this.logger.warn({ message: 'Announcement deactivated', announcementId: announcement.id, masjidId });
+    return announcement;
   }
 
   private getCurrentUserMasjidId(actor: AuthenticatedUser): string {

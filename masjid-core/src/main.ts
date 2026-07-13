@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import 'dotenv/config';
@@ -7,10 +8,10 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiException } from './common/exceptions/api.exception';
 import { ERROR_CODES } from './common/constants/error-codes.constant';
 import { SuccessResponseInterceptor } from './common/interceptors/success-response.interceptor';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
 
   app.setGlobalPrefix('api/v1');
 
@@ -18,7 +19,8 @@ async function bootstrap() {
     origin: true,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-request-id'],
+    exposedHeaders: ['x-request-id'],
   });
 
   app.useGlobalPipes(
@@ -44,11 +46,8 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new SuccessResponseInterceptor(),
-  );
+  app.useGlobalFilters(app.get(HttpExceptionFilter));
+  app.useGlobalInterceptors(new SuccessResponseInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Platform Core API')
