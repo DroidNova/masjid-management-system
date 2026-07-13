@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -106,6 +106,8 @@ const expenseSelect = {
 
 @Injectable()
 export class ExpensesService {
+  private readonly logger = new Logger(ExpensesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): ExpensesPrismaDelegate {
@@ -158,6 +160,7 @@ export class ExpensesService {
       select: expenseSelect,
     });
 
+    this.logger.log({ message: 'Expense created', expenseId: expense.id, masjidId });
     return this.toResponse(expense);
   }
 
@@ -192,6 +195,7 @@ export class ExpensesService {
       data,
       select: expenseSelect,
     });
+    this.logger.log({ message: 'Expense updated', expenseId: expense.id, masjidId });
     return this.toResponse(expense);
   }
 
@@ -203,6 +207,7 @@ export class ExpensesService {
       data: { status: FinanceEntryStatusDto.CANCELLED },
       select: expenseSelect,
     });
+    this.logger.warn({ message: 'Expense cancelled', expenseId: expense.id, masjidId });
     return this.toResponse(expense);
   }
 

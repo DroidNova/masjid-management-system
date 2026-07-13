@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
@@ -243,6 +243,8 @@ const masjidMemberSelect = {
 
 @Injectable()
 export class MasjidsService {
+  private readonly logger = new Logger(MasjidsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): MasjidsPrismaDelegate {
@@ -287,11 +289,13 @@ export class MasjidsService {
     }
 
     try {
-      return await this.db.masjid.update({
+      const masjid = await this.db.masjid.update({
         where: { id: actor.masjidId },
         data: { welcomeMsg: dto.welcomeMsg },
         select: masjidWelcomeSelect,
       });
+      this.logger.log({ message: 'Masjid welcome message updated', masjidId: actor.masjidId });
+      return masjid;
     } catch {
       throw new ApiException(
         'Masjid not found',
@@ -448,6 +452,8 @@ export class MasjidsService {
       createdUser as CreatedUserWithRoles,
     );
 
+    this.logger.log({ message: 'Masjid user created', userId: response.id, masjidId, role: dto.role });
+
     if (temporaryPassword) {
       response.temporaryPassword = temporaryPassword;
       response.message =
@@ -497,6 +503,7 @@ export class MasjidsService {
     }
 
     const updated = await this.db.user.update({ where: { id: userId }, data, select: masjidMemberSelect });
+    this.logger.log({ message: 'Masjid user updated', userId, masjidId: updated.masjidId });
     return this.toMasjidMemberResponse(updated);
   }
 
@@ -511,6 +518,7 @@ export class MasjidsService {
       data: { status: dto.status },
       select: masjidMemberSelect,
     });
+    this.logger.warn({ message: 'Masjid user status changed', userId, status: dto.status });
     return this.toMasjidMemberResponse(updated);
   }
 

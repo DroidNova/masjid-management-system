@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -72,6 +72,8 @@ const namazTimeSelect = {
 
 @Injectable()
 export class NamazTimesService {
+  private readonly logger = new Logger(NamazTimesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): NamazTimesPrismaDelegate {
@@ -111,12 +113,14 @@ export class NamazTimesService {
     await this.ensureCanAccessMasjid(masjidId, actor);
     const data = this.toNamazTimeWriteData(dto);
 
-    return this.db.namazTime.upsert({
+    const namazTime = await this.db.namazTime.upsert({
       where: { masjidId },
       create: { masjidId, ...data },
       update: data,
       select: namazTimeSelect,
     });
+    this.logger.log({ message: 'Namaz times updated', masjidId });
+    return namazTime;
   }
 
   private async ensureCanAccessMasjid(

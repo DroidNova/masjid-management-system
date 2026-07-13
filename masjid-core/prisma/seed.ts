@@ -1,6 +1,9 @@
 import 'dotenv/config';
+import { Logger } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+
+const logger = new Logger('PrismaSeed');
 
 const ROLE_NAMES = [
   'SUPER_ADMIN',
@@ -135,13 +138,13 @@ async function main(): Promise<void> {
     await seedRoles(prisma);
     await seedPermissions(prisma);
     await seedRolePermissions(prisma);
-    console.log('Role and permission seed completed successfully.');
+    logger.log('Role and permission seed completed successfully.');
   } finally {
     await prisma.$disconnect();
   }
 }
 
 void main().catch((error) => {
-  console.error('Role/permission seed failed:', error);
+  logger.error('Role/permission seed failed', error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });

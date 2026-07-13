@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Logger, ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -53,6 +53,8 @@ type TokenDuration = `${number}${'s' | 'm' | 'h' | 'd'}`;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   private readonly jwtAccessSecret = process.env.JWT_ACCESS_SECRET ?? '';
   private readonly jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? '';
   private readonly jwtAccessExpiresIn: TokenDuration = this.parseTokenDuration(
@@ -76,10 +78,12 @@ export class AuthService {
 
   async startLogin(loginStartDto: LoginStartDto) {
     const phone = this.normalizePhone(loginStartDto.phone);
+    this.logger.debug({ message: 'Login flow started', phone });
     const user = await this.getUserByPhoneOrThrow(phone);
     this.assertUserActive(user);
 
     if (this.hasPrivilegedRole(user)) {
+      this.logger.debug({ message: 'Password login required for privileged user', userId: user.id });
       return {
         nextStep: 'PASSWORD_REQUIRED',
         phone,
@@ -89,6 +93,7 @@ export class AuthService {
 
     const challenge = this.otpChallengeService.create(phone, false);
     await this.sendOtp(phone);
+    this.logger.debug({ message: 'OTP challenge created', challengeId: challenge.challengeId });
 
     return {
       nextStep: 'OTP_REQUIRED',
@@ -101,6 +106,7 @@ export class AuthService {
   async verifyPassword(loginPasswordDto: LoginPasswordDto) {
     const invalidCredentialsMessage = 'Invalid phone or password';
     const phone = this.normalizePhone(loginPasswordDto.phone);
+    this.logger.debug({ message: 'Password verification started', phone });
     const password =
       typeof loginPasswordDto.password === 'string'
         ? loginPasswordDto.password
@@ -137,6 +143,7 @@ export class AuthService {
 
     const challenge = this.otpChallengeService.create(phone, true);
     await this.sendOtp(phone);
+    this.logger.debug({ message: 'Password verified and OTP challenge created', userId: user.id, challengeId: challenge.challengeId });
 
     return {
       nextStep: 'OTP_REQUIRED',
@@ -189,6 +196,7 @@ export class AuthService {
     }
 
     this.otpChallengeService.remove(challengeId);
+    this.logger.log({ message: 'User authenticated', userId: user.id });
 
     return this.createAuthenticatedSession(user, userAgent);
   }

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -155,6 +155,8 @@ const imamSalarySelect = {
 
 @Injectable()
 export class ImamSalariesService {
+  private readonly logger = new Logger(ImamSalariesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): ImamSalariesPrismaDelegate {
@@ -226,9 +228,11 @@ export class ImamSalariesService {
         select: imamSalarySelect,
       });
 
+      this.logger.log({ message: 'Imam salary created', imamSalaryId: salary.id, masjidId });
       return this.toSalaryResponse(salary);
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
+        this.logger.warn({ message: 'Duplicate imam salary create rejected', masjidId, month: dto.month, year: dto.year });
         throw new ApiException(
           'Imam salary record already exists for this month and year',
           HttpStatus.CONFLICT,
@@ -274,6 +278,7 @@ export class ImamSalariesService {
         select: imamSalarySelect,
       });
 
+      this.logger.log({ message: 'Imam salary updated', imamSalaryId: salary.id, masjidId });
       return this.toSalaryResponse(salary);
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {

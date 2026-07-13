@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -106,6 +106,8 @@ const collectionSelect = {
 
 @Injectable()
 export class CollectionsService {
+  private readonly logger = new Logger(CollectionsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): CollectionsPrismaDelegate {
@@ -158,6 +160,7 @@ export class CollectionsService {
       select: collectionSelect,
     });
 
+    this.logger.log({ message: 'Collection created', collectionId: collection.id, masjidId });
     return this.toResponse(collection);
   }
 
@@ -192,6 +195,7 @@ export class CollectionsService {
       data,
       select: collectionSelect,
     });
+    this.logger.log({ message: 'Collection updated', collectionId: collection.id, masjidId });
     return this.toResponse(collection);
   }
 
@@ -206,6 +210,7 @@ export class CollectionsService {
       data: { status: FinanceEntryStatusDto.CANCELLED },
       select: collectionSelect,
     });
+    this.logger.warn({ message: 'Collection cancelled', collectionId: collection.id, masjidId });
     return this.toResponse(collection);
   }
 

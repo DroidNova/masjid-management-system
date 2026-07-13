@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
@@ -293,6 +293,8 @@ const masjidRequestDetailSelect = {
 
 @Injectable()
 export class MasjidRequestsService {
+  private readonly logger = new Logger(MasjidRequestsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private get db(): MasjidRequestsPrismaDelegate {
@@ -313,7 +315,8 @@ export class MasjidRequestsService {
     const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
     this.assertDistinctImamAndCommitteePhones(normalizePhone(imamPhone), committeeMembers);
 
-    return this.db.masjidRegistrationRequest.create({
+    this.logger.debug({ message: 'Masjid request submission started', masjidName: dto.masjidName });
+    const request = await this.db.masjidRegistrationRequest.create({
       data: {
         requesterName: dto.requesterName.trim(),
         requesterPhone: normalizePhone(dto.requesterPhone),
@@ -337,6 +340,8 @@ export class MasjidRequestsService {
       },
       select: masjidRequestDetailSelect,
     });
+    this.logger.log({ message: 'Masjid request submitted', masjidRequestId: request.id });
+    return request;
   }
 
   async findAll(query: GetMasjidRequestsQueryDto) {
@@ -392,7 +397,8 @@ export class MasjidRequestsService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<MasjidRequestRecord> {
-    return this.db.$transaction(async (tx) => {
+    this.logger.debug({ message: 'Masjid request approval started', masjidRequestId: id, actorId: actor.id });
+    const approvedRequest = await this.db.$transaction(async (tx) => {
       const request = await this.findByIdOrThrow(id, tx);
       this.assertCanApprove(request);
 
@@ -444,6 +450,12 @@ export class MasjidRequestsService {
         select: masjidRequestDetailSelect,
       });
     });
+    this.logger.log({
+      message: 'Masjid request approved',
+      masjidRequestId: approvedRequest.id,
+      masjidId: approvedRequest.createdMasjidId,
+    });
+    return approvedRequest;
   }
 
   private async reject(
@@ -469,7 +481,7 @@ export class MasjidRequestsService {
       );
     }
 
-    return this.db.masjidRegistrationRequest.update({
+    const rejectedRequest = await this.db.masjidRegistrationRequest.update({
       where: { id: request.id },
       data: {
         status: MasjidRegistrationRequestStatus.REJECTED,
@@ -479,6 +491,8 @@ export class MasjidRequestsService {
       },
       select: masjidRequestDetailSelect,
     });
+    this.logger.warn({ message: 'Masjid request rejected', masjidRequestId: rejectedRequest.id });
+    return rejectedRequest;
   }
 
   private buildWhere(
