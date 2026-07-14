@@ -15,8 +15,12 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
+  const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: true,
+    origin: corsAllowedOrigins?.length ? corsAllowedOrigins : true,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-request-id'],
@@ -65,7 +69,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('api', app, document);
 
   app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);

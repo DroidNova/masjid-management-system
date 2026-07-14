@@ -1,0 +1,17 @@
+# Optional development override. Docker Compose loads this automatically.
+# The backend uses the development Dockerfile, bind-mounts source code, keeps
+# node_modules in a Docker volume, and runs NestJS hot reload.
+services:
+  backend:
+    build:
+      context: ./masjid-core
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./masjid-core:/app
+      - backend_node_modules:/app/node_modules
+    command: sh -c "npm run prisma:generate && npm run start:dev"
+
+volumes:
+  backend_node_modules:
