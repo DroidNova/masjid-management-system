@@ -11,6 +11,11 @@ class CommunityUserModel {
     this.temporaryPassword,
     this.createdAt,
     this.updatedAt,
+    this.fatherName,
+    this.age,
+    this.gender,
+    this.isFamilyHead = false,
+    this.familyMemberCount,
   });
 
   factory CommunityUserModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,11 @@ class CommunityUserModel {
           .toList(),
       createdAt: _optionalString(json['createdAt']),
       updatedAt: _optionalString(json['updatedAt']),
+      fatherName: _optionalString(json['fatherName']),
+      age: _optionalInt(json['age']),
+      gender: _optionalString(json['gender']),
+      isFamilyHead: json['isFamilyHead'] == true,
+      familyMemberCount: _optionalInt(json['familyMemberCount']),
     );
   }
 
@@ -42,6 +52,11 @@ class CommunityUserModel {
   final List<String> roles;
   final String? createdAt;
   final String? updatedAt;
+  final String? fatherName;
+  final int? age;
+  final String? gender;
+  final bool isFamilyHead;
+  final int? familyMemberCount;
 
   bool get isImam => roles.contains('IMAM');
   bool get isCommitteeMember => roles.contains('COMMITTEE_MEMBER');
@@ -68,4 +83,9 @@ String? _optionalString(Object? value) {
   final parsed = value?.toString();
   if (parsed == null || parsed.trim().isEmpty) return null;
   return parsed;
+}
+
+int? _optionalInt(Object? value) {
+  if (value is int) return value;
+  return int.tryParse(value?.toString() ?? '');
 }

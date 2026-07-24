@@ -29,3 +29,23 @@ Masjid responses use only `country`, `state`, `district`, `locality`, and `addre
 - API date-only fields are sent as `yyyy-MM-dd`.
 - Flutter UI displays dates as `dd MMM yyyy` through `formatReadableDate`, for example `15 Jun 2026`.
 - Forms use `AppDateField` and Flutter's built-in Material date picker instead of raw manual ISO date entry.
+
+## User profile fields
+
+Community user responses include `fatherName`, `age`, `gender`, `isFamilyHead`, and `familyMemberCount` alongside `fullName`, `phone`, `email`, `status`, `masjidId`, and `roles`. `gender` is one of `MALE`, `FEMALE`, or `OTHER`.
+
+### Add community user
+
+`POST /api/v1/masjids/my/users` requires `fullName`, `phone`, `role`, `fatherName`, `age`, and `gender`. When `role` is `MEMBER`, `isFamilyHead` must be provided as `true` or `false`. `email`, `masjidId`, and `familyMemberCount` are optional.
+
+### Update community user
+
+`PATCH /api/v1/masjids/my/users/:userId` requires `fullName`, `phone`, `fatherName`, `age`, and `gender`. If the target user is a `MEMBER`, `isFamilyHead` must be provided. `email` and `familyMemberCount` are optional. Role and masjid changes are not accepted by this API.
+
+### Masjid request imam fields
+
+Masjid registration requests require imam `imamName`, `imamPhone`, `imamAddress`, `imamFatherName`, `imamAge`, and `imamGender`; `imamEmail` is optional.
+
+### Masjid request committee member fields
+
+Each committee member in `committeeMembers` requires `name`, `phone`, `fatherName`, `age`, and `gender`.

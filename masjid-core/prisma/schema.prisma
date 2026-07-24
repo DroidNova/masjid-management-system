@@ -74,11 +74,22 @@ enum MasjidRegistrationStatus {
   REJECTED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 model User {
   id              String     @id @default(uuid()) @db.Uuid
   fullName        String
   email           String?    @unique
   phone           String?    @unique
+  fatherName      String?
+  age             Int?
+  gender          Gender?
+  isFamilyHead    Boolean    @default(false)
+  familyMemberCount Int?
   masjidId        String?    @db.Uuid
   passwordHash    String
   status          UserStatus @default(ACTIVE)
@@ -239,6 +250,9 @@ model MasjidRegistrationRequest {
   imamEmail   String?
   imamPhone   String
   imamAddress String
+  imamFatherName String?
+  imamAge Int?
+  imamGender Gender?
 
   committeeMembers Json
 

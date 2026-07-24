@@ -31,19 +31,19 @@ export class AdminService {
 
     if (trimmedSearch) {
       where.OR = [
-            {
-              fullName: {
-                contains: trimmedSearch,
-                mode: 'insensitive' as const,
-              },
-            },
-            {
-              email: { contains: trimmedSearch, mode: 'insensitive' as const },
-            },
-            {
-              phone: { contains: trimmedSearch, mode: 'insensitive' as const },
-            },
-          ];
+        {
+          fullName: {
+            contains: trimmedSearch,
+            mode: 'insensitive' as const,
+          },
+        },
+        {
+          email: { contains: trimmedSearch, mode: 'insensitive' as const },
+        },
+        {
+          phone: { contains: trimmedSearch, mode: 'insensitive' as const },
+        },
+      ];
     }
     if (query.status) where.status = query.status;
     if (query.masjidId) where.masjidId = query.masjidId;
@@ -64,6 +64,11 @@ export class AdminService {
           fullName: true,
           email: true,
           phone: true,
+          fatherName: true,
+          age: true,
+          gender: true,
+          isFamilyHead: true,
+          familyMemberCount: true,
           status: true,
           masjidId: true,
           createdAt: true,
@@ -115,6 +120,11 @@ export class AdminService {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
+      fatherName: user.fatherName,
+      age: user.age,
+      gender: user.gender,
+      isFamilyHead: user.isFamilyHead,
+      familyMemberCount: user.familyMemberCount,
       status: user.status,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -190,9 +200,15 @@ export class AdminService {
       this.prisma.masjid.count({ where: { status: 'APPROVED' } }),
       this.prisma.masjid.count({ where: { status: 'PENDING' } }),
       this.prisma.masjid.count({ where: { status: 'SUSPENDED' } }),
-      this.prisma.masjidRegistrationRequest.count({ where: { status: 'PENDING' } }),
-      this.prisma.masjidRegistrationRequest.count({ where: { status: 'APPROVED' } }),
-      this.prisma.masjidRegistrationRequest.count({ where: { status: 'REJECTED' } }),
+      this.prisma.masjidRegistrationRequest.count({
+        where: { status: 'PENDING' },
+      }),
+      this.prisma.masjidRegistrationRequest.count({
+        where: { status: 'APPROVED' },
+      }),
+      this.prisma.masjidRegistrationRequest.count({
+        where: { status: 'REJECTED' },
+      }),
     ]);
 
     return {
@@ -226,10 +242,14 @@ export class AdminService {
     const where = {} as any;
 
     if (query.status) where.status = query.status;
-    if (query.state) where.state = { contains: query.state, mode: 'insensitive' };
-    if (query.country) where.country = { contains: query.country, mode: 'insensitive' };
-    if (query.district) where.district = { contains: query.district, mode: 'insensitive' };
-    if (query.locality) where.locality = { contains: query.locality, mode: 'insensitive' };
+    if (query.state)
+      where.state = { contains: query.state, mode: 'insensitive' };
+    if (query.country)
+      where.country = { contains: query.country, mode: 'insensitive' };
+    if (query.district)
+      where.district = { contains: query.district, mode: 'insensitive' };
+    if (query.locality)
+      where.locality = { contains: query.locality, mode: 'insensitive' };
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -266,7 +286,9 @@ export class AdminService {
           requestedByPhone: true,
           requestedByEmail: true,
           imamUserId: true,
-          imamUser: { select: { id: true, fullName: true, phone: true, email: true } },
+          imamUser: {
+            select: { id: true, fullName: true, phone: true, email: true },
+          },
           _count: { select: { users: true } },
           createdAt: true,
           updatedAt: true,
@@ -308,7 +330,9 @@ export class AdminService {
         requestedByPhone: true,
         requestedByEmail: true,
         imamUserId: true,
-        imamUser: { select: { id: true, fullName: true, phone: true, email: true } },
+        imamUser: {
+          select: { id: true, fullName: true, phone: true, email: true },
+        },
         _count: { select: { users: true } },
         createdAt: true,
         updatedAt: true,
@@ -324,7 +348,10 @@ export class AdminService {
     };
   }
 
-  async updateMasjidStatus(id: string, dto: { status: string; reason?: string }) {
+  async updateMasjidStatus(
+    id: string,
+    dto: { status: string; reason?: string },
+  ) {
     const masjid = await this.prisma.masjid.findUnique({
       where: { id },
       select: { id: true },

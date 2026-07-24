@@ -4,15 +4,25 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
+  IsEnum,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
 
 const trimString = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
+
+export enum GenderDto {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER',
+}
 
 export class ImamDetailsDto {
   @ApiProperty({ example: 'Imam Name', maxLength: 150 })
@@ -64,6 +74,27 @@ export class CommitteeMemberDto {
     message: 'Committee member phone must be 20 characters or less',
   })
   phone!: string;
+
+  @ApiProperty({ example: 'Abdul Kareem', maxLength: 150 })
+  @Transform(trimString)
+  @IsString({ message: 'Committee member father name must be a string' })
+  @MinLength(1, { message: 'Committee member father name is required' })
+  @MaxLength(150, {
+    message: 'Committee member father name must be 150 characters or less',
+  })
+  fatherName!: string;
+
+  @ApiProperty({ example: 42, minimum: 1, maximum: 120 })
+  @IsInt({ message: 'Committee member age must be a whole number' })
+  @Min(1, { message: 'Committee member age must be at least 1' })
+  @Max(120, { message: 'Committee member age must be 120 or less' })
+  age!: number;
+
+  @ApiProperty({ enum: GenderDto, example: GenderDto.MALE })
+  @IsEnum(GenderDto, {
+    message: 'Committee member gender must be MALE, FEMALE, or OTHER',
+  })
+  gender!: GenderDto;
 }
 
 export class CreateMasjidRequestDto {
@@ -104,14 +135,22 @@ export class CreateMasjidRequestDto {
   @MaxLength(100, { message: 'Country must be 100 characters or less' })
   country!: string;
 
-  @ApiPropertyOptional({ example: 'District', maxLength: 100, description: 'Required when country is India or IN' })
+  @ApiPropertyOptional({
+    example: 'District',
+    maxLength: 100,
+    description: 'Required when country is India or IN',
+  })
   @Transform(trimString)
   @IsOptional()
   @IsString({ message: 'District must be a string' })
   @MaxLength(100, { message: 'District must be 100 characters or less' })
   district?: string;
 
-  @ApiProperty({ example: 'Nighasan', maxLength: 100, description: 'City / Village / Town' })
+  @ApiProperty({
+    example: 'Nighasan',
+    maxLength: 100,
+    description: 'City / Village / Town',
+  })
   @Transform(trimString)
   @IsString({ message: 'Locality must be a string' })
   @MinLength(1, { message: 'City / Village / Town is required' })
@@ -182,6 +221,25 @@ export class CreateMasjidRequestDto {
   @MinLength(1, { message: 'Imam address is required' })
   @MaxLength(500, { message: 'Imam address must be 500 characters or less' })
   imamAddress!: string;
+
+  @ApiProperty({ example: 'Abdul Kareem', maxLength: 150 })
+  @Transform(trimString)
+  @IsString({ message: 'Imam father name must be a string' })
+  @MinLength(1, { message: 'Imam father name is required' })
+  @MaxLength(150, {
+    message: 'Imam father name must be 150 characters or less',
+  })
+  imamFatherName!: string;
+
+  @ApiProperty({ example: 50, minimum: 1, maximum: 120 })
+  @IsInt({ message: 'Imam age must be a whole number' })
+  @Min(1, { message: 'Imam age must be at least 1' })
+  @Max(120, { message: 'Imam age must be 120 or less' })
+  imamAge!: number;
+
+  @ApiProperty({ enum: GenderDto, example: GenderDto.MALE })
+  @IsEnum(GenderDto, { message: 'Imam gender must be MALE, FEMALE, or OTHER' })
+  imamGender!: GenderDto;
 
   @ApiPropertyOptional({ type: ImamDetailsDto, deprecated: true })
   @IsOptional()

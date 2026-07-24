@@ -4,6 +4,11 @@ class CreateCommunityUserRequest {
     required this.phone,
     this.email,
     required this.role,
+    required this.fatherName,
+    required this.age,
+    required this.gender,
+    this.isFamilyHead,
+    this.familyMemberCount,
     this.masjidId,
   }) {
     if (!_allowedRoles.contains(role.trim())) {
@@ -21,6 +26,11 @@ class CreateCommunityUserRequest {
   final String phone;
   final String? email;
   final String role;
+  final String fatherName;
+  final int age;
+  final String gender;
+  final bool? isFamilyHead;
+  final int? familyMemberCount;
   final String? masjidId;
 
   Map<String, dynamic> toJson() {
@@ -31,6 +41,11 @@ class CreateCommunityUserRequest {
       'fullName': fullName.trim(),
       'phone': phone.trim(),
       'role': role.trim(),
+      'fatherName': fatherName.trim(),
+      'age': age,
+      'gender': gender.trim(),
+      if (isFamilyHead != null) 'isFamilyHead': isFamilyHead,
+      if (familyMemberCount != null) 'familyMemberCount': familyMemberCount,
       if (trimmedEmail != null && trimmedEmail.isNotEmpty)
         'email': trimmedEmail,
       if (trimmedMasjidId != null && trimmedMasjidId.isNotEmpty)
