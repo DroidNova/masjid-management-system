@@ -33,6 +33,8 @@ import 'package:platform_core_frontend/features/imam_salary/presentation/imam_sa
 import 'package:platform_core_frontend/features/imam_salary/presentation/imam_salary_screen.dart';
 import 'package:platform_core_frontend/features/main_shell/presentation/main_shell_screen.dart';
 import 'package:platform_core_frontend/features/masjid_request/presentation/masjid_request_form_screen.dart';
+import 'package:platform_core_frontend/features/masjid_request/presentation/masjid_request_submitted_screen.dart';
+import 'package:platform_core_frontend/features/masjid_request/presentation/track_masjid_application_screen.dart';
 import 'package:platform_core_frontend/features/namaz_time/presentation/update_namaz_time_screen.dart';
 import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:platform_core_frontend/features/projects/presentation/add_project_screen.dart';
@@ -89,6 +91,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/masjid-request',
       builder: (context, state) => const MasjidRequestFormScreen(),
+    ),
+    GoRoute(
+      path: '/masjid-request/submitted',
+      builder: (context, state) => const MasjidRequestSubmittedScreen(),
+    ),
+    GoRoute(
+      path: '/masjid-request/track',
+      builder: (context, state) => const TrackMasjidApplicationScreen(),
     ),
     GoRoute(
       path: '/community/add-user',

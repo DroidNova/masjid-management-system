@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import { CreateMasjidRequestDto } from './dto/create-masjid-request.dto';
 import { GetMasjidRequestsQueryDto } from './dto/get-masjid-requests-query.dto';
+import { TrackMasjidRequestDto } from './dto/track-masjid-request.dto';
 import { UpdateMasjidRequestStatusDto } from './dto/update-masjid-request-status.dto';
 import { MasjidRequestsService } from './masjid-requests.service';
 
@@ -58,6 +59,22 @@ export class MasjidRequestsController {
   })
   create(@Body() dto: CreateMasjidRequestDto) {
     return this.masjidRequestsService.create(dto);
+  }
+
+  @Post('track')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Track public masjid registration requests by requester phone',
+    description:
+      'Public endpoint. No bearer token or tracking token is required.',
+  })
+  @ApiBody({ type: TrackMasjidRequestDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Applications fetched successfully',
+  })
+  track(@Body() dto: TrackMasjidRequestDto) {
+    return this.masjidRequestsService.trackByRequesterPhone(dto.requesterPhone);
   }
 
   @Get()

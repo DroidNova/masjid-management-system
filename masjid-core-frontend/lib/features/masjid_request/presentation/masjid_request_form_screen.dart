@@ -132,26 +132,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       await _repository.submitMasjidRequest(_buildRequest());
 
       if (!mounted) return;
-
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Request Submitted'),
-          content: const Text(
-            'Your masjid request has been submitted successfully. Admin will review and approve it.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                context.go('/auth');
-              },
-              child: const Text('Back to Login'),
-            ),
-          ],
-        ),
-      );
+      context.go('/masjid-request/submitted');
     } catch (error) {
       if (mounted) _showError(_cleanError(error));
     } finally {

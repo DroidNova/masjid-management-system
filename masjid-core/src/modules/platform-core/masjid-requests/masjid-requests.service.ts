@@ -94,6 +94,22 @@ type MasjidRequestRecord = {
   createdMasjid?: CreatedMasjid | null;
 };
 
+type TrackedMasjidRequestRecord = {
+  masjidName: string;
+  status: string;
+  imamName: string | null;
+  createdAt: Date;
+  reviewedAt: Date | null;
+};
+
+type TrackedMasjidRequestResponse = {
+  masjidName: string;
+  status: string;
+  imamName: string | null;
+  requestedAt: Date;
+  reviewedAt: Date | null;
+};
+
 type RoleName = typeof IMAM_ROLE | typeof COMMITTEE_MEMBER_ROLE;
 
 type RequestCreateData = {
@@ -183,6 +199,11 @@ type MasjidRequestDelegate = {
     orderBy: { createdAt: 'desc' };
     select: typeof masjidRequestListSelect;
   }): Promise<MasjidRequestRecord[]>;
+  findMany(args: {
+    where: Record<string, unknown>;
+    orderBy: { createdAt: 'desc' };
+    select: typeof masjidRequestTrackingSelect;
+  }): Promise<TrackedMasjidRequestRecord[]>;
   count(args: { where: Record<string, unknown> }): Promise<number>;
   findUnique(args: {
     where: { id: string };
@@ -314,6 +335,14 @@ const masjidRequestDetailSelect = {
   ...masjidRequestListSelect,
 } as const;
 
+const masjidRequestTrackingSelect = {
+  masjidName: true,
+  status: true,
+  imamName: true,
+  createdAt: true,
+  reviewedAt: true,
+} as const;
+
 @Injectable()
 export class MasjidRequestsService {
   private readonly logger = new Logger(MasjidRequestsService.name);
@@ -407,6 +436,40 @@ export class MasjidRequestsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async trackByRequesterPhone(requesterPhone: string) {
+    const normalizedPhone = normalizePhone(requesterPhone);
+
+    if (!isValidNormalizedPhone(normalizedPhone)) {
+      throw new ApiException(
+        'Enter a valid phone number',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+
+    const phoneVariants = getPhoneSearchVariants(normalizedPhone);
+    const items = await this.db.masjidRegistrationRequest.findMany({
+      where: { requesterPhone: { in: phoneVariants } },
+      orderBy: { createdAt: 'desc' },
+      select: masjidRequestTrackingSelect,
+    });
+
+    const responseItems = items.map((request) => ({
+      masjidName: request.masjidName,
+      status: request.status,
+      imamName: request.imamName,
+      requestedAt: request.createdAt,
+      reviewedAt: request.reviewedAt,
+    }));
+
+    return successResponse(
+      responseItems.length
+        ? 'Applications fetched successfully'
+        : 'No application found for this phone number',
+      { items: responseItems },
+    );
   }
 
   async updateStatus(

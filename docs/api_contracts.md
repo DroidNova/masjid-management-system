@@ -49,3 +49,31 @@ Masjid registration requests require imam `imamName`, `imamPhone`, `imamAddress`
 ### Masjid request committee member fields
 
 Each committee member in `committeeMembers` requires `name`, `phone`, `fatherName`, `age`, and `gender`.
+
+## Public masjid request tracking
+
+`POST /api/v1/masjid-requests/track` is a public endpoint for tracking masjid registration applications by the registered requester phone number. It does not use or store any tracking token.
+
+Request body:
+
+```json
+{
+  "requesterPhone": "+919876543210"
+}
+```
+
+Response data is intentionally limited for privacy and contains no requester details, committee member data, reviewer details, internal IDs, or created masjid IDs:
+
+```json
+{
+  "items": [
+    {
+      "masjidName": "Jama Masjid",
+      "status": "PENDING",
+      "imamName": "Maulana Ahmed",
+      "requestedAt": "2026-07-25T10:30:00.000Z",
+      "reviewedAt": null
+    }
+  ]
+}
+```
