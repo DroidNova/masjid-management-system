@@ -21,6 +21,8 @@ import 'package:platform_core_frontend/features/auth/presentation/login_phone_sc
 import 'package:platform_core_frontend/features/auth/presentation/otp_screen.dart';
 import 'package:platform_core_frontend/features/community/presentation/add_community_user_screen.dart';
 import 'package:platform_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/collection_contributions_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
 import 'package:platform_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:platform_core_frontend/features/projects/presentation/projects_screen.dart';
 import 'package:platform_core_frontend/features/finance/presentation/finance_screen.dart';
@@ -120,6 +122,17 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
+    GoRoute(
+      path: '/projects/:id/contributions',
+      builder: (context, state) => ProjectContributionsScreen(
+        projectId: state.pathParameters['id'] ?? '',
+        projectTitle: (state.extra as String?) ?? 'Project',
+      ),
+    ),
+    GoRoute(
+      path: '/finance/collection-contributions',
+      builder: (context, state) => const CollectionContributionsScreen(),
+    ),
     GoRoute(
       path: '/contributions',
       builder: (context, state) => const MyContributionsScreen(),

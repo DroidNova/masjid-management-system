@@ -59,6 +59,9 @@ class MyContributionSummaryModel {
   const MyContributionSummaryModel({
     required this.user,
     required this.imamSalary,
+    required this.projectContributionTotal,
+    required this.collectionContributionTotal,
+    required this.totalContributionAmount,
   });
 
   factory MyContributionSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +71,9 @@ class MyContributionSummaryModel {
             ? json['user'] as Map<String, dynamic>
             : const <String, dynamic>{},
       ),
+      projectContributionTotal: _readDouble(json['projectContributionTotal']),
+      collectionContributionTotal: _readDouble(json['collectionContributionTotal']),
+      totalContributionAmount: _readDouble(json['totalContributionAmount']),
       imamSalary: ImamSalaryContributionSummaryModel.fromJson(
         json['imamSalary'] is Map<String, dynamic>
             ? json['imamSalary'] as Map<String, dynamic>
@@ -78,6 +84,9 @@ class MyContributionSummaryModel {
 
   final MyContributionUserModel user;
   final ImamSalaryContributionSummaryModel imamSalary;
+  final double projectContributionTotal;
+  final double collectionContributionTotal;
+  final double totalContributionAmount;
 }
 
 double _readDouble(dynamic value) {

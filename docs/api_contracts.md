@@ -128,6 +128,9 @@ Returns the authenticated user's limited profile and aggregate totals for their 
     "phone": "+919876543210",
     "isFamilyHead": true
   },
+  "projectContributionTotal": 500,
+  "collectionContributionTotal": 100,
+  "totalContributionAmount": 800,
   "imamSalary": {
     "monthsShown": 6,
     "totalExpected": 300,
@@ -148,4 +151,19 @@ Query parameters are `monthsBack` (default `6`, maximum `24`), `page` (default `
 
 Returns only the authenticated user's transactions for the selected month and year. Query parameters are `page` and `limit`. Each item contains only `id`, `amount`, `paymentMode`, `paidAt`, `collectedByName`, and optional `note`. Payment modes are `CASH` and `ONLINE`.
 
-These read-only APIs are available to any authenticated role with a masjid assignment, but always resolve contribution ownership from the current session. Project and general-donation contribution records are intentionally not implemented yet.
+These read-only APIs are available to any authenticated role with a masjid assignment and always resolve contribution ownership from the current session. Project and collection contribution histories are exposed through the self-only endpoints documented below.
+
+## Project and collection contribution transactions
+
+Contribution management requires `SUPER_ADMIN`, `MASJID_ADMIN`, or `COMMITTEE_MEMBER`; `IMAM` has read-only management-list access. `MEMBER` can access only the authenticated `/contributions/my/*` endpoints. Registered contributors are validated against the current masjid, while external contributors may be recorded without `memberId`. All records retain contributor and collector name/phone snapshots.
+
+- `POST /api/v1/projects/:projectId/contributions` creates a project contribution and atomically increments `Project.collectedAmount`.
+- `GET /api/v1/projects/:projectId/contributions` supports `search`, `paymentMode`, `fromDate`, `toDate`, `page`, and `limit`.
+- `POST /api/v1/collections/contributions` creates a general collection contribution with `collectionType`.
+- `GET /api/v1/collections/contributions` supports `collectionType`, `search`, `paymentMode`, `fromDate`, `toDate`, `page`, and `limit`.
+- `GET /api/v1/contributions/my/projects` returns only project contributions whose `memberId` is the authenticated user.
+- `GET /api/v1/contributions/my/collections` returns only collection contributions whose `memberId` is the authenticated user.
+
+Create bodies use `memberId` (optional), `contributorName`, `contributorPhone` (optional), positive `amount`, `paymentMode` (`CASH` or `ONLINE`), `paidAt`, and optional `note`. Collection bodies additionally require a valid `collectionType`. Lists use the standard paginated response documented above.
+
+The contribution summary now also returns `projectContributionTotal`, `collectionContributionTotal`, and `totalContributionAmount`. The last value combines paid imam-salary contributions with project and collection transaction totals for the authenticated user. No my-contribution endpoint accepts a user ID.

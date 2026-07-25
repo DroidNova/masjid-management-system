@@ -7,6 +7,16 @@ describe('ContributionsService', () => {
       findMany: jest.fn(),
       count: jest.fn(),
     },
+    projectContribution: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    collectionContribution: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+    },
     imamSalaryPayment: {
       findMany: jest.fn(),
       count: jest.fn(),
@@ -21,6 +31,12 @@ describe('ContributionsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.projectContribution.aggregate.mockResolvedValue({
+      _sum: { amount: 0 },
+    });
+    prisma.collectionContribution.aggregate.mockResolvedValue({
+      _sum: { amount: 0 },
+    });
     prisma.user.findUnique.mockResolvedValue({
       id: 'current-user',
       fullName: 'Saleem',
@@ -52,6 +68,9 @@ describe('ContributionsService', () => {
         phone: '+919876543210',
         isFamilyHead: true,
       },
+      projectContributionTotal: 0,
+      collectionContributionTotal: 0,
+      totalContributionAmount: 70,
       imamSalary: {
         monthsShown: 6,
         totalExpected: 150,
@@ -97,6 +116,12 @@ describe('ContributionsService', () => {
   });
 
   it('returns the clean masjid-assignment error before reading ledger data', async () => {
+    prisma.projectContribution.aggregate.mockResolvedValue({
+      _sum: { amount: 0 },
+    });
+    prisma.collectionContribution.aggregate.mockResolvedValue({
+      _sum: { amount: 0 },
+    });
     prisma.user.findUnique.mockResolvedValue({
       id: 'current-user',
       fullName: 'Saleem',

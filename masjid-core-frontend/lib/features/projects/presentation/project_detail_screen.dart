@@ -188,6 +188,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       ProjectProgressBar(
                         progressPercentage: project.progressPercentage,
                       ),
+                      const SizedBox(height: 12),
+                      AppButton(
+                        label: 'View Contributions',
+                        isOutlined: true,
+                        onPressed: () => context.push(
+                          '/projects/${project.id}/contributions',
+                          extra: project.title,
+                        ),
+                      ),
                       const Divider(height: 28),
                       Text('Start Date: ${formatReadableDate(parseApiDate(project.startDate))}'),
                       Text('End Date: ${formatReadableDate(parseApiDate(project.endDate))}'),

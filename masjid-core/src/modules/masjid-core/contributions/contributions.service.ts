@@ -4,6 +4,7 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
+import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
 import { MyPaymentsQueryDto } from './dto/my-payments-query.dto';
 
@@ -13,6 +14,8 @@ type ContributionsDb = {
   user: DynamicDelegate;
   imamSalaryAssignment: DynamicDelegate;
   imamSalaryPayment: DynamicDelegate;
+  projectContribution: DynamicDelegate;
+  collectionContribution: DynamicDelegate;
 };
 
 type AssignmentRow = {
@@ -59,6 +62,26 @@ export class ContributionsService {
       },
     } as never)) as unknown as AssignmentRow[];
 
+    const [projectAggregate, collectionAggregate] = (await Promise.all([
+      this.db.projectContribution.aggregate({
+        where: { memberId: actor.id, masjidId: user.masjidId },
+        _sum: { amount: true },
+      } as never),
+      this.db.collectionContribution.aggregate({
+        where: { memberId: actor.id, masjidId: user.masjidId },
+        _sum: { amount: true },
+      } as never),
+    ])) as unknown as [
+      { _sum: { amount: DecimalValue | null } },
+      { _sum: { amount: DecimalValue | null } },
+    ];
+    const projectContributionTotal = projectAggregate._sum.amount
+      ? this.toNumber(projectAggregate._sum.amount)
+      : 0;
+    const collectionContributionTotal = collectionAggregate._sum.amount
+      ? this.toNumber(collectionAggregate._sum.amount)
+      : 0;
+
     const sum = (field: 'expectedAmount' | 'paidAmount' | 'dueAmount') =>
       assignments.reduce((total, assignment) => {
         return total + this.toNumber(assignment[field]);
@@ -71,6 +94,12 @@ export class ContributionsService {
         phone: user.phone,
         isFamilyHead: user.isFamilyHead,
       },
+      projectContributionTotal,
+      collectionContributionTotal,
+      totalContributionAmount:
+        sum('paidAmount') +
+        projectContributionTotal +
+        collectionContributionTotal,
       imamSalary: {
         monthsShown: 6,
         totalExpected: sum('expectedAmount'),
@@ -81,6 +110,67 @@ export class ContributionsService {
         unpaidMonths: this.countStatus(assignments, 'UNPAID'),
       },
     });
+  }
+
+  async getMyProjectContributions(
+    query: MyContributionListQueryDto,
+    actor: AuthenticatedUser,
+  ) {
+    const user = await this.getCurrentUser(actor);
+    return successResponse(
+      'Project contributions fetched successfully',
+      await this.getPersonalContributionPage(
+        this.db.projectContribution,
+        {
+          memberId: actor.id,
+          masjidId: user.masjidId,
+          ...this.dateFilter(query),
+        },
+        query,
+        {
+          id: true,
+          projectId: true,
+          contributorName: true,
+          contributorPhone: true,
+          amount: true,
+          paymentMode: true,
+          paidAt: true,
+          collectedByName: true,
+          note: true,
+          project: { select: { title: true } },
+        },
+      ),
+    );
+  }
+
+  async getMyCollectionContributions(
+    query: MyContributionListQueryDto,
+    actor: AuthenticatedUser,
+  ) {
+    const user = await this.getCurrentUser(actor);
+    return successResponse(
+      'Collection contributions fetched successfully',
+      await this.getPersonalContributionPage(
+        this.db.collectionContribution,
+        {
+          memberId: actor.id,
+          masjidId: user.masjidId,
+          ...this.dateFilter(query),
+        },
+        query,
+        {
+          id: true,
+          collectionType: true,
+          contributorName: true,
+          contributorPhone: true,
+          amount: true,
+          paymentMode: true,
+          paidAt: true,
+          collectedByName: true,
+          note: true,
+        },
+      ),
+    );
   }
 
   async getImamSalaryHistory(
@@ -209,6 +299,62 @@ export class ContributionsService {
     }
 
     return user;
+  }
+
+  private async getPersonalContributionPage(
+    delegate: DynamicDelegate,
+    where: Record<string, unknown>,
+    query: { page?: number; limit?: number },
+    select: Record<string, unknown>,
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const [items, total] = (await Promise.all([
+      delegate.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
+        select,
+      }),
+      delegate.count({ where }),
+    ])) as unknown as [Array<Record<string, unknown>>, number];
+    return {
+      items: items.map((item) => this.serialize(item)),
+      ...this.pagination(total, page, limit),
+    };
+  }
+
+  private dateFilter(query: MyContributionListQueryDto) {
+    if (!query.fromDate && !query.toDate) return {};
+    return {
+      paidAt: {
+        ...(query.fromDate ? { gte: new Date(query.fromDate) } : {}),
+        ...(query.toDate ? { lte: this.endOfDay(query.toDate) } : {}),
+      },
+    };
+  }
+
+  private endOfDay(value: string): Date {
+    const date = new Date(value);
+    date.setUTCHours(23, 59, 59, 999);
+    return date;
+  }
+
+  private serialize<T>(value: T): T {
+    return JSON.parse(
+      JSON.stringify(value, (_key, item: unknown) => {
+        if (
+          item &&
+          typeof item === 'object' &&
+          'toNumber' in item &&
+          typeof (item as { toNumber?: unknown }).toNumber === 'function'
+        ) {
+          return (item as { toNumber: () => number }).toNumber();
+        }
+        return item;
+      }),
+    ) as T;
   }
 
   private countStatus(assignments: AssignmentRow[], status: string): number {

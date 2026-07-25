@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
 import 'package:platform_core_frontend/features/contributions/data/contributions_repository.dart';
+import 'package:platform_core_frontend/features/contributions/models/collection_contribution_model.dart';
+import 'package:platform_core_frontend/features/contributions/models/project_contribution_model.dart';
 import 'package:platform_core_frontend/features/contributions/models/my_contribution_summary_model.dart';
 import 'package:platform_core_frontend/features/contributions/models/my_imam_salary_contribution_model.dart';
 import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_summary_card.dart';
 import 'package:platform_core_frontend/features/contributions/presentation/widgets/imam_salary_month_card.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
+import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:platform_core_frontend/shared/utils/paginated_list_controller.dart';
 import 'package:platform_core_frontend/shared/widgets/app_card.dart';
 
@@ -23,6 +27,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
   late final ContributionsRepository _repository =
       widget._repository ?? ContributionsRepository();
   late final PaginatedListController<MyImamSalaryContributionModel> _history;
+  late final PaginatedListController<ProjectContributionModel> _projects;
+  late final PaginatedListController<CollectionContributionModel> _collections;
   final ScrollController _scrollController = ScrollController();
   MyContributionSummaryModel? _summary;
   bool _loadingSummary = true;
@@ -39,14 +45,24 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
         limit: limit,
       ),
     )..addListener(_onHistoryChanged);
+    _projects = PaginatedListController<ProjectContributionModel>(
+      errorMapper: getReadableErrorMessage,
+      loader: (page, limit) => _repository.getMyProjectContributions(page: page, limit: limit),
+    )..addListener(_onHistoryChanged);
+    _collections = PaginatedListController<CollectionContributionModel>(
+      errorMapper: getReadableErrorMessage,
+      loader: (page, limit) => _repository.getMyCollectionContributions(page: page, limit: limit),
+    )..addListener(_onHistoryChanged);
     _scrollController.addListener(_loadMoreNearBottom);
     _refresh();
   }
 
   @override
   void dispose() {
-    _history.removeListener(_onHistoryChanged);
-    _history.dispose();
+    for (final controller in [_history, _projects, _collections]) {
+      controller.removeListener(_onHistoryChanged);
+      controller.dispose();
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -58,6 +74,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
   void _loadMoreNearBottom() {
     if (_scrollController.position.extentAfter < 300) {
       _history.loadNext();
+      _projects.loadNext();
+      _collections.loadNext();
     }
   }
 
@@ -72,6 +90,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
       final results = await Future.wait<dynamic>([
         _repository.getMySummary(),
         _history.refresh(),
+        _projects.refresh(),
+        _collections.refresh(),
       ]);
       if (!mounted) return;
       setState(() => _summary = results.first as MyContributionSummaryModel);
@@ -102,6 +122,18 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                     _UserCard(user: _summary!.user),
                     const SizedBox(height: 12),
                     ContributionSummaryCard(summary: _summary!.imamSalary),
+                    const SizedBox(height: 12),
+                    AppCard(
+                      child: Wrap(
+                        spacing: 20,
+                        runSpacing: 8,
+                        children: <Widget>[
+                          Text('Projects ${formatRupees(_summary!.projectContributionTotal)}'),
+                          Text('Collections ${formatRupees(_summary!.collectionContributionTotal)}'),
+                          Text('All paid contributions ${formatRupees(_summary!.totalContributionAmount)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 20),
                   Text(
@@ -135,20 +167,22 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                       message: _history.error!,
                       onRetry: _history.loadNext,
                     ),
-                  const SizedBox(height: 12),
-                  const AppCard(
-                    child: Row(
-                      children: <Widget>[
-                        Icon(Icons.upcoming_outlined),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Project and donation contribution history will be available soon.',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(height: 20),
+                  Text('Project Contributions', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 10),
+                  if (_projects.items.isEmpty && !_projects.isLoading)
+                    const AppCard(child: Text('No project contributions yet.', textAlign: TextAlign.center))
+                  else
+                    ..._projects.items.map((item) => ContributionTransactionCard(title: item.projectTitle ?? item.contributorName, subtitle: item.note, amount: item.amount, paymentMode: item.paymentMode, paidAt: item.paidAt, collectedByName: item.collectedByName)),
+                  const SizedBox(height: 20),
+                  Text('General Collections', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 10),
+                  if (_collections.items.isEmpty && !_collections.isLoading)
+                    const AppCard(child: Text('No collection contributions yet.', textAlign: TextAlign.center))
+                  else
+                    ..._collections.items.map((item) => ContributionTransactionCard(title: item.collectionType.replaceAll('_', ' '), subtitle: item.note, amount: item.amount, paymentMode: item.paymentMode, paidAt: item.paidAt, collectedByName: item.collectedByName)),
+                  if (_projects.isLoading || _collections.isLoading)
+                    const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
                 ],
               ),
             ),

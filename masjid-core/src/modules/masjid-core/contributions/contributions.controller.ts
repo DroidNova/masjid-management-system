@@ -11,6 +11,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { ContributionsService } from './contributions.service';
+import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
 import { MyPaymentsQueryDto } from './dto/my-payments-query.dto';
 
@@ -26,6 +27,28 @@ export class ContributionsController {
   @Get('summary')
   getSummary(@Req() request: AuthenticatedRequest) {
     return this.contributionsService.getSummary(request.user);
+  }
+
+  @Get('projects')
+  getProjectContributions(
+    @Query() query: MyContributionListQueryDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.getMyProjectContributions(
+      query,
+      request.user,
+    );
+  }
+
+  @Get('collections')
+  getCollectionContributions(
+    @Query() query: MyContributionListQueryDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.getMyCollectionContributions(
+      query,
+      request.user,
+    );
   }
 
   @Get('imam-salary')

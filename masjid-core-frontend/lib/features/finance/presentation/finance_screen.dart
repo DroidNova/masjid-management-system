@@ -195,6 +195,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         : 'View salary paid/unpaid records',
                   ),
                   const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.volunteer_activism_outlined),
+                      title: const Text('Collection Contributions'),
+                      subtitle: const Text(
+                        'View donations and contributor transactions',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(
+                        '/finance/collection-contributions',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   SegmentedButton<int>(
                     segments: const <ButtonSegment<int>>[
                       ButtonSegment<int>(

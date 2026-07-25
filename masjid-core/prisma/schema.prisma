@@ -121,6 +121,10 @@ model User {
   imamSalaryAssignments      ImamSalaryAssignment[] @relation("SalaryAssignmentMember")
   imamSalaryPayments         ImamSalaryPayment[] @relation("SalaryPaymentMember")
   collectedSalaryPayments    ImamSalaryPayment[] @relation("SalaryPaymentCollector")
+  projectContributions       ProjectContribution[] @relation("ProjectContributionMember")
+  collectedProjectContributions ProjectContribution[] @relation("ProjectContributionCollector")
+  collectionContributions    CollectionContribution[] @relation("CollectionContributionMember")
+  collectedCollectionContributions CollectionContribution[] @relation("CollectionContributionCollector")
   createdCollections         Collection[]                @relation("CollectionCreatedBy")
   createdExpenses            Expense[]                   @relation("ExpenseCreatedBy")
 
@@ -228,6 +232,8 @@ model Masjid {
   imamSalaryMonths     ImamSalaryMonth[]
   imamSalaryAssignments ImamSalaryAssignment[]
   imamSalaryPayments   ImamSalaryPayment[]
+  projectContributions ProjectContribution[]
+  collectionContributions CollectionContribution[]
   projects             Project[]
   announcements        Announcement[]
   collections          Collection[]
@@ -432,10 +438,66 @@ model Project {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  masjid        Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  contributions ProjectContribution[]
 
   @@index([masjidId])
   @@index([status])
+}
+
+model ProjectContribution {
+  id               String @id @default(uuid()) @db.Uuid
+  masjidId         String @db.Uuid
+  projectId        String @db.Uuid
+  memberId         String? @db.Uuid
+  contributorName  String
+  contributorPhone String?
+  amount           Decimal @db.Decimal(12, 2)
+  paymentMode      PaymentMode
+  paidAt           DateTime
+  collectedById    String @db.Uuid
+  collectedByName  String
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  masjid      Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  member      User? @relation("ProjectContributionMember", fields: [memberId], references: [id])
+  collectedBy User @relation("ProjectContributionCollector", fields: [collectedById], references: [id])
+
+  @@index([masjidId])
+  @@index([projectId])
+  @@index([memberId])
+  @@index([paidAt])
+  @@index([paymentMode])
+}
+
+model CollectionContribution {
+  id               String @id @default(uuid()) @db.Uuid
+  masjidId         String @db.Uuid
+  memberId         String? @db.Uuid
+  contributorName  String
+  contributorPhone String?
+  collectionType   CollectionType
+  amount           Decimal @db.Decimal(12, 2)
+  paymentMode      PaymentMode
+  paidAt           DateTime
+  collectedById    String @db.Uuid
+  collectedByName  String
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  masjid      Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  member      User? @relation("CollectionContributionMember", fields: [memberId], references: [id])
+  collectedBy User @relation("CollectionContributionCollector", fields: [collectedById], references: [id])
+
+  @@index([masjidId])
+  @@index([memberId])
+  @@index([paidAt])
+  @@index([collectionType])
+  @@index([paymentMode])
 }
 
 model Announcement {
