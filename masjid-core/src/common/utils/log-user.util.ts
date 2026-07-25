@@ -1,6 +1,4 @@
-import { Request } from 'express';
-
-type RequestWithUser = Request & {
+type RequestWithUser = {
   user?: {
     id?: unknown;
     userId?: unknown;

@@ -2,8 +2,10 @@ import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { successResponse } from '../../../common/helpers/api-response.helper';
 import {
   getPhoneSearchVariants,
+  isValidNormalizedPhone,
   normalizePhone,
 } from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
