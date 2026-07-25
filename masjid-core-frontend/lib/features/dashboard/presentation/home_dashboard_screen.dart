@@ -150,6 +150,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     final canManageAnnouncements = PermissionHelper.canManageAnnouncements(roles);
     final canManageFinance = PermissionHelper.canManageFinance(roles);
     final canManageProjects = PermissionHelper.canManageProjects(roles);
+    final canViewContributions = PermissionHelper.hasRoleInList(roles, PermissionHelper.member) ||
+        PermissionHelper.hasRoleInList(roles, PermissionHelper.committeeMember) ||
+        PermissionHelper.hasRoleInList(roles, PermissionHelper.masjidAdmin);
     if (dashboard == null) {
       return _DashboardErrorView(
         message: 'Unable to load dashboard',
@@ -238,6 +241,20 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   ImamSalaryCard(
                     salarySummary: dashboard.imamSalarySummary,
                   ),
+                  if (canViewContributions) ...<Widget>[
+                    const SizedBox(height: 12),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.volunteer_activism_outlined),
+                        title: const Text('My Contributions'),
+                        subtitle: const Text(
+                          'View your imam salary and donation history',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/contributions'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

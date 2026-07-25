@@ -111,3 +111,41 @@ Paginated responses use:
 ```
 
 The shared Flutter `PaginatedResponse<T>` and `PaginatedListController<T>` can be reused incrementally by collections, expenses, users, projects, and super-admin lists. It starts at page 1, defaults to 20 records, prevents concurrent page loads, supports reset/refresh, and stops after `hasNextPage` becomes false.
+
+## My contributions
+
+All contribution endpoints require a valid access token and derive both `memberId` and `masjidId` from the authenticated user. They do not accept a `userId`, do not expose another member's data, and never return credentials, role internals, or password/token fields. A user without a masjid receives `USER_MASJID_NOT_ASSIGNED`; a user without salary assignments receives zero totals and empty lists.
+
+### `GET /api/v1/contributions/my/summary`
+
+Returns the authenticated user's limited profile and aggregate totals for their latest six imam-salary assignments.
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "fullName": "Saleem",
+    "phone": "+919876543210",
+    "isFamilyHead": true
+  },
+  "imamSalary": {
+    "monthsShown": 6,
+    "totalExpected": 300,
+    "totalPaid": 200,
+    "totalDue": 100,
+    "paidMonths": 3,
+    "partialMonths": 1,
+    "unpaidMonths": 2
+  }
+}
+```
+
+### `GET /api/v1/contributions/my/imam-salary`
+
+Query parameters are `monthsBack` (default `6`, maximum `24`), `page` (default `1`), and `limit` (default `20`, maximum `100`). Items are newest first and contain only `month`, `year`, `expectedAmount`, `paidAmount`, `dueAmount`, `status`, `paymentsCount`, and `lastPaidAt`. The response uses the standard `items`, `total`, `page`, `limit`, `totalPages`, and `hasNextPage` pagination shape.
+
+### `GET /api/v1/contributions/my/imam-salary/:month/:year/payments`
+
+Returns only the authenticated user's transactions for the selected month and year. Query parameters are `page` and `limit`. Each item contains only `id`, `amount`, `paymentMode`, `paidAt`, `collectedByName`, and optional `note`. Payment modes are `CASH` and `ONLINE`.
+
+These read-only APIs are available to any authenticated role with a masjid assignment, but always resolve contribution ownership from the current session. Project and general-donation contribution records are intentionally not implemented yet.

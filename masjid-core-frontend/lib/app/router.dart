@@ -20,6 +20,8 @@ import 'package:platform_core_frontend/features/auth/presentation/login_password
 import 'package:platform_core_frontend/features/auth/presentation/login_phone_screen.dart';
 import 'package:platform_core_frontend/features/auth/presentation/otp_screen.dart';
 import 'package:platform_core_frontend/features/community/presentation/add_community_user_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:platform_core_frontend/features/projects/presentation/projects_screen.dart';
 import 'package:platform_core_frontend/features/finance/presentation/finance_screen.dart';
 import 'package:platform_core_frontend/features/dashboard/presentation/home_dashboard_screen.dart';
@@ -116,6 +118,22 @@ final GoRouter appRouter = GoRouter(
         isAllowed: PermissionHelper.canManageFinance,
         child: const AddExpenseScreen(),
       ),
+    ),
+
+    GoRoute(
+      path: '/contributions',
+      builder: (context, state) => const MyContributionsScreen(),
+    ),
+    GoRoute(
+      path: '/contributions/imam-salary/:month/:year/payments',
+      builder: (context, state) {
+        final month = int.tryParse(state.pathParameters['month'] ?? '');
+        final year = int.tryParse(state.pathParameters['year'] ?? '');
+        if (month == null || year == null || month < 1 || month > 12) {
+          return const _InvalidRouteParametersScreen();
+        }
+        return ImamSalaryPaymentHistoryScreen(month: month, year: year);
+      },
     ),
 
     GoRoute(
@@ -257,6 +275,17 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+class _InvalidRouteParametersScreen extends StatelessWidget {
+  const _InvalidRouteParametersScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Invalid contribution period.')),
+    );
+  }
+}
 
 Map<String, String>? _readExtraMap(Object? extra) {
   if (extra is Map<String, String>) return extra;
