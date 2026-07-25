@@ -29,6 +29,17 @@ enum PaymentStatus {
   PARTIAL
 }
 
+enum ImamSalaryAssignmentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum PaymentMode {
+  CASH
+  ONLINE
+}
+
 enum ProjectStatus {
   PLANNED
   ONGOING
@@ -107,6 +118,9 @@ model User {
   reviewedMasjidRequests     MasjidRegistrationRequest[] @relation("MasjidRequestReviewedBy")
   masjid                     Masjid?                     @relation("MasjidUsers", fields: [masjidId], references: [id])
   imamSalaries               ImamSalary[]
+  imamSalaryAssignments      ImamSalaryAssignment[] @relation("SalaryAssignmentMember")
+  imamSalaryPayments         ImamSalaryPayment[] @relation("SalaryPaymentMember")
+  collectedSalaryPayments    ImamSalaryPayment[] @relation("SalaryPaymentCollector")
   createdCollections         Collection[]                @relation("CollectionCreatedBy")
   createdExpenses            Expense[]                   @relation("ExpenseCreatedBy")
 
@@ -211,6 +225,9 @@ model Masjid {
   approvedBy           User?                       @relation("MasjidApprovedBy", fields: [approvedById], references: [id])
   namazTime            NamazTime?
   imamSalaries         ImamSalary[]
+  imamSalaryMonths     ImamSalaryMonth[]
+  imamSalaryAssignments ImamSalaryAssignment[]
+  imamSalaryPayments   ImamSalaryPayment[]
   projects             Project[]
   announcements        Announcement[]
   collections          Collection[]
@@ -312,6 +329,93 @@ model ImamSalary {
   @@index([masjidId])
   @@index([imamId])
   @@index([status])
+}
+
+/// Ledger replacement for the legacy ImamSalary model. Legacy rows are retained
+/// unchanged; all new monthly family-head collection flows use this model.
+model ImamSalaryMonth {
+  id             String   @id @default(uuid()) @db.Uuid
+  masjidId       String   @db.Uuid
+  month          Int
+  year           Int
+  amountPerHead  Decimal  @db.Decimal(12, 2)
+  totalExpected  Decimal  @default(0) @db.Decimal(12, 2)
+  totalCollected Decimal  @default(0) @db.Decimal(12, 2)
+  totalDue       Decimal  @default(0) @db.Decimal(12, 2)
+  paidCount      Int      @default(0)
+  partialCount   Int      @default(0)
+  unpaidCount    Int      @default(0)
+  status         PaymentStatus @default(UNPAID)
+  note           String?
+  createdById    String?  @db.Uuid
+  createdByName  String?
+  updatedById    String?  @db.Uuid
+  updatedByName  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  masjid      Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  assignments ImamSalaryAssignment[]
+  payments    ImamSalaryPayment[]
+
+  @@unique([masjidId, month, year])
+  @@index([masjidId, year, month])
+}
+
+model ImamSalaryAssignment {
+  id                 String @id @default(uuid()) @db.Uuid
+  masjidId           String @db.Uuid
+  imamSalaryMonthId  String @db.Uuid
+  memberId           String @db.Uuid
+  memberName         String
+  memberPhone        String
+  expectedAmount     Decimal @db.Decimal(12, 2)
+  paidAmount         Decimal @default(0) @db.Decimal(12, 2)
+  dueAmount          Decimal @db.Decimal(12, 2)
+  status             ImamSalaryAssignmentStatus @default(UNPAID)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  masjid           Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  imamSalaryMonth ImamSalaryMonth @relation(fields: [imamSalaryMonthId], references: [id], onDelete: Cascade)
+  member           User @relation("SalaryAssignmentMember", fields: [memberId], references: [id])
+  payments         ImamSalaryPayment[]
+
+  @@unique([imamSalaryMonthId, memberId])
+  @@index([masjidId, status])
+  @@index([memberId])
+}
+
+model ImamSalaryPayment {
+  id                 String @id @default(uuid()) @db.Uuid
+  masjidId           String @db.Uuid
+  imamSalaryMonthId  String @db.Uuid
+  assignmentId       String @db.Uuid
+  memberId           String @db.Uuid
+  memberName         String
+  memberPhone        String
+  amount             Decimal @db.Decimal(12, 2)
+  paymentMode        PaymentMode
+  paymentForMonth    Int
+  paymentForYear     Int
+  paidAt             DateTime
+  collectedById      String @db.Uuid
+  collectedByName    String
+  note               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  masjid           Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  imamSalaryMonth ImamSalaryMonth @relation(fields: [imamSalaryMonthId], references: [id], onDelete: Cascade)
+  assignment       ImamSalaryAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  member           User @relation("SalaryPaymentMember", fields: [memberId], references: [id])
+  collectedBy      User @relation("SalaryPaymentCollector", fields: [collectedById], references: [id])
+
+  @@index([masjidId, paymentForYear, paymentForMonth])
+  @@index([memberId])
+  @@index([paidAt])
+  @@index([paymentMode])
+  @@index([collectedById])
 }
 
 model Project {

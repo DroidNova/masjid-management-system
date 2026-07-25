@@ -77,3 +77,37 @@ Response data is intentionally limited for privacy and contains no requester det
   ]
 }
 ```
+
+## Imam salary ledger
+
+The legacy `ImamSalary` records remain available for migration safety. New family-head salary collection uses the ledger tables `ImamSalaryMonth`, `ImamSalaryAssignment`, and `ImamSalaryPayment`; no debt is stored on `User`.
+
+Management endpoints require `MASJID_ADMIN`, `COMMITTEE_MEMBER`, or a tenant-assigned `SUPER_ADMIN`. `IMAM` has month-summary read access. `MEMBER` can call only their own history endpoint.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/imam-salaries/months` | Start a month and assign every active `MEMBER` family head |
+| `GET` | `/api/v1/imam-salaries/months` | Paginated monthly summaries; filters: `month`, `year`, `page`, `limit` |
+| `GET` | `/api/v1/imam-salaries/months/:id` | One monthly summary |
+| `PATCH` | `/api/v1/imam-salaries/months/:id/amount` | Increase amount per head and recalculate dues/statuses |
+| `GET` | `/api/v1/imam-salaries/months/:id/assignments` | Paginated member assignments; filters: `status`, `search`, `page`, `limit` |
+| `POST` | `/api/v1/imam-salaries/payments` | Add one transaction and atomically update assignment/month totals |
+| `GET` | `/api/v1/imam-salaries/payments` | Paginated transactions; filters: `month`, `year`, `paymentMode`, `search` |
+| `GET` | `/api/v1/imam-salaries/my-history?monthsBack=6` | Logged-in member's own lightweight history |
+
+Start-month body: `{"month":6,"year":2026,"amountPerHead":50,"note":"June salary"}`. Payment body: `{"assignmentId":"uuid","amount":25,"paymentMode":"CASH","paidAt":"2026-06-15","note":"Partial payment"}`. `paymentMode` is `CASH` or `ONLINE`; assignment status is `UNPAID`, `PARTIAL`, or `PAID`. Overpayments and non-positive payments are rejected.
+
+Paginated responses use:
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 0,
+  "hasNextPage": false
+}
+```
+
+The shared Flutter `PaginatedResponse<T>` and `PaginatedListController<T>` can be reused incrementally by collections, expenses, users, projects, and super-admin lists. It starts at page 1, defaults to 20 records, prevents concurrent page loads, supports reset/refresh, and stops after `hasNextPage` becomes false.
