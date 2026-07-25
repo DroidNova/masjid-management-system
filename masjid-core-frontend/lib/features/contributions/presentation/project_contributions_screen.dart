@@ -11,18 +11,377 @@ import 'package:platform_core_frontend/shared/utils/paginated_list_controller.da
 import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
 import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
 
-class ProjectContributionsScreen extends StatefulWidget { const ProjectContributionsScreen({super.key,required this.projectId,required this.projectTitle});final String projectId,projectTitle;@override State<ProjectContributionsScreen> createState()=>_State(); }
-class _State extends State<ProjectContributionsScreen>{
- final _repo=ContributionsRepository();final _scroll=ScrollController();late final PaginatedListController<ProjectContributionModel> _items;bool _canAdd=false;String? _mode;String _search='';
- @override void initState(){super.initState();_items=PaginatedListController(loader:(p,l)=>_repo.getProjectContributions(widget.projectId,page:p,limit:l,search:_search,paymentMode:_mode),errorMapper:getReadableErrorMessage)..addListener(_changed);_scroll.addListener(_more);_permissions();_items.refresh();}
- Future<void> _permissions()async{final u=await SessionStorage().getUser();if(mounted)setState(()=>_canAdd=PermissionHelper.canManageProjects(u?.roles??const[]));}
- void _changed(){if(mounted)setState((){});}void _more(){if(_scroll.position.extentAfter<300)_items.loadNext();}@override void dispose(){_items.removeListener(_changed);_items.dispose();_scroll.dispose();super.dispose();}
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text('${widget.projectTitle} Contributions')),floatingActionButton:_canAdd?FloatingActionButton.extended(onPressed:_add,icon:const Icon(Icons.add),label:const Text('Add Contribution')):null,body:RefreshIndicator(onRefresh:_items.refresh,child:ListView(controller:_scroll,physics:const AlwaysScrollableScrollPhysics(),padding:const EdgeInsets.all(16),children:[TextField(decoration:const InputDecoration(labelText:'Search name or phone',prefixIcon:Icon(Icons.search)),onSubmitted:(v){_search=v.trim();_items.refresh();}),DropdownButtonFormField<String?>(initialValue:_mode,decoration:const InputDecoration(labelText:'Payment mode'),items:const[DropdownMenuItem(value:null,child:Text('All')),DropdownMenuItem(value:'CASH',child:Text('Cash')),DropdownMenuItem(value:'ONLINE',child:Text('Online'))],onChanged:(v){_mode=v;_items.refresh();}),const SizedBox(height:12),if(_items.items.isEmpty&&!_items.isLoading)const Center(child:Text('No project contributions yet.')),..._items.items.map((e)=>ContributionTransactionCard(title:e.contributorName,subtitle:e.contributorPhone,amount:e.amount,paymentMode:e.paymentMode,paidAt:e.paidAt,collectedByName:e.collectedByName,note:e.note)),if(_items.isLoading)const Center(child:CircularProgressIndicator()),if(_items.error!=null)Text(_items.error!,textAlign:TextAlign.center)])));
- Future<void> _add()async{final saved=await showDialog<bool>(context:context,builder:(c)=>_ProjectContributionDialog(projectId:widget.projectId,repository:_repo));if(saved==true)await _items.refresh();}
+class ProjectContributionsScreen extends StatefulWidget {
+  const ProjectContributionsScreen({
+    super.key,
+    required this.projectId,
+    required this.projectTitle,
+  });
+
+  final String projectId;
+  final String projectTitle;
+
+  @override
+  State<ProjectContributionsScreen> createState() =>
+      _ProjectContributionsScreenState();
 }
-class _ProjectContributionDialog extends StatefulWidget{const _ProjectContributionDialog({required this.projectId,required this.repository});final String projectId;final ContributionsRepository repository;@override State<_ProjectContributionDialog> createState()=>_DialogState();}
-class _DialogState extends State<_ProjectContributionDialog>{final _form=GlobalKey<FormState>(),_name=TextEditingController(),_phone=TextEditingController(),_amount=TextEditingController(),_note=TextEditingController();List<CommunityUserModel> _members=[];String? _memberId;String _mode='CASH',_normalizedPhone='';DateTime _paidAt=DateTime.now();bool _saving=false;
- @override void initState(){super.initState();CommunityRepository().getMyMasjidUsers().then((v){if(mounted)setState(()=>_members=v);});}@override void dispose(){for(final c in[_name,_phone,_amount,_note]){c.dispose();}super.dispose();}
- @override Widget build(BuildContext context)=>AlertDialog(title:const Text('Add Project Contribution'),content:SizedBox(width:440,child:Form(key:_form,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[DropdownButtonFormField<String?>(initialValue:_memberId,decoration:const InputDecoration(labelText:'Member (optional)'),items:[const DropdownMenuItem(value:null,child:Text('External contributor')),..._members.map((u)=>DropdownMenuItem(value:u.id,child:Text(u.fullName)))],onChanged:(id){final matches=_members.where((u)=>u.id==id);setState((){_memberId=id;if(matches.isNotEmpty){final user=matches.first;_name.text=user.fullName;_phone.text=user.phone??'';_normalizedPhone=user.phone??'';}});}),TextFormField(controller:_name,decoration:const InputDecoration(labelText:'Contributor name *'),validator:(v)=>v?.trim().isEmpty==true?'Name is required':null),AppPhoneField(phoneController:_phone,label:'Contributor phone',onNormalizedPhoneChanged:(v)=>_normalizedPhone=v),TextFormField(controller:_amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Amount *'),validator:(v)=>(double.tryParse(v??'')??0)<=0?'Enter a valid amount':null),DropdownButtonFormField<String>(initialValue:_mode,decoration:const InputDecoration(labelText:'Payment mode *'),items:const[DropdownMenuItem(value:'CASH',child:Text('Cash')),DropdownMenuItem(value:'ONLINE',child:Text('Online'))],onChanged:(v)=>_mode=v!),AppDateField(label:'Paid date',selectedDate:_paidAt,onDateSelected:(v)=>_paidAt=v!,firstDate:DateTime(2020),lastDate:DateTime.now(),required:true),TextFormField(controller:_note,decoration:const InputDecoration(labelText:'Note (optional)'))]))),actions:[TextButton(onPressed:_saving?null:()=>Navigator.pop(context),child:const Text('Cancel')),FilledButton(onPressed:_saving?null:_save,child:_saving?const SizedBox.square(dimension:18,child:CircularProgressIndicator()):const Text('Save'))]);
- Future<void> _save()async{if(!_form.currentState!.validate())return;setState(()=>_saving=true);try{await widget.repository.addProjectContribution(widget.projectId,CreateProjectContributionRequest(memberId:_memberId,contributorName:_name.text,contributorPhone:_normalizedPhone,amount:double.parse(_amount.text),paymentMode:_mode,paidAt:_paidAt,note:_note.text));if(mounted)Navigator.pop(context,true);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(getReadableErrorMessage(e))));}finally{if(mounted)setState(()=>_saving=false);}}
+
+class _ProjectContributionsScreenState
+    extends State<ProjectContributionsScreen> {
+  final ContributionsRepository _repository = ContributionsRepository();
+  final ScrollController _scrollController = ScrollController();
+  late final PaginatedListController<ProjectContributionModel> _contributions;
+
+  bool _canAdd = false;
+  String? _paymentMode;
+  String _search = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _contributions = PaginatedListController<ProjectContributionModel>(
+      loader: (page, limit) => _repository.getProjectContributions(
+        widget.projectId,
+        page: page,
+        limit: limit,
+        search: _search,
+        paymentMode: _paymentMode,
+      ),
+      errorMapper: getReadableErrorMessage,
+    )..addListener(_onContributionsChanged);
+    _scrollController.addListener(_loadMoreNearBottom);
+    _loadPermissions();
+    _contributions.refresh();
+  }
+
+  @override
+  void dispose() {
+    _contributions.removeListener(_onContributionsChanged);
+    _contributions.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPermissions() async {
+    final user = await SessionStorage().getUser();
+    if (!mounted) return;
+    setState(() {
+      _canAdd = PermissionHelper.canManageProjects(
+        user?.roles ?? const <String>[],
+      );
+    });
+  }
+
+  void _onContributionsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _loadMoreNearBottom() {
+    if (_scrollController.position.extentAfter < 300) {
+      _contributions.loadNext();
+    }
+  }
+
+  Future<void> _openAddContribution() async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => _ProjectContributionDialog(
+        projectId: widget.projectId,
+        repository: _repository,
+      ),
+    );
+    if (saved == true) await _contributions.refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('${widget.projectTitle} Contributions')),
+      floatingActionButton: _canAdd
+          ? FloatingActionButton.extended(
+              onPressed: _openAddContribution,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Contribution'),
+            )
+          : null,
+      body: RefreshIndicator(
+        onRefresh: _contributions.refresh,
+        child: ListView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Search name or phone',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onSubmitted: (value) {
+                _search = value.trim();
+                _contributions.refresh();
+              },
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String?>(
+              initialValue: _paymentMode,
+              decoration: const InputDecoration(labelText: 'Payment mode'),
+              items: const <DropdownMenuItem<String?>>[
+                DropdownMenuItem<String?>(value: null, child: Text('All')),
+                DropdownMenuItem<String?>(
+                  value: 'CASH',
+                  child: Text('Cash'),
+                ),
+                DropdownMenuItem<String?>(
+                  value: 'ONLINE',
+                  child: Text('Online'),
+                ),
+              ],
+              onChanged: (value) {
+                _paymentMode = value;
+                _contributions.refresh();
+              },
+            ),
+            const SizedBox(height: 12),
+            if (_contributions.items.isEmpty && !_contributions.isLoading)
+              const Center(child: Text('No project contributions yet.')),
+            ..._contributions.items.map(
+              (contribution) => ContributionTransactionCard(
+                title: contribution.contributorName,
+                subtitle: contribution.contributorPhone,
+                amount: contribution.amount,
+                paymentMode: contribution.paymentMode,
+                paidAt: contribution.paidAt,
+                collectedByName: contribution.collectedByName,
+                note: contribution.note,
+              ),
+            ),
+            if (_contributions.isLoading)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (_contributions.error != null)
+              Text(_contributions.error!, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectContributionDialog extends StatefulWidget {
+  const _ProjectContributionDialog({
+    required this.projectId,
+    required this.repository,
+  });
+
+  final String projectId;
+  final ContributionsRepository repository;
+
+  @override
+  State<_ProjectContributionDialog> createState() =>
+      _ProjectContributionDialogState();
+}
+
+class _ProjectContributionDialogState
+    extends State<_ProjectContributionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+
+  List<CommunityUserModel> _members = <CommunityUserModel>[];
+  String? _memberId;
+  String _paymentMode = 'CASH';
+  String _normalizedPhone = '';
+  DateTime _paidAt = DateTime.now();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final members = await CommunityRepository().getMyMasjidUsers();
+      if (mounted) setState(() => _members = members);
+    } catch (_) {
+      // External contributor entry remains available if members cannot load.
+    }
+  }
+
+  void _selectMember(String? memberId) {
+    final matches = _members.where((member) => member.id == memberId);
+    setState(() {
+      _memberId = memberId;
+      if (matches.isNotEmpty) {
+        final member = matches.first;
+        _nameController.text = member.fullName;
+        _phoneController.text = member.phone ?? '';
+        _normalizedPhone = member.phone ?? '';
+      }
+    });
+  }
+
+  String? _validateName(String? value) {
+    return value == null || value.trim().isEmpty ? 'Name is required' : null;
+  }
+
+  String? _validateAmount(String? value) {
+    final amount = double.tryParse(value ?? '');
+    return amount == null || amount <= 0 ? 'Enter a valid amount' : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Project Contribution'),
+      content: SizedBox(
+        width: 440,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                DropdownButtonFormField<String?>(
+                  initialValue: _memberId,
+                  decoration: const InputDecoration(
+                    labelText: 'Member (optional)',
+                  ),
+                  items: <DropdownMenuItem<String?>>[
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('External contributor'),
+                    ),
+                    ..._members.map(
+                      (member) => DropdownMenuItem<String?>(
+                        value: member.id,
+                        child: Text(member.fullName),
+                      ),
+                    ),
+                  ],
+                  onChanged: _selectMember,
+                ),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contributor name *',
+                  ),
+                  validator: _validateName,
+                ),
+                AppPhoneField(
+                  phoneController: _phoneController,
+                  label: 'Contributor phone',
+                  onNormalizedPhoneChanged: (value) {
+                    _normalizedPhone = value;
+                  },
+                ),
+                TextFormField(
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Amount *'),
+                  validator: _validateAmount,
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: _paymentMode,
+                  decoration: const InputDecoration(
+                    labelText: 'Payment mode *',
+                  ),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem<String>(
+                      value: 'CASH',
+                      child: Text('Cash'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'ONLINE',
+                      child: Text('Online'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) _paymentMode = value;
+                  },
+                ),
+                const SizedBox(height: 12),
+                AppDateField(
+                  label: 'Paid date',
+                  selectedDate: _paidAt,
+                  onDateSelected: (value) {
+                    if (value != null) _paidAt = value;
+                  },
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  required: true,
+                ),
+                TextFormField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Note (optional)',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _saving = true);
+    try {
+      await widget.repository.addProjectContribution(
+        widget.projectId,
+        CreateProjectContributionRequest(
+          memberId: _memberId,
+          contributorName: _nameController.text,
+          contributorPhone: _normalizedPhone,
+          amount: double.parse(_amountController.text),
+          paymentMode: _paymentMode,
+          paidAt: _paidAt,
+          note: _noteController.text,
+        ),
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getReadableErrorMessage(error))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 }
