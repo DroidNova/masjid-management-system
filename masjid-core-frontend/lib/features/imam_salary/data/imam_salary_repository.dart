@@ -3,6 +3,8 @@ import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
 import 'package:platform_core_frontend/features/imam_salary/data/imam_salary_api.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/create_imam_salary_request.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_model.dart';
+import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_ledger_models.dart';
+import 'package:platform_core_frontend/shared/models/paginated_response.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/update_imam_salary_request.dart';
 
 class ImamSalaryRepository {
@@ -54,4 +56,13 @@ class ImamSalaryRepository {
       AppDataScope.dashboard,
     ]);
   }
+  Future<PaginatedResponse<ImamSalaryMonthModel>> getMonths({required int month, required int year, int page = 1, int limit = 20}) => _imamSalaryApi.getMonths(month: month, year: year, page: page, limit: limit);
+  Future<ImamSalaryMonthModel> getMonth(String id) => _imamSalaryApi.getMonth(id);
+  Future<PaginatedResponse<ImamSalaryAssignmentModel>> getAssignments(String id, {String? status, String? search, int page = 1, int limit = 20}) => _imamSalaryApi.getAssignments(id, status: status, search: search, page: page, limit: limit);
+  Future<PaginatedResponse<ImamSalaryPaymentModel>> getPayments({required int month, required int year, String? paymentMode, String? search, int page = 1, int limit = 20}) => _imamSalaryApi.getPayments(month: month, year: year, paymentMode: paymentMode, search: search, page: page, limit: limit);
+  Future<List<MyImamSalaryHistoryModel>> getMyHistory() => _imamSalaryApi.getMyHistory();
+  Future<ImamSalaryMonthModel> createMonth(CreateImamSalaryMonthRequest request) async { final value = await _imamSalaryApi.createMonth(request); _notifySalaryChanged(); return value; }
+  Future<ImamSalaryMonthModel> updateAmount(String id, UpdateImamSalaryAmountRequest request) async { final value = await _imamSalaryApi.updateAmount(id, request); _notifySalaryChanged(); return value; }
+  Future<ImamSalaryPaymentModel> addPayment(CreateImamSalaryPaymentRequest request) async { final value = await _imamSalaryApi.addPayment(request); _notifySalaryChanged(); return value; }
+
 }

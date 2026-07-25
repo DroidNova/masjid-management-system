@@ -1,27 +1,28 @@
-import { Request } from 'express';
-
-type RequestWithUser = Request & {
-  user?: {
-    id?: unknown;
-    userId?: unknown;
-    sub?: unknown;
-    role?: unknown;
-    roles?: unknown;
-  };
+type LogUserPayload = {
+  id?: unknown;
+  userId?: unknown;
+  sub?: unknown;
+  role?: unknown;
+  roles?: unknown;
 };
 
-export function getLogUser(req: RequestWithUser): {
+export function getLogUser(req: unknown): {
   userId?: string;
   roles?: string[];
 } {
-  const user = req.user;
+  if (!req || typeof req !== 'object' || !('user' in req)) {
+    return {};
+  }
+
+  const user = (req as { user?: unknown }).user;
 
   if (!user || typeof user !== 'object') {
     return {};
   }
 
-  const userId = firstString(user.id, user.userId, user.sub);
-  const roles = normalizeRoles(user.roles ?? user.role);
+  const payload = user as LogUserPayload;
+  const userId = firstString(payload.id, payload.userId, payload.sub);
+  const roles = normalizeRoles(payload.roles ?? payload.role);
 
   return {
     ...(userId ? { userId } : {}),

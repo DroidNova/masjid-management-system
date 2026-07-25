@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
 import 'package:platform_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
@@ -43,6 +44,9 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   final TextEditingController _imamPhoneController = TextEditingController();
   final TextEditingController _imamEmailController = TextEditingController();
   final TextEditingController _imamAddressController = TextEditingController();
+  final TextEditingController _imamFatherNameController = TextEditingController();
+  final TextEditingController _imamAgeController = TextEditingController();
+  String? _imamGender;
   final List<_CommitteeMemberControllers> _committeeMembers = [];
 
   late final MasjidRequestRepository _repository =
@@ -78,6 +82,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     _imamPhoneController.dispose();
     _imamEmailController.dispose();
     _imamAddressController.dispose();
+    _imamFatherNameController.dispose();
     for (final member in _committeeMembers) {
       member.dispose();
     }
@@ -127,26 +132,7 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       await _repository.submitMasjidRequest(_buildRequest());
 
       if (!mounted) return;
-
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Request Submitted'),
-          content: const Text(
-            'Your masjid request has been submitted successfully. Admin will review and approve it.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                context.go('/auth');
-              },
-              child: const Text('Back to Login'),
-            ),
-          ],
-        ),
-      );
+      context.go('/masjid-request/submitted');
     } catch (error) {
       if (mounted) _showError(_cleanError(error));
     } finally {
@@ -173,12 +159,18 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
         email: _imamEmailController.text,
         phone: _imamPhoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _imamCountry, nationalNumber: _imamPhoneController.text),
         address: _imamAddressController.text,
+        fatherName: _imamFatherNameController.text,
+        age: int.parse(_imamAgeController.text.trim()),
+        gender: _imamGender!,
       ),
       committeeMembers: _committeeMembers
           .map(
             (member) => CommitteeMemberInput(
               name: member.nameController.text,
               phone: member.phoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: member.countryCode, nationalNumber: member.phoneController.text),
+              fatherName: member.fatherNameController.text,
+              age: int.parse(member.ageController.text.trim()),
+              gender: member.gender!,
             ),
           )
           .toList(),
@@ -234,6 +226,13 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     if (!emailPattern.hasMatch(trimmedValue)) {
       return 'Enter a valid $label.';
     }
+    return null;
+  }
+
+  String? _ageValidator(String? value, String label) {
+    final age = int.tryParse(value?.trim() ?? '');
+    if (age == null) return '$label is required.';
+    if (age < 1 || age > 120) return '$label must be between 1 and 120.';
     return null;
   }
 
@@ -415,6 +414,27 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           validator: (value) =>
                               _emailValidator(value, 'imam email'),
                         ),
+
+                        AppTextField(
+                          controller: _imamFatherNameController,
+                          label: 'Imam Father Name *',
+                          textInputAction: TextInputAction.next,
+                          validator: (value) => _requiredValidator(value, 'Imam father name'),
+                        ),
+                        TextFormField(
+                          controller: _imamAgeController,
+                          decoration: const InputDecoration(labelText: 'Imam Age *', border: OutlineInputBorder()),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                          validator: (value) => _ageValidator(value, 'Imam age'),
+                        ),
+                        DropdownButtonFormField<String>(
+                          value: _imamGender,
+                          decoration: const InputDecoration(labelText: 'Imam Gender *', border: OutlineInputBorder()),
+                          items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))],
+                          onChanged: (value) => setState(() => _imamGender = value),
+                          validator: (value) => value == null ? 'Imam gender is required.' : null,
+                        ),
                         AppTextField(
                           controller: _imamAddressController,
                           label: 'Imam Address *',
@@ -482,6 +502,7 @@ class _FormSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -517,6 +538,13 @@ class _CommitteeMemberFields extends StatelessWidget {
   final _CommitteeMemberControllers member;
   final int index;
   final VoidCallback onRemove;
+
+  String? _ageValidator(String? value, String label) {
+    final age = int.tryParse(value?.trim() ?? '');
+    if (age == null) return '$label is required.';
+    if (age < 1 || age > 120) return '$label must be between 1 and 120.';
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -558,6 +586,30 @@ class _CommitteeMemberFields extends StatelessWidget {
           isRequired: true,
           textInputAction: TextInputAction.next,
         ),
+
+        const SizedBox(height: 14),
+        AppTextField(
+          controller: member.fatherNameController,
+          label: 'Father Name *',
+          textInputAction: TextInputAction.next,
+          validator: (value) => (value == null || value.trim().isEmpty) ? 'Father name is required.' : null,
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: member.ageController,
+          decoration: const InputDecoration(labelText: 'Age *', border: OutlineInputBorder()),
+          keyboardType: TextInputType.number,
+          inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+          validator: (value) { final age = int.tryParse(value?.trim() ?? ''); if (age == null) return 'Age is required.'; if (age < 1 || age > 120) return 'Age must be between 1 and 120.'; return null; },
+        ),
+        const SizedBox(height: 14),
+        DropdownButtonFormField<String>(
+          value: member.gender,
+          decoration: const InputDecoration(labelText: 'Gender *', border: OutlineInputBorder()),
+          items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))],
+          onChanged: (value) => member.gender = value,
+          validator: (value) => value == null ? 'Gender is required.' : null,
+        ),
         const Divider(height: 28),
       ],
     );
@@ -567,10 +619,15 @@ class _CommitteeMemberFields extends StatelessWidget {
 class _CommitteeMemberControllers {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final TextEditingController fatherNameController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  String? gender;
   CountryCode countryCode = getDefaultCountryCode();
 
   void dispose() {
     nameController.dispose();
     phoneController.dispose();
+    fatherNameController.dispose();
+    ageController.dispose();
   }
 }

@@ -29,6 +29,9 @@ class CommunityUserCard extends StatelessWidget {
             if (user.phone != null) Text('Phone: ${user.phone}'),
             if (user.email != null) Text('Email: ${user.email}'),
             if (user.status != null) Text('Status: ${user.status}'),
+            if (user.fatherName != null) Text('Father: ${user.fatherName}'),
+            if (user.age != null || user.gender != null) Text('Profile: ${user.age?.toString() ?? '-'} • ${user.gender ?? '-'}'),
+            if (user.isFamilyHead) const Chip(label: Text('Family Head')),
             if (onEdit != null || onChangeStatus != null) ...<Widget>[
               const SizedBox(height: 8),
               Wrap(

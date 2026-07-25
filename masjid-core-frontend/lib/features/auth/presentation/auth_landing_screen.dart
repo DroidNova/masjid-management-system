@@ -49,6 +49,11 @@ class AuthLandingScreen extends StatelessWidget {
                 isOutlined: true,
                 onPressed: () => context.go('/masjid-request'),
               ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.go('/masjid-request/track'),
+                child: const Text('Track your application'),
+              ),
             ],
           ),
         ),

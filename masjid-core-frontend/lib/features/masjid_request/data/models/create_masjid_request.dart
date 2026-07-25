@@ -53,6 +53,9 @@ class CreateMasjidRequest {
     _addIfNotEmpty(json, 'imamPhone', imam.phone);
     _addIfNotEmpty(json, 'imamEmail', imam.email);
     _addIfNotEmpty(json, 'imamAddress', imam.address);
+    _addIfNotEmpty(json, 'imamFatherName', imam.fatherName);
+    json['imamAge'] = imam.age;
+    _addIfNotEmpty(json, 'imamGender', imam.gender);
 
     final nonEmptyMembers = committeeMembers
         .where((member) => !member.isEmpty)

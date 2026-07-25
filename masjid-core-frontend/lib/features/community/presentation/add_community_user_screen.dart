@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
 import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
@@ -39,6 +40,9 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _fatherNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _familyMemberCountController = TextEditingController();
   final _masjidIdController = TextEditingController();
 
   late final CommunityRepository _communityRepository =
@@ -50,6 +54,8 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   AppUser? _currentUser;
   List<String> _allowedRoles = const <String>[];
   String? _selectedRole;
+  String? _selectedGender;
+  bool _isFamilyHead = false;
   bool _isLoadingUser = true;
   CountryCode _selectedCountry = getDefaultCountryCode();
   bool _isSaving = false;
@@ -79,6 +85,9 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
     _fullNameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _fatherNameController.dispose();
+    _ageController.dispose();
+    _familyMemberCountController.dispose();
     _masjidIdController.dispose();
     super.dispose();
   }
@@ -94,6 +103,11 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
           phone: normalizePhone(countryCode: _selectedCountry, nationalNumber: _phoneController.text),
           email: _emailController.text,
           role: _selectedRole!,
+          fatherName: _fatherNameController.text,
+          age: int.parse(_ageController.text.trim()),
+          gender: _selectedGender!,
+          isFamilyHead: _selectedRole == PermissionHelper.member ? _isFamilyHead : null,
+          familyMemberCount: _familyMemberCountController.text.trim().isEmpty ? null : int.parse(_familyMemberCountController.text.trim()),
           masjidId: _masjidIdController.text,
         ),
       );
@@ -237,11 +251,70 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             },
           ),
           const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _fatherNameController,
+            decoration: const InputDecoration(labelText: 'Father Name *', border: OutlineInputBorder()),
+            textInputAction: TextInputAction.next,
+            validator: (value) => (value == null || value.trim().isEmpty) ? 'Please enter father name.' : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _ageController,
+            decoration: const InputDecoration(labelText: 'Age *', border: OutlineInputBorder()),
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              final age = int.tryParse(value?.trim() ?? '');
+              if (age == null) return 'Please enter age.';
+              if (age < 1 || age > 120) return 'Age must be between 1 and 120.';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _selectedGender,
+            decoration: const InputDecoration(labelText: 'Gender *', border: OutlineInputBorder()),
+            items: const <DropdownMenuItem<String>>[
+              DropdownMenuItem(value: 'MALE', child: Text('Male')),
+              DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+              DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+            ],
+            onChanged: (value) => setState(() => _selectedGender = value),
+            validator: (value) => value == null ? 'Please select gender.' : null,
+          ),
+          const SizedBox(height: 16),
           AddUserRoleDropdown(
             allowedRoles: _allowedRoles,
             value: _selectedRole,
             onChanged: (role) => setState(() => _selectedRole = role),
           ),
+
+          if (_selectedRole == PermissionHelper.member) ...<Widget>[
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Is Family Head *'),
+              value: _isFamilyHead,
+              onChanged: (value) => setState(() => _isFamilyHead = value),
+            ),
+            if (_isFamilyHead) ...<Widget>[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _familyMemberCountController,
+                decoration: const InputDecoration(labelText: 'Family Member Count', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  final count = int.tryParse(text);
+                  if (count == null || count < 0) return 'Family member count cannot be negative.';
+                  return null;
+                },
+              ),
+            ],
+          ],
           if (_shouldShowMasjidIdField) ...<Widget>[
             const SizedBox(height: 16),
             TextFormField(

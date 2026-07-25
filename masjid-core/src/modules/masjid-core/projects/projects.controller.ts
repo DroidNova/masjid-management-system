@@ -24,6 +24,9 @@ import {
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
+import { ContributionTransactionsService } from '../contributions/contribution-transactions.service';
+import { ContributionListQueryDto } from '../contributions/dto/contribution-list-query.dto';
+import { CreateContributionDto } from '../contributions/dto/create-contribution.dto';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateProjectDto, ProjectStatusDto } from './dto/create-project.dto';
 import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
@@ -47,7 +50,10 @@ const standardErrorSchema = {
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly contributionsService: ContributionTransactionsService,
+  ) {}
 
   @Get('my-masjid')
   @ApiOperation({ summary: "Get current masjid's projects" })
@@ -79,6 +85,36 @@ export class ProjectsController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
   create(@Body() dto: CreateProjectDto, @Req() request: AuthenticatedRequest) {
     return this.projectsService.create(dto, request.user);
+  }
+
+  @Post(':projectId/contributions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  addContribution(
+    @Param('projectId', new ParseUUIDPipe({ version: '4' })) projectId: string,
+    @Body() dto: CreateContributionDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.createProjectContribution(
+      projectId,
+      dto,
+      request.user,
+    );
+  }
+
+  @Get(':projectId/contributions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER', 'IMAM')
+  listContributions(
+    @Param('projectId', new ParseUUIDPipe({ version: '4' })) projectId: string,
+    @Query() query: ContributionListQueryDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.listProjectContributions(
+      projectId,
+      query,
+      request.user,
+    );
   }
 
   @Get(':id')

@@ -6,6 +6,7 @@ import { AuthModule } from './modules/platform-core/auth/auth.module';
 import { DashboardModule } from './modules/masjid-core/dashboard/dashboard.module';
 import { FinanceModule } from './modules/masjid-core/finance/finance.module';
 import { ExpensesModule } from './modules/masjid-core/expenses/expenses.module';
+import { ContributionsModule } from './modules/masjid-core/contributions/contributions.module';
 import { CollectionsModule } from './modules/masjid-core/collections/collections.module';
 import { MasjidsModule } from './modules/masjid-core/masjids/masjids.module';
 import { NamazTimesModule } from './modules/masjid-core/namaz-times/namaz-times.module';
@@ -99,6 +100,7 @@ const logLevel = process.env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug');
     FinanceModule,
     ExpensesModule,
     CollectionsModule,
+    ContributionsModule,
     MasjidRequestsModule,
     MasjidsModule,
     NamazTimesModule,

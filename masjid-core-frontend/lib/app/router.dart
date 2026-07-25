@@ -20,19 +20,21 @@ import 'package:platform_core_frontend/features/auth/presentation/login_password
 import 'package:platform_core_frontend/features/auth/presentation/login_phone_screen.dart';
 import 'package:platform_core_frontend/features/auth/presentation/otp_screen.dart';
 import 'package:platform_core_frontend/features/community/presentation/add_community_user_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/collection_contributions_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
+import 'package:platform_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:platform_core_frontend/features/projects/presentation/projects_screen.dart';
 import 'package:platform_core_frontend/features/finance/presentation/finance_screen.dart';
 import 'package:platform_core_frontend/features/dashboard/presentation/home_dashboard_screen.dart';
 import 'package:platform_core_frontend/features/community/presentation/community_screen.dart';
 import 'package:platform_core_frontend/features/finance/presentation/add_collection_screen.dart';
 import 'package:platform_core_frontend/features/finance/presentation/add_expense_screen.dart';
-import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_model.dart';
-import 'package:platform_core_frontend/features/imam_salary/presentation/add_imam_salary_screen.dart';
-import 'package:platform_core_frontend/features/imam_salary/presentation/edit_imam_salary_screen.dart';
-import 'package:platform_core_frontend/features/imam_salary/presentation/imam_salary_detail_screen.dart';
 import 'package:platform_core_frontend/features/imam_salary/presentation/imam_salary_screen.dart';
 import 'package:platform_core_frontend/features/main_shell/presentation/main_shell_screen.dart';
 import 'package:platform_core_frontend/features/masjid_request/presentation/masjid_request_form_screen.dart';
+import 'package:platform_core_frontend/features/masjid_request/presentation/masjid_request_submitted_screen.dart';
+import 'package:platform_core_frontend/features/masjid_request/presentation/track_masjid_application_screen.dart';
 import 'package:platform_core_frontend/features/namaz_time/presentation/update_namaz_time_screen.dart';
 import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:platform_core_frontend/features/projects/presentation/add_project_screen.dart';
@@ -91,6 +93,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const MasjidRequestFormScreen(),
     ),
     GoRoute(
+      path: '/masjid-request/submitted',
+      builder: (context, state) => const MasjidRequestSubmittedScreen(),
+    ),
+    GoRoute(
+      path: '/masjid-request/track',
+      builder: (context, state) => const TrackMasjidApplicationScreen(),
+    ),
+    GoRoute(
       path: '/community/add-user',
       builder: (context, state) => _RoleGuard(
         isAllowed: PermissionHelper.canAddCommunityUser,
@@ -113,42 +123,35 @@ final GoRouter appRouter = GoRouter(
     ),
 
     GoRoute(
-      path: '/imam-salaries',
-      builder: (context, state) => const ImamSalaryScreen(),
-    ),
-    GoRoute(
-      path: '/imam-salaries/add',
-      builder: (context, state) => _RoleGuard(
-        isAllowed: PermissionHelper.canManageImamSalary,
-        child: const AddImamSalaryScreen(),
+      path: '/projects/:id/contributions',
+      builder: (context, state) => ProjectContributionsScreen(
+        projectId: state.pathParameters['id'] ?? '',
+        projectTitle: (state.extra as String?) ?? 'Project',
       ),
     ),
     GoRoute(
-      path: '/imam-salaries/:id/edit',
-      builder: (context, state) {
-        final salaryId = state.pathParameters['id'] ?? '';
-        final extra = state.extra;
-        final salary = extra is ImamSalaryModel ? extra : null;
-        return _RoleGuard(
-          isAllowed: PermissionHelper.canManageImamSalary,
-          child: EditImamSalaryScreen(
-            salaryId: salaryId,
-            initialSalary: salary,
-          ),
-        );
-      },
+      path: '/finance/collection-contributions',
+      builder: (context, state) => const CollectionContributionsScreen(),
     ),
     GoRoute(
-      path: '/imam-salaries/:id',
+      path: '/contributions',
+      builder: (context, state) => const MyContributionsScreen(),
+    ),
+    GoRoute(
+      path: '/contributions/imam-salary/:month/:year/payments',
       builder: (context, state) {
-        final salaryId = state.pathParameters['id'] ?? '';
-        final extra = state.extra;
-        final salary = extra is ImamSalaryModel ? extra : null;
-        return ImamSalaryDetailScreen(
-          salaryId: salaryId,
-          initialSalary: salary,
-        );
+        final month = int.tryParse(state.pathParameters['month'] ?? '');
+        final year = int.tryParse(state.pathParameters['year'] ?? '');
+        if (month == null || year == null || month < 1 || month > 12) {
+          return const _InvalidRouteParametersScreen();
+        }
+        return ImamSalaryPaymentHistoryScreen(month: month, year: year);
       },
+    ),
+
+    GoRoute(
+      path: '/imam-salaries',
+      builder: (context, state) => const ImamSalaryScreen(),
     ),
 
     GoRoute(
@@ -285,6 +288,17 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+class _InvalidRouteParametersScreen extends StatelessWidget {
+  const _InvalidRouteParametersScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Invalid contribution period.')),
+    );
+  }
+}
 
 Map<String, String>? _readExtraMap(Object? extra) {
   if (extra is Map<String, String>) return extra;

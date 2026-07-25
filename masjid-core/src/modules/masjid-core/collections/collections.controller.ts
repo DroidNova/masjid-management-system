@@ -24,6 +24,9 @@ import {
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
+import { ContributionTransactionsService } from '../contributions/contribution-transactions.service';
+import { CollectionContributionListQueryDto } from '../contributions/dto/contribution-list-query.dto';
+import { CreateCollectionContributionDto } from '../contributions/dto/create-contribution.dto';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CollectionsService } from './collections.service';
 import {
@@ -48,7 +51,10 @@ const standardErrorSchema = {
 @UseGuards(JwtAuthGuard)
 @Controller('collections')
 export class CollectionsController {
-  constructor(private readonly collectionsService: CollectionsService) {}
+  constructor(
+    private readonly collectionsService: CollectionsService,
+    private readonly contributionsService: ContributionTransactionsService,
+  ) {}
 
   @Get('my-masjid')
   @ApiOperation({ summary: "Get current masjid's collections" })
@@ -85,6 +91,32 @@ export class CollectionsController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.collectionsService.create(dto, request.user);
+  }
+
+  @Post('contributions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  addContribution(
+    @Body() dto: CreateCollectionContributionDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.createCollectionContribution(
+      dto,
+      request.user,
+    );
+  }
+
+  @Get('contributions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER', 'IMAM')
+  listContributions(
+    @Query() query: CollectionContributionListQueryDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.contributionsService.listCollectionContributions(
+      query,
+      request.user,
+    );
   }
 
   @Get(':id')

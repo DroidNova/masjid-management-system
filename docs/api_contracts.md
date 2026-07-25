@@ -29,3 +29,141 @@ Masjid responses use only `country`, `state`, `district`, `locality`, and `addre
 - API date-only fields are sent as `yyyy-MM-dd`.
 - Flutter UI displays dates as `dd MMM yyyy` through `formatReadableDate`, for example `15 Jun 2026`.
 - Forms use `AppDateField` and Flutter's built-in Material date picker instead of raw manual ISO date entry.
+
+## User profile fields
+
+Community user responses include `fatherName`, `age`, `gender`, `isFamilyHead`, and `familyMemberCount` alongside `fullName`, `phone`, `email`, `status`, `masjidId`, and `roles`. `gender` is one of `MALE`, `FEMALE`, or `OTHER`.
+
+### Add community user
+
+`POST /api/v1/masjids/my/users` requires `fullName`, `phone`, `role`, `fatherName`, `age`, and `gender`. When `role` is `MEMBER`, `isFamilyHead` must be provided as `true` or `false`. `email`, `masjidId`, and `familyMemberCount` are optional.
+
+### Update community user
+
+`PATCH /api/v1/masjids/my/users/:userId` requires `fullName`, `phone`, `fatherName`, `age`, and `gender`. If the target user is a `MEMBER`, `isFamilyHead` must be provided. `email` and `familyMemberCount` are optional. Role and masjid changes are not accepted by this API.
+
+### Masjid request imam fields
+
+Masjid registration requests require imam `imamName`, `imamPhone`, `imamAddress`, `imamFatherName`, `imamAge`, and `imamGender`; `imamEmail` is optional.
+
+### Masjid request committee member fields
+
+Each committee member in `committeeMembers` requires `name`, `phone`, `fatherName`, `age`, and `gender`.
+
+## Public masjid request tracking
+
+`POST /api/v1/masjid-requests/track` is a public endpoint for tracking masjid registration applications by the registered requester phone number. It does not use or store any tracking token.
+
+Request body:
+
+```json
+{
+  "requesterPhone": "+919876543210"
+}
+```
+
+Response data is intentionally limited for privacy and contains no requester details, committee member data, reviewer details, internal IDs, or created masjid IDs:
+
+```json
+{
+  "items": [
+    {
+      "masjidName": "Jama Masjid",
+      "status": "PENDING",
+      "imamName": "Maulana Ahmed",
+      "requestedAt": "2026-07-25T10:30:00.000Z",
+      "reviewedAt": null
+    }
+  ]
+}
+```
+
+## Imam salary ledger
+
+The legacy `ImamSalary` records remain available for migration safety. New family-head salary collection uses the ledger tables `ImamSalaryMonth`, `ImamSalaryAssignment`, and `ImamSalaryPayment`; no debt is stored on `User`.
+
+Management endpoints require `MASJID_ADMIN`, `COMMITTEE_MEMBER`, or a tenant-assigned `SUPER_ADMIN`. `IMAM` has month-summary read access. `MEMBER` can call only their own history endpoint.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/imam-salaries/months` | Start a month and assign every active `MEMBER` family head |
+| `GET` | `/api/v1/imam-salaries/months` | Paginated monthly summaries; filters: `month`, `year`, `page`, `limit` |
+| `GET` | `/api/v1/imam-salaries/months/:id` | One monthly summary |
+| `PATCH` | `/api/v1/imam-salaries/months/:id/amount` | Increase amount per head and recalculate dues/statuses |
+| `GET` | `/api/v1/imam-salaries/months/:id/assignments` | Paginated member assignments; filters: `status`, `search`, `page`, `limit` |
+| `POST` | `/api/v1/imam-salaries/payments` | Add one transaction and atomically update assignment/month totals |
+| `GET` | `/api/v1/imam-salaries/payments` | Paginated transactions; filters: `month`, `year`, `paymentMode`, `search` |
+| `GET` | `/api/v1/imam-salaries/my-history?monthsBack=6` | Logged-in member's own lightweight history |
+
+Start-month body: `{"month":6,"year":2026,"amountPerHead":50,"note":"June salary"}`. Payment body: `{"assignmentId":"uuid","amount":25,"paymentMode":"CASH","paidAt":"2026-06-15","note":"Partial payment"}`. `paymentMode` is `CASH` or `ONLINE`; assignment status is `UNPAID`, `PARTIAL`, or `PAID`. Overpayments and non-positive payments are rejected.
+
+Paginated responses use:
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 0,
+  "hasNextPage": false
+}
+```
+
+The shared Flutter `PaginatedResponse<T>` and `PaginatedListController<T>` can be reused incrementally by collections, expenses, users, projects, and super-admin lists. It starts at page 1, defaults to 20 records, prevents concurrent page loads, supports reset/refresh, and stops after `hasNextPage` becomes false.
+
+## My contributions
+
+All contribution endpoints require a valid access token and derive both `memberId` and `masjidId` from the authenticated user. They do not accept a `userId`, do not expose another member's data, and never return credentials, role internals, or password/token fields. A user without a masjid receives `USER_MASJID_NOT_ASSIGNED`; a user without salary assignments receives zero totals and empty lists.
+
+### `GET /api/v1/contributions/my/summary`
+
+Returns the authenticated user's limited profile and aggregate totals for their latest six imam-salary assignments.
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "fullName": "Saleem",
+    "phone": "+919876543210",
+    "isFamilyHead": true
+  },
+  "projectContributionTotal": 500,
+  "collectionContributionTotal": 100,
+  "totalContributionAmount": 800,
+  "imamSalary": {
+    "monthsShown": 6,
+    "totalExpected": 300,
+    "totalPaid": 200,
+    "totalDue": 100,
+    "paidMonths": 3,
+    "partialMonths": 1,
+    "unpaidMonths": 2
+  }
+}
+```
+
+### `GET /api/v1/contributions/my/imam-salary`
+
+Query parameters are `monthsBack` (default `6`, maximum `24`), `page` (default `1`), and `limit` (default `20`, maximum `100`). Items are newest first and contain only `month`, `year`, `expectedAmount`, `paidAmount`, `dueAmount`, `status`, `paymentsCount`, and `lastPaidAt`. The response uses the standard `items`, `total`, `page`, `limit`, `totalPages`, and `hasNextPage` pagination shape.
+
+### `GET /api/v1/contributions/my/imam-salary/:month/:year/payments`
+
+Returns only the authenticated user's transactions for the selected month and year. Query parameters are `page` and `limit`. Each item contains only `id`, `amount`, `paymentMode`, `paidAt`, `collectedByName`, and optional `note`. Payment modes are `CASH` and `ONLINE`.
+
+These read-only APIs are available to any authenticated role with a masjid assignment and always resolve contribution ownership from the current session. Project and collection contribution histories are exposed through the self-only endpoints documented below.
+
+## Project and collection contribution transactions
+
+Contribution management requires `SUPER_ADMIN`, `MASJID_ADMIN`, or `COMMITTEE_MEMBER`; `IMAM` has read-only management-list access. `MEMBER` can access only the authenticated `/contributions/my/*` endpoints. Registered contributors are validated against the current masjid, while external contributors may be recorded without `memberId`. All records retain contributor and collector name/phone snapshots.
+
+- `POST /api/v1/projects/:projectId/contributions` creates a project contribution and atomically increments `Project.collectedAmount`.
+- `GET /api/v1/projects/:projectId/contributions` supports `search`, `paymentMode`, `fromDate`, `toDate`, `page`, and `limit`.
+- `POST /api/v1/collections/contributions` creates a general collection contribution with `collectionType`.
+- `GET /api/v1/collections/contributions` supports `collectionType`, `search`, `paymentMode`, `fromDate`, `toDate`, `page`, and `limit`.
+- `GET /api/v1/contributions/my/projects` returns only project contributions whose `memberId` is the authenticated user.
+- `GET /api/v1/contributions/my/collections` returns only collection contributions whose `memberId` is the authenticated user.
+
+Create bodies use `memberId` (optional), `contributorName`, `contributorPhone` (optional), positive `amount`, `paymentMode` (`CASH` or `ONLINE`), `paidAt`, and optional `note`. Collection bodies additionally require a valid `collectionType`. Lists use the standard paginated response documented above.
+
+The contribution summary now also returns `projectContributionTotal`, `collectionContributionTotal`, and `totalContributionAmount`. The last value combines paid imam-salary contributions with project and collection transaction totals for the authenticated user. No my-contribution endpoint accepts a user ID.

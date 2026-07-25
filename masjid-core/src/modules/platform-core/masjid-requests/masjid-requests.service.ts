@@ -2,7 +2,12 @@ import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
+import { successResponse } from '../../../common/helpers/api-response.helper';
+import {
+  getPhoneSearchVariants,
+  isValidNormalizedPhone,
+  normalizePhone,
+} from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
@@ -51,6 +56,9 @@ type CreatedMasjid = {
 type CommitteeMember = {
   name?: string;
   phone?: string;
+  fatherName?: string;
+  age?: number;
+  gender?: string;
 };
 
 type MasjidRequestRecord = {
@@ -74,6 +82,9 @@ type MasjidRequestRecord = {
   imamEmail: string | null;
   imamPhone: string | null;
   imamAddress: string | null;
+  imamFatherName: string | null;
+  imamAge: number | null;
+  imamGender: string | null;
   committeeMembers: unknown | null;
   rejectionReason: string | null;
   reviewedAt: Date | null;
@@ -85,9 +96,23 @@ type MasjidRequestRecord = {
   createdMasjid?: CreatedMasjid | null;
 };
 
-type RoleName =
-  | typeof IMAM_ROLE
-  | typeof COMMITTEE_MEMBER_ROLE;
+type TrackedMasjidRequestRecord = {
+  masjidName: string;
+  status: string;
+  imamName: string | null;
+  createdAt: Date;
+  reviewedAt: Date | null;
+};
+
+type TrackedMasjidRequestResponse = {
+  masjidName: string;
+  status: string;
+  imamName: string | null;
+  requestedAt: Date;
+  reviewedAt: Date | null;
+};
+
+type RoleName = typeof IMAM_ROLE | typeof COMMITTEE_MEMBER_ROLE;
 
 type RequestCreateData = {
   requestedById?: string | null;
@@ -108,6 +133,9 @@ type RequestCreateData = {
   imamEmail?: string | null;
   imamPhone: string;
   imamAddress: string;
+  imamFatherName?: string | null;
+  imamAge?: number | null;
+  imamGender?: string | null;
   committeeMembers: CommitteeMember[];
 };
 
@@ -125,6 +153,11 @@ type UserCreateData = {
   phone?: string | null;
   passwordHash: string;
   status: string;
+  fatherName?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  isFamilyHead?: boolean;
+  familyMemberCount?: number | null;
 };
 
 type UserUpdateData = {
@@ -168,6 +201,11 @@ type MasjidRequestDelegate = {
     orderBy: { createdAt: 'desc' };
     select: typeof masjidRequestListSelect;
   }): Promise<MasjidRequestRecord[]>;
+  findMany(args: {
+    where: Record<string, unknown>;
+    orderBy: { createdAt: 'desc' };
+    select: typeof masjidRequestTrackingSelect;
+  }): Promise<TrackedMasjidRequestRecord[]>;
   count(args: { where: Record<string, unknown> }): Promise<number>;
   findUnique(args: {
     where: { id: string };
@@ -246,6 +284,11 @@ const basicUserSelect = {
 const requestUserSelect = {
   ...basicUserSelect,
   masjidId: true,
+  fatherName: true,
+  age: true,
+  gender: true,
+  isFamilyHead: true,
+  familyMemberCount: true,
 } as const;
 
 const createdMasjidSelect = {
@@ -276,6 +319,9 @@ const masjidRequestListSelect = {
   imamEmail: true,
   imamPhone: true,
   imamAddress: true,
+  imamFatherName: true,
+  imamAge: true,
+  imamGender: true,
   committeeMembers: true,
   rejectionReason: true,
   reviewedAt: true,
@@ -289,6 +335,14 @@ const masjidRequestListSelect = {
 
 const masjidRequestDetailSelect = {
   ...masjidRequestListSelect,
+} as const;
+
+const masjidRequestTrackingSelect = {
+  masjidName: true,
+  status: true,
+  imamName: true,
+  createdAt: true,
+  reviewedAt: true,
 } as const;
 
 @Injectable()
@@ -312,10 +366,18 @@ export class MasjidRequestsService {
         ERROR_CODES.BAD_REQUEST,
       );
     }
-    const committeeMembers = this.normalizeCommitteeMembers(dto.committeeMembers);
-    this.assertDistinctImamAndCommitteePhones(normalizePhone(imamPhone), committeeMembers);
+    const committeeMembers = this.normalizeCommitteeMembers(
+      dto.committeeMembers,
+    );
+    this.assertDistinctImamAndCommitteePhones(
+      normalizePhone(imamPhone),
+      committeeMembers,
+    );
 
-    this.logger.debug({ message: 'Masjid request submission started', masjidName: dto.masjidName });
+    this.logger.debug({
+      message: 'Masjid request submission started',
+      masjidName: dto.masjidName,
+    });
     const request = await this.db.masjidRegistrationRequest.create({
       data: {
         requesterName: dto.requesterName.trim(),
@@ -324,7 +386,9 @@ export class MasjidRequestsService {
         masjidName: dto.masjidName,
         country: dto.country.trim(),
         locality: dto.locality.trim(),
-        district: this.isIndia(dto.country) ? dto.district!.trim() : this.nullableString(dto.district),
+        district: this.isIndia(dto.country)
+          ? dto.district!.trim()
+          : this.nullableString(dto.district),
         state: dto.state.trim(),
         address: dto.address.trim(),
         contactNo: this.normalizeNullablePhone(dto.contactNo),
@@ -334,13 +398,19 @@ export class MasjidRequestsService {
         imamEmail: this.nullableEmail(imamEmail),
         imamPhone: normalizePhone(imamPhone),
         imamAddress: dto.imamAddress.trim(),
+        imamFatherName: dto.imamFatherName.trim(),
+        imamAge: dto.imamAge,
+        imamGender: dto.imamGender,
         committeeMembers,
         requestedById: null,
         status: MasjidRegistrationRequestStatus.PENDING,
       },
       select: masjidRequestDetailSelect,
     });
-    this.logger.log({ message: 'Masjid request submitted', masjidRequestId: request.id });
+    this.logger.log({
+      message: 'Masjid request submitted',
+      masjidRequestId: request.id,
+    });
     return request;
   }
 
@@ -370,6 +440,40 @@ export class MasjidRequestsService {
     };
   }
 
+  async trackByRequesterPhone(requesterPhone: string) {
+    const normalizedPhone = normalizePhone(requesterPhone);
+
+    if (!isValidNormalizedPhone(normalizedPhone)) {
+      throw new ApiException(
+        'Enter a valid phone number',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+
+    const phoneVariants = getPhoneSearchVariants(normalizedPhone);
+    const items = await this.db.masjidRegistrationRequest.findMany({
+      where: { requesterPhone: { in: phoneVariants } },
+      orderBy: { createdAt: 'desc' },
+      select: masjidRequestTrackingSelect,
+    });
+
+    const responseItems = items.map((request) => ({
+      masjidName: request.masjidName,
+      status: request.status,
+      imamName: request.imamName,
+      requestedAt: request.createdAt,
+      reviewedAt: request.reviewedAt,
+    }));
+
+    return successResponse(
+      responseItems.length
+        ? 'Applications fetched successfully'
+        : 'No application found for this phone number',
+      { items: responseItems },
+    );
+  }
+
   async updateStatus(
     id: string,
     dto: UpdateMasjidRequestStatusDto,
@@ -397,7 +501,11 @@ export class MasjidRequestsService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<MasjidRequestRecord> {
-    this.logger.debug({ message: 'Masjid request approval started', masjidRequestId: id, actorId: actor.id });
+    this.logger.debug({
+      message: 'Masjid request approval started',
+      masjidRequestId: id,
+      actorId: actor.id,
+    });
     const approvedRequest = await this.db.$transaction(async (tx) => {
       const request = await this.findByIdOrThrow(id, tx);
       this.assertCanApprove(request);
@@ -491,7 +599,10 @@ export class MasjidRequestsService {
       },
       select: masjidRequestDetailSelect,
     });
-    this.logger.warn({ message: 'Masjid request rejected', masjidRequestId: rejectedRequest.id });
+    this.logger.warn({
+      message: 'Masjid request rejected',
+      masjidRequestId: rejectedRequest.id,
+    });
     return rejectedRequest;
   }
 
@@ -632,7 +743,17 @@ export class MasjidRequestsService {
       return null;
     }
 
-    return this.createTemporaryUser({ fullName, email, phone }, db);
+    return this.createTemporaryUser(
+      {
+        fullName,
+        email,
+        phone,
+        fatherName: request.imamFatherName,
+        age: request.imamAge,
+        gender: request.imamGender,
+      },
+      db,
+    );
   }
 
   private async createOrLinkCommitteeMembers(
@@ -666,7 +787,14 @@ export class MasjidRequestsService {
 
       if (!user && fullName) {
         user = await this.createTemporaryUser(
-          { fullName, email: null, phone },
+          {
+            fullName,
+            email: null,
+            phone,
+            fatherName: member.fatherName ?? null,
+            age: member.age ?? null,
+            gender: member.gender ?? null,
+          },
           db,
         );
       }
@@ -707,7 +835,14 @@ export class MasjidRequestsService {
   }
 
   private async createTemporaryUser(
-    data: { fullName: string; email: string | null; phone: string | null },
+    data: {
+      fullName: string;
+      email: string | null;
+      phone: string | null;
+      fatherName?: string | null;
+      age?: number | null;
+      gender?: string | null;
+    },
     db: MasjidRequestsPrismaDelegate,
   ): Promise<RequestUser> {
     // TODO: Replace temporary password with OTP/email/SMS invitation before production.
@@ -721,6 +856,11 @@ export class MasjidRequestsService {
         fullName: data.fullName,
         email: data.email,
         phone: data.phone,
+        fatherName: data.fatherName ?? null,
+        age: data.age ?? null,
+        gender: data.gender ?? null,
+        isFamilyHead: false,
+        familyMemberCount: null,
         passwordHash,
         status: 'ACTIVE',
       },
@@ -773,7 +913,6 @@ export class MasjidRequestsService {
     });
   }
 
-
   private isIndia(country: string): boolean {
     return ['india', 'in'].includes(country.trim().toLowerCase());
   }
@@ -789,6 +928,9 @@ export class MasjidRequestsService {
     return committeeMembers.map((member) => ({
       name: member.name.trim(),
       phone: normalizePhone(member.phone),
+      fatherName: member.fatherName?.trim(),
+      age: member.age,
+      gender: member.gender,
     }));
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
 import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
@@ -394,9 +395,14 @@ class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
   late final TextEditingController _name = TextEditingController(text: widget.user.fullName);
   late final TextEditingController _phone = TextEditingController(text: widget.user.phone ?? '');
   late final TextEditingController _email = TextEditingController(text: widget.user.email ?? '');
+  late final TextEditingController _fatherName = TextEditingController(text: widget.user.fatherName ?? '');
+  late final TextEditingController _age = TextEditingController(text: widget.user.age?.toString() ?? '');
+  late final TextEditingController _familyMemberCount = TextEditingController(text: widget.user.familyMemberCount?.toString() ?? '');
+  late String? _gender = widget.user.gender;
+  late bool _isFamilyHead = widget.user.isFamilyHead;
 
   @override
-  void dispose() { _name.dispose(); _phone.dispose(); _email.dispose(); super.dispose(); }
+  void dispose() { _name.dispose(); _phone.dispose(); _email.dispose(); _fatherName.dispose(); _age.dispose(); _familyMemberCount.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -410,6 +416,11 @@ class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
             TextFormField(controller: _name, decoration: const InputDecoration(labelText: 'Full name *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Full name is required' : null),
             TextFormField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Phone is required' : null),
             TextFormField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
+            TextFormField(controller: _fatherName, decoration: const InputDecoration(labelText: 'Father name *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Father name is required' : null),
+            TextFormField(controller: _age, decoration: const InputDecoration(labelText: 'Age *'), keyboardType: TextInputType.number, inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly], validator: (v) { final age = int.tryParse(v?.trim() ?? ''); if (age == null) return 'Age is required'; if (age < 1 || age > 120) return 'Age must be between 1 and 120'; return null; }),
+            DropdownButtonFormField<String>(value: _gender, decoration: const InputDecoration(labelText: 'Gender *'), items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))], onChanged: (value) => setState(() => _gender = value), validator: (value) => value == null ? 'Gender is required' : null),
+            if (widget.user.isMember) SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Is Family Head *'), value: _isFamilyHead, onChanged: (value) => setState(() => _isFamilyHead = value)),
+            if (widget.user.isMember && _isFamilyHead) TextFormField(controller: _familyMemberCount, decoration: const InputDecoration(labelText: 'Family Member Count'), keyboardType: TextInputType.number, inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]),
           ],
         ),
       ),
@@ -417,7 +428,7 @@ class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
         FilledButton(onPressed: () {
           if (!_formKey.currentState!.validate()) return;
-          Navigator.of(context).pop(UpdateCommunityUserRequest(fullName: _name.text, phone: _phone.text, email: _email.text));
+          Navigator.of(context).pop(UpdateCommunityUserRequest(fullName: _name.text, phone: _phone.text, email: _email.text, fatherName: _fatherName.text, age: int.parse(_age.text.trim()), gender: _gender!, isFamilyHead: widget.user.isMember ? _isFamilyHead : null, familyMemberCount: _familyMemberCount.text.trim().isEmpty ? null : int.parse(_familyMemberCount.text.trim())));
         }, child: const Text('Save')),
       ],
     );

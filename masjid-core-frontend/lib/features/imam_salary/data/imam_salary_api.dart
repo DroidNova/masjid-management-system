@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:platform_core_frontend/core/network/api_client.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/create_imam_salary_request.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_model.dart';
+import 'package:platform_core_frontend/features/imam_salary/models/imam_salary_ledger_models.dart';
+import 'package:platform_core_frontend/shared/models/paginated_response.dart';
 import 'package:platform_core_frontend/features/imam_salary/models/update_imam_salary_request.dart';
 
 class ImamSalaryApi {
@@ -108,4 +110,22 @@ class ImamSalaryApi {
     }
     return error.message ?? 'Unable to load imam salary records.';
   }
+  Future<PaginatedResponse<ImamSalaryMonthModel>> getMonths({required int month, required int year, int page = 1, int limit = 20}) async {
+    final response = await _apiClient.dio.get<Object?>('/imam-salaries/months', queryParameters: {'month': month, 'year': year, 'page': page, 'limit': limit});
+    return PaginatedResponse.fromJson(_extractMapData(response.data), ImamSalaryMonthModel.fromJson);
+  }
+  Future<ImamSalaryMonthModel> getMonth(String id) async => ImamSalaryMonthModel.fromJson(_extractMapData((await _apiClient.dio.get<Object?>('/imam-salaries/months/$id')).data));
+  Future<ImamSalaryMonthModel> createMonth(CreateImamSalaryMonthRequest request) async => ImamSalaryMonthModel.fromJson(_extractMapData((await _apiClient.dio.post<Object?>('/imam-salaries/months', data: request.toJson())).data));
+  Future<ImamSalaryMonthModel> updateAmount(String id, UpdateImamSalaryAmountRequest request) async => ImamSalaryMonthModel.fromJson(_extractMapData((await _apiClient.dio.patch<Object?>('/imam-salaries/months/$id/amount', data: request.toJson())).data));
+  Future<PaginatedResponse<ImamSalaryAssignmentModel>> getAssignments(String id, {String? status, String? search, int page = 1, int limit = 20}) async {
+    final response = await _apiClient.dio.get<Object?>('/imam-salaries/months/$id/assignments', queryParameters: {'page': page, 'limit': limit, if (status != null) 'status': status, if (search?.isNotEmpty == true) 'search': search});
+    return PaginatedResponse.fromJson(_extractMapData(response.data), ImamSalaryAssignmentModel.fromJson);
+  }
+  Future<ImamSalaryPaymentModel> addPayment(CreateImamSalaryPaymentRequest request) async => ImamSalaryPaymentModel.fromJson(_extractMapData((await _apiClient.dio.post<Object?>('/imam-salaries/payments', data: request.toJson())).data));
+  Future<PaginatedResponse<ImamSalaryPaymentModel>> getPayments({required int month, required int year, String? paymentMode, String? search, int page = 1, int limit = 20}) async {
+    final response = await _apiClient.dio.get<Object?>('/imam-salaries/payments', queryParameters: {'month': month, 'year': year, 'page': page, 'limit': limit, if (paymentMode != null) 'paymentMode': paymentMode, if (search?.isNotEmpty == true) 'search': search});
+    return PaginatedResponse.fromJson(_extractMapData(response.data), ImamSalaryPaymentModel.fromJson);
+  }
+  Future<List<MyImamSalaryHistoryModel>> getMyHistory({int monthsBack = 6}) async => _extractListData((await _apiClient.dio.get<Object?>('/imam-salaries/my-history', queryParameters: {'monthsBack': monthsBack})).data).whereType<Map<String,dynamic>>().map(MyImamSalaryHistoryModel.fromJson).toList();
+
 }
