@@ -18,6 +18,8 @@ import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { FinanceService } from './finance.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = { user: AuthenticatedUser };
 const toOptionalNumber = ({ value }: { value: unknown }) =>
@@ -60,6 +62,7 @@ export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
   @Get('my-masjid/summary')
+  @RequirePermissions(PERMISSIONS.FINANCE_READ)
   @ApiOperation({ summary: "Get current masjid's finance summary" })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })

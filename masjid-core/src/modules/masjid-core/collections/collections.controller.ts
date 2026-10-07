@@ -21,8 +21,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { ContributionTransactionsService } from '../contributions/contribution-transactions.service';
 import { CollectionContributionListQueryDto } from '../contributions/dto/contribution-list-query.dto';
@@ -36,6 +34,8 @@ import {
 } from './dto/create-collection.dto';
 import { GetCollectionsQueryDto } from './dto/get-collections-query.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = { user: AuthenticatedUser };
 const standardErrorSchema = {
@@ -57,6 +57,7 @@ export class CollectionsController {
   ) {}
 
   @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.FINANCE_READ)
   @ApiOperation({ summary: "Get current masjid's collections" })
   @ApiQuery({ name: 'type', required: false, enum: CollectionTypeDto })
   @ApiQuery({ name: 'status', required: false, enum: FinanceEntryStatusDto })
@@ -78,8 +79,7 @@ export class CollectionsController {
   }
 
   @Post('my-masjid')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.COLLECTIONS_MANAGE)
   @ApiOperation({ summary: "Create current masjid's collection" })
   @ApiBody({ type: CreateCollectionDto })
   @ApiResponse({
@@ -94,8 +94,7 @@ export class CollectionsController {
   }
 
   @Post('contributions')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.CONTRIBUTIONS_RECORD)
   addContribution(
     @Body() dto: CreateCollectionContributionDto,
     @Req() request: AuthenticatedRequest,
@@ -107,8 +106,7 @@ export class CollectionsController {
   }
 
   @Get('contributions')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER', 'IMAM')
+  @RequirePermissions(PERMISSIONS.CONTRIBUTIONS_READ)
   listContributions(
     @Query() query: CollectionContributionListQueryDto,
     @Req() request: AuthenticatedRequest,
@@ -120,6 +118,7 @@ export class CollectionsController {
   }
 
   @Get(':id')
+  @RequirePermissions(PERMISSIONS.FINANCE_READ)
   @ApiOperation({ summary: 'Get collection details' })
   @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiResponse({
@@ -134,8 +133,7 @@ export class CollectionsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.COLLECTIONS_MANAGE)
   @ApiOperation({ summary: 'Update a collection' })
   @ApiBody({ type: UpdateCollectionDto })
   update(
@@ -147,8 +145,7 @@ export class CollectionsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.COLLECTIONS_MANAGE)
   @ApiOperation({ summary: 'Cancel a collection' })
   cancel(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

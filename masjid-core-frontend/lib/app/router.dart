@@ -408,7 +408,8 @@ class _SuperAdminGuard extends StatelessWidget {
 class _RoleGuard extends StatelessWidget {
   const _RoleGuard({required this.isAllowed, required this.child});
 
-  final bool Function(List<String> roles) isAllowed;
+  /// Receives the signed-in user's permissions (see PermissionHelper).
+  final bool Function(List<String> permissions) isAllowed;
   final Widget child;
 
   @override
@@ -421,8 +422,8 @@ class _RoleGuard extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        final roles = snapshot.data?.roles ?? const <String>[];
-        if (!isAllowed(roles)) {
+        final permissions = snapshot.data?.permissions ?? const <String>[];
+        if (!isAllowed(permissions)) {
           return const Scaffold(body: NotAllowedView());
         }
         return child;

@@ -172,8 +172,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
       );
     }
 
-    final roles = _currentUser?.roles ?? const <String>[];
-    final canManageFinance = PermissionHelper.canManageFinance(roles);
+    final permissions = _currentUser?.permissions ?? const <String>[];
+    final canManageFinance = PermissionHelper.canManageFinance(permissions);
 
     return SafeArea(
       child: RefreshIndicator(
@@ -190,7 +190,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   FinanceSummaryCard(summary: _summary),
                   const SizedBox(height: 12),
                   _ImamSalaryNavigationCard(
-                    subtitle: PermissionHelper.canManageImamSalary(roles)
+                    subtitle: PermissionHelper.canManageImamSalary(permissions)
                         ? 'Manage salary paid/unpaid records'
                         : 'View salary paid/unpaid records',
                   ),

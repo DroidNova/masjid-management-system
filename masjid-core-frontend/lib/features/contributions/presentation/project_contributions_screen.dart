@@ -66,8 +66,8 @@ class _ProjectContributionsScreenState
     final user = await SessionStorage().getUser();
     if (!mounted) return;
     setState(() {
-      _canAdd = PermissionHelper.canManageProjects(
-        user?.roles ?? const <String>[],
+      _canAdd = PermissionHelper.canRecordContributions(
+        user?.permissions ?? const <String>[],
       );
     });
   }

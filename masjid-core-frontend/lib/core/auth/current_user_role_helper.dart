@@ -15,11 +15,11 @@ class CurrentUserRoleHelper {
   }
 
   static bool canAddUsers(AppUser user) {
-    return PermissionHelper.canAddCommunityUser(user.roles);
+    return PermissionHelper.canAddCommunityUser(user.permissions);
   }
 
   static List<String> allowedRolesToCreate(AppUser user) {
-    return PermissionHelper.allowedCommunityRolesToCreate(user.roles);
+    return PermissionHelper.allowedCommunityRolesToCreate(user.permissions);
   }
 
   static String roleLabel(String role) {

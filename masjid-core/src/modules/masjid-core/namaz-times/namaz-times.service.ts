@@ -4,8 +4,7 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { UpsertNamazTimeDto } from './dto/upsert-namaz-time.dto';
-
-const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';
+import { hasPermission, PERMISSIONS } from '../../../access/permissions';
 
 type NamazTimeRecord = {
   id?: string;
@@ -140,7 +139,8 @@ export class NamazTimesService {
       );
     }
 
-    if (actor.roles.includes(SUPER_ADMIN_ROLE)) {
+    // Super admin may read or set times for any masjid.
+    if (hasPermission(actor, PERMISSIONS.PLATFORM_MASJIDS_MANAGE)) {
       return;
     }
 

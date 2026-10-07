@@ -21,8 +21,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { ContributionTransactionsService } from '../contributions/contribution-transactions.service';
 import { ContributionListQueryDto } from '../contributions/dto/contribution-list-query.dto';
@@ -32,6 +30,8 @@ import { CreateProjectDto, ProjectStatusDto } from './dto/create-project.dto';
 import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsService } from './projects.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -56,6 +56,7 @@ export class ProjectsController {
   ) {}
 
   @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.PROJECTS_READ)
   @ApiOperation({ summary: "Get current masjid's projects" })
   @ApiQuery({ name: 'status', required: false, enum: ProjectStatusDto })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -74,8 +75,7 @@ export class ProjectsController {
   }
 
   @Post('my-masjid')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.PROJECTS_MANAGE)
   @ApiOperation({ summary: "Create a project for current user's masjid" })
   @ApiBody({ type: CreateProjectDto })
   @ApiResponse({
@@ -88,8 +88,7 @@ export class ProjectsController {
   }
 
   @Post(':projectId/contributions')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.CONTRIBUTIONS_RECORD)
   addContribution(
     @Param('projectId', new ParseUUIDPipe({ version: '4' })) projectId: string,
     @Body() dto: CreateContributionDto,
@@ -103,8 +102,7 @@ export class ProjectsController {
   }
 
   @Get(':projectId/contributions')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER', 'IMAM')
+  @RequirePermissions(PERMISSIONS.CONTRIBUTIONS_READ)
   listContributions(
     @Param('projectId', new ParseUUIDPipe({ version: '4' })) projectId: string,
     @Query() query: ContributionListQueryDto,
@@ -118,6 +116,7 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @RequirePermissions(PERMISSIONS.PROJECTS_READ)
   @ApiOperation({ summary: 'Get project details from the current masjid' })
   @ApiParam({
     name: 'id',
@@ -137,8 +136,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.PROJECTS_MANAGE)
   @ApiOperation({ summary: 'Update a project from the current masjid' })
   @ApiParam({
     name: 'id',
@@ -160,8 +158,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.PROJECTS_MANAGE)
   @ApiOperation({ summary: 'Cancel a project from the current masjid' })
   @ApiParam({
     name: 'id',

@@ -9,6 +9,7 @@ import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
+import { hasPermission, PERMISSIONS } from '../../../access/permissions';
 import { initialPasswordFor } from '../../platform-core/auth/initial-password';
 import { BCRYPT_ROUNDS } from '../../platform-core/auth/auth.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
@@ -387,7 +388,7 @@ export class MasjidsService {
     const callerRoles = this.resolveCallerRoles(actor, currentUser);
     this.assertCanCreateRole(callerRoles, dto.role);
 
-    if (!callerRoles.includes('SUPER_ADMIN') && dto.masjidId) {
+    if (!this.isPlatformAdmin(callerRoles) && dto.masjidId) {
       throw new ApiException(
         'You are not allowed to choose a masjid',
         HttpStatus.FORBIDDEN,
@@ -700,7 +701,7 @@ export class MasjidsService {
     }
 
     const targetRoles = target.userRoles.map((userRole) => userRole.role.name);
-    if (callerRoles.includes('SUPER_ADMIN')) return target;
+    if (this.isPlatformAdmin(callerRoles)) return target;
 
     if (!actor.masjidId || target.masjidId !== actor.masjidId) {
       throw new ApiException(
@@ -713,7 +714,12 @@ export class MasjidsService {
     const isOnlyMember =
       targetRoles.includes('MEMBER') &&
       targetRoles.every((role) => role === 'MEMBER');
-    if (!callerRoles.includes('COMMITTEE_MEMBER') || !isOnlyMember) {
+    // Committee members manage villagers (MEMBER role) only; imams and
+    // committee members are appointed by the super admin.
+    if (
+      !hasPermission({ roles: callerRoles }, PERMISSIONS.MEMBERS_MANAGE) ||
+      !isOnlyMember
+    ) {
       throw new ApiException(
         'You are not allowed to manage this user',
         HttpStatus.FORBIDDEN,
@@ -763,21 +769,27 @@ export class MasjidsService {
   private getAllowedCreatableRoles(
     callerRoles: string[],
   ): CreateMasjidUserRoleDto[] {
-    if (
-      callerRoles.includes('SUPER_ADMIN') ||
-      callerRoles.includes('MASJID_ADMIN')
-    ) {
+    if (this.isPlatformAdmin(callerRoles)) {
       return [
         CreateMasjidUserRoleDto.IMAM,
         CreateMasjidUserRoleDto.COMMITTEE_MEMBER,
+        CreateMasjidUserRoleDto.MEMBER,
       ];
     }
 
-    if (callerRoles.includes('COMMITTEE_MEMBER')) {
+    if (hasPermission({ roles: callerRoles }, PERMISSIONS.MEMBERS_MANAGE)) {
       return [CreateMasjidUserRoleDto.MEMBER];
     }
 
     return [];
+  }
+
+  /** Super admin: may act on any masjid and appoint imams/committee members. */
+  private isPlatformAdmin(callerRoles: string[]): boolean {
+    return hasPermission(
+      { roles: callerRoles },
+      PERMISSIONS.PLATFORM_ROLES_ASSIGN,
+    );
   }
 
   private resolveTargetMasjidId(
@@ -785,7 +797,7 @@ export class MasjidsService {
     currentUser: CurrentUserWithRoles,
     dto: CreateMasjidUserDto,
   ): string {
-    const masjidId = callerRoles.includes('SUPER_ADMIN')
+    const masjidId = this.isPlatformAdmin(callerRoles)
       ? (currentUser.masjidId ?? dto.masjidId)
       : currentUser.masjidId;
 

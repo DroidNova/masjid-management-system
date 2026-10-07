@@ -14,6 +14,8 @@ import { ContributionsService } from './contributions.service';
 import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
 import { MyPaymentsQueryDto } from './dto/my-payments-query.dto';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = { user: AuthenticatedUser };
 
@@ -25,11 +27,13 @@ export class ContributionsController {
   constructor(private readonly contributionsService: ContributionsService) {}
 
   @Get('summary')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   getSummary(@Req() request: AuthenticatedRequest) {
     return this.contributionsService.getSummary(request.user);
   }
 
   @Get('projects')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   getProjectContributions(
     @Query() query: MyContributionListQueryDto,
     @Req() request: AuthenticatedRequest,
@@ -41,6 +45,7 @@ export class ContributionsController {
   }
 
   @Get('collections')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   getCollectionContributions(
     @Query() query: MyContributionListQueryDto,
     @Req() request: AuthenticatedRequest,
@@ -52,6 +57,7 @@ export class ContributionsController {
   }
 
   @Get('imam-salary')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   getImamSalaryHistory(
     @Query() query: MyContributionQueryDto,
     @Req() request: AuthenticatedRequest,
@@ -60,6 +66,7 @@ export class ContributionsController {
   }
 
   @Get('imam-salary/:month/:year/payments')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   getImamSalaryPayments(
     @Param('month', ParseIntPipe) month: number,
     @Param('year', ParseIntPipe) year: number,

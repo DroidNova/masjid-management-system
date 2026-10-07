@@ -1,4 +1,5 @@
 import {
+  Logger,
   BadRequestException,
   ForbiddenException,
   Injectable,
@@ -10,12 +11,18 @@ import { RolesService } from '../roles/roles.service';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { ListAdminUsersDto } from './dto/list-admin-users.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { ASSIGNABLE_ROLES } from '../../../access/permissions';
+import {
+  ListAdminMasjidsDto,
+  UpdateMasjidStatusDto,
+} from './dto/admin-masjids.dto';
 
 const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';
-const MASJID_ADMIN_ROLE = 'MASJID_ADMIN';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly rolesService: RolesService,
@@ -165,11 +172,10 @@ export class AdminService {
     }
 
     this.assertCanModifyTargetUser({
-      actorRoles: actor.roles,
       targetRoleNames: user.userRoles.map((userRole) => userRole.role.name),
     });
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: { status: dto.status },
       select: {
@@ -181,6 +187,13 @@ export class AdminService {
         updatedAt: true,
       },
     });
+    this.logger.log({
+      message: 'User status changed',
+      userId: id,
+      status: dto.status,
+      actorId: actor.id,
+    });
+    return updated;
   }
 
   async getDashboardSummary() {
@@ -231,16 +244,7 @@ export class AdminService {
     };
   }
 
-  async listMasjids(query: {
-    search?: string;
-    status?: string;
-    state?: string;
-    country?: string;
-    district?: string;
-    locality?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async listMasjids(query: ListAdminMasjidsDto) {
     const page = Number(query.page ?? 1) || 1;
     const limit = Math.min(Number(query.limit ?? 20) || 20, 100);
     const search = query.search?.trim();
@@ -353,10 +357,7 @@ export class AdminService {
     };
   }
 
-  async updateMasjidStatus(
-    id: string,
-    dto: { status: string; reason?: string },
-  ) {
+  async updateMasjidStatus(id: string, dto: UpdateMasjidStatusDto) {
     const masjid = await this.prisma.masjid.findUnique({
       where: { id },
       select: { id: true },
@@ -367,7 +368,7 @@ export class AdminService {
     return this.prisma.masjid.update({
       where: { id },
       data: {
-        status: dto.status as any,
+        status: dto.status,
         rejectionReason: dto.reason?.trim() || null,
       },
       select: {
@@ -432,50 +433,47 @@ export class AdminService {
       );
     }
 
-    const isActorSuperAdmin = actor.roles.includes(SUPER_ADMIN_ROLE);
-    const isPromotingToAdmin = normalizedRoleNames.includes(MASJID_ADMIN_ROLE);
-
-    if (isPromotingToAdmin && !isActorSuperAdmin) {
+    const notAssignable = normalizedRoleNames.filter(
+      (name) => !(ASSIGNABLE_ROLES as readonly string[]).includes(name),
+    );
+    if (notAssignable.length) {
       throw new ForbiddenException(
-        'Only super admin can assign MASJID_ADMIN role',
+        `These roles cannot be assigned: ${notAssignable.join(', ')}. Allowed: ${ASSIGNABLE_ROLES.join(', ')}`,
       );
     }
 
     this.assertCanModifyTargetUser({
-      actorRoles: actor.roles,
       targetRoleNames: user.userRoles.map((userRole) => userRole.role.name),
     });
 
     const roles =
       await this.rolesService.validateRoleNames(normalizedRoleNames);
 
-    await this.prisma.userRole.deleteMany({ where: { userId: id } });
-    await this.prisma.userRole.createMany({
-      data: roles.map((role) => ({ userId: id, roleId: role.id })),
-      skipDuplicates: true,
+    // Replace roles atomically so a failure never leaves the user with none.
+    await this.prisma.$transaction([
+      this.prisma.userRole.deleteMany({ where: { userId: id } }),
+      this.prisma.userRole.createMany({
+        data: roles.map((role) => ({ userId: id, roleId: role.id })),
+        skipDuplicates: true,
+      }),
+    ]);
+    this.logger.log({
+      message: 'User roles replaced',
+      userId: id,
+      roles: normalizedRoleNames,
+      actorId: actor.id,
     });
 
     return this.getUserById(id);
   }
 
+  /** Admin APIs are super-admin only; super admin accounts are managed by script. */
   private assertCanModifyTargetUser(params: {
-    actorRoles: string[];
     targetRoleNames: string[];
   }): void {
-    const { actorRoles, targetRoleNames } = params;
-    const isActorSuperAdmin = actorRoles.includes(SUPER_ADMIN_ROLE);
-    const isTargetSuperAdmin = targetRoleNames.includes(SUPER_ADMIN_ROLE);
-    const isTargetAdmin = targetRoleNames.includes(MASJID_ADMIN_ROLE);
-
-    if (isTargetSuperAdmin) {
+    if (params.targetRoleNames.includes(SUPER_ADMIN_ROLE)) {
       throw new ForbiddenException(
         'SUPER_ADMIN account cannot be modified from admin APIs',
-      );
-    }
-
-    if (isTargetAdmin && !isActorSuperAdmin) {
-      throw new ForbiddenException(
-        'Only super admin can modify masjid admin accounts',
       );
     }
   }

@@ -20,9 +20,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { Roles } from '../../../common/decorators/roles.decorator';
 import { RATE_LIMITS } from '../../../common/rate-limit/rate-limit';
-import { RolesGuard } from '../../../common/guards/roles.guard';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import { CreateMasjidRequestDto } from './dto/create-masjid-request.dto';
@@ -82,8 +82,9 @@ export class MasjidRequestsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
+  // Decorators apply bottom-up: JwtAuthGuard must run before the permission check.
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJID_REQUESTS_MANAGE)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
   @ApiOperation({ summary: 'Get all masjid requests with filters' })
   @ApiResponse({
@@ -96,8 +97,9 @@ export class MasjidRequestsController {
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
+  // Decorators apply bottom-up: JwtAuthGuard must run before the permission check.
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJID_REQUESTS_MANAGE)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
   @ApiOperation({ summary: 'Approve or reject a masjid request' })
   @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })

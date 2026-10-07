@@ -82,8 +82,8 @@ class _CollectionContributionsScreenState
     final user = await SessionStorage().getUser();
     if (!mounted) return;
     setState(() {
-      _canAdd = PermissionHelper.canManageFinance(
-        user?.roles ?? const <String>[],
+      _canAdd = PermissionHelper.canRecordContributions(
+        user?.permissions ?? const <String>[],
       );
     });
   }

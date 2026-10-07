@@ -54,7 +54,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (!mounted) return;
     setState(() {
       _canManageProjects = PermissionHelper.canManageProjects(
-        user?.roles ?? const <String>[],
+        user?.permissions ?? const <String>[],
       );
     });
   }

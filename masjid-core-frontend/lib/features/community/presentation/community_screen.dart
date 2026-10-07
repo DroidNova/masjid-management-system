@@ -135,14 +135,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   bool get _canAddUsers {
     final user = _currentUser;
-    return user != null && PermissionHelper.canAddCommunityUser(user.roles);
+    return user != null &&
+        PermissionHelper.canAddCommunityUser(user.permissions);
   }
 
   Future<void> _openAddUser() async {
     await context.push('/community/add-user');
   }
 
-  List<String> get _currentUserRoles => _currentUser?.roles ?? const <String>[];
+  List<String> get _currentUserPermissions =>
+      _currentUser?.permissions ?? const <String>[];
 
   void _replaceUser(CommunityUserModel updatedUser) {
     setState(() {
@@ -154,7 +156,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _openEditUser(CommunityUserModel user) async {
     if (!PermissionHelper.canEditCommunityUser(
-      currentUserRoles: _currentUserRoles,
+      currentUserPermissions: _currentUserPermissions,
       targetUserRoles: user.roles,
     )) {
       return;
@@ -184,7 +186,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _openChangeUserStatus(CommunityUserModel user) async {
     if (!PermissionHelper.canChangeCommunityUserStatus(
-      currentUserRoles: _currentUserRoles,
+      currentUserPermissions: _currentUserPermissions,
       targetUserRoles: user.roles,
     )) {
       return;
@@ -302,7 +304,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       title: 'Imam',
                       users: _imamUsers,
                       emptyMessage: 'Imam is not added yet.',
-                      currentUserRoles: _currentUserRoles,
+                      currentUserPermissions: _currentUserPermissions,
                       onEditUser: _openEditUser,
                       onChangeUserStatus: _openChangeUserStatus,
                     ),
@@ -311,7 +313,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       title: 'Committee Members',
                       users: _committeeUsers,
                       emptyMessage: 'No committee members added yet.',
-                      currentUserRoles: _currentUserRoles,
+                      currentUserPermissions: _currentUserPermissions,
                       onEditUser: _openEditUser,
                       onChangeUserStatus: _openChangeUserStatus,
                     ),
@@ -320,7 +322,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       title: 'Members',
                       users: _memberUsers,
                       emptyMessage: 'No members added yet.',
-                      currentUserRoles: _currentUserRoles,
+                      currentUserPermissions: _currentUserPermissions,
                       onEditUser: _openEditUser,
                       onChangeUserStatus: _openChangeUserStatus,
                     ),

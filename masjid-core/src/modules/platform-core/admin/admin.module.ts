@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PermissionsGuard } from '../../../common/guards/permissions.guard';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { RolesModule } from '../roles/roles.module';
 import {
@@ -16,7 +15,7 @@ import { AdminService } from './admin.service';
     AdminDashboardController,
     AdminMasjidsController,
   ],
-  providers: [AdminService, PermissionsGuard],
+  providers: [AdminService],
   exports: [AdminService],
 })
 export class AdminModule {}

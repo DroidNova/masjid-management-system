@@ -1,124 +1,98 @@
 import { ForbiddenException } from '@nestjs/common';
+import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import { AdminService } from './admin.service';
+import { AdminUserStatus } from './dto/update-user-status.dto';
 
-describe('AdminService hierarchy protections', () => {
+// Admin endpoints are reachable only with platform.* permissions, which only
+// SUPER_ADMIN holds (see src/access/permissions.ts and its spec). These tests
+// cover the extra rules inside the service.
+describe('AdminService', () => {
   const mockPrisma = {
-    user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    userRole: {
-      deleteMany: jest.fn(),
-      createMany: jest.fn(),
-    },
+    user: { findUnique: jest.fn(), update: jest.fn() },
+    userRole: { deleteMany: jest.fn(), createMany: jest.fn() },
+    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
-
-  const mockRolesService = {
-    validateRoleNames: jest.fn(),
-  };
-
+  const mockRolesService = { validateRoleNames: jest.fn() };
   const service = new AdminService(
     mockPrisma as never,
     mockRolesService as never,
   );
+  const superAdmin = {
+    id: 'super-admin',
+    roles: ['SUPER_ADMIN'],
+  } as AuthenticatedUser;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  beforeEach(() => jest.clearAllMocks());
 
-  it('blocks MASJID_ADMIN from updating another MASJID_ADMIN status', async () => {
+  it('does not let anyone change a SUPER_ADMIN account', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({
-      id: 'target-admin',
-      userRoles: [{ role: { name: 'MASJID_ADMIN' } }],
+      id: 'other-super',
+      userRoles: [{ role: { name: 'SUPER_ADMIN' } }],
     });
 
     await expect(
       service.updateUserStatus(
-        'target-admin',
-        { status: 'SUSPENDED' },
-        {
-          id: 'actor-admin',
-          fullName: 'Admin Actor',
-          email: 'admin@example.com',
-          phone: null,
-          status: 'ACTIVE',
-          roles: ['MASJID_ADMIN'],
-          permissions: ['users.update'],
-        },
+        'other-super',
+        { status: AdminUserStatus.SUSPENDED },
+        superAdmin,
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockPrisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('allows SUPER_ADMIN to update MASJID_ADMIN status', async () => {
+  it('updates the status of a committee member', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({
-      id: 'target-admin',
-      userRoles: [{ role: { name: 'MASJID_ADMIN' } }],
+      id: 'cm-1',
+      userRoles: [{ role: { name: 'COMMITTEE_MEMBER' } }],
     });
     mockPrisma.user.update.mockResolvedValue({
-      id: 'target-admin',
+      id: 'cm-1',
       status: 'SUSPENDED',
     });
 
     await expect(
       service.updateUserStatus(
-        'target-admin',
-        { status: 'SUSPENDED' },
-        {
-          id: 'actor-super-admin',
-          fullName: 'Super Admin Actor',
-          email: 'superadmin@example.com',
-          phone: null,
-          status: 'ACTIVE',
-          roles: ['SUPER_ADMIN'],
-          permissions: ['users.update'],
-        },
+        'cm-1',
+        { status: AdminUserStatus.SUSPENDED },
+        superAdmin,
       ),
-    ).resolves.toEqual({ id: 'target-admin', status: 'SUSPENDED' });
+    ).resolves.toEqual({ id: 'cm-1', status: 'SUSPENDED' });
   });
 
-  it('blocks assigning SUPER_ADMIN role from admin API', async () => {
+  it.each([['SUPER_ADMIN'], ['MASJID_ADMIN']])(
+    'refuses to assign %s',
+    async (role) => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u-1',
+        userRoles: [{ role: { name: 'MEMBER' } }],
+      });
+
+      await expect(
+        service.assignRoles('u-1', { roleNames: ['MEMBER', role] }, superAdmin),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it('replaces roles in one transaction', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({
-      id: 'target-user',
+      id: 'u-1',
       userRoles: [{ role: { name: 'MEMBER' } }],
     });
+    mockRolesService.validateRoleNames.mockResolvedValue([
+      { id: 'role-imam', name: 'IMAM' },
+    ]);
+    jest
+      .spyOn(service, 'getUserById')
+      .mockResolvedValue({ id: 'u-1' } as never);
 
-    await expect(
-      service.assignRoles(
-        'target-user',
-        { roleNames: ['MEMBER', 'SUPER_ADMIN'] },
-        {
-          id: 'actor-super-admin',
-          fullName: 'Super Admin Actor',
-          email: 'superadmin@example.com',
-          phone: null,
-          status: 'ACTIVE',
-          roles: ['SUPER_ADMIN'],
-          permissions: ['roles.assign'],
-        },
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
+    await service.assignRoles('u-1', { roleNames: ['imam'] }, superAdmin);
 
-  it('blocks MASJID_ADMIN from assigning MASJID_ADMIN role to users', async () => {
-    mockPrisma.user.findUnique.mockResolvedValue({
-      id: 'target-user',
-      userRoles: [{ role: { name: 'MEMBER' } }],
+    expect(mockRolesService.validateRoleNames).toHaveBeenCalledWith(['IMAM']);
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.userRole.createMany).toHaveBeenCalledWith({
+      data: [{ userId: 'u-1', roleId: 'role-imam' }],
+      skipDuplicates: true,
     });
-
-    await expect(
-      service.assignRoles(
-        'target-user',
-        { roleNames: ['MEMBER', 'MASJID_ADMIN'] },
-        {
-          id: 'actor-admin',
-          fullName: 'Admin Actor',
-          email: 'admin@example.com',
-          phone: null,
-          status: 'ACTIVE',
-          roles: ['MASJID_ADMIN'],
-          permissions: ['roles.assign'],
-        },
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

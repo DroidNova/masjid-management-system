@@ -17,12 +17,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { UpsertNamazTimeDto } from './dto/upsert-namaz-time.dto';
 import { NamazTimesService } from './namaz-times.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -44,6 +44,7 @@ export class NamazTimesController {
   constructor(private readonly namazTimesService: NamazTimesService) {}
 
   @Get(':masjidId')
+  @RequirePermissions(PERMISSIONS.NAMAZ_TIMES_READ)
   @ApiOperation({ summary: 'Get namaz times by masjid id' })
   @ApiParam({
     name: 'masjidId',
@@ -63,8 +64,7 @@ export class NamazTimesController {
   }
 
   @Put(':masjidId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'IMAM', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.NAMAZ_TIMES_UPDATE)
   @ApiOperation({ summary: 'Insert or update namaz times by masjid id' })
   @ApiParam({
     name: 'masjidId',

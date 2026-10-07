@@ -8,6 +8,8 @@ import {
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { DashboardService } from './dashboard.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -29,6 +31,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.DASHBOARD_READ)
   @ApiOperation({ summary: "Get the current user's masjid dashboard" })
   @ApiResponse({
     status: HttpStatus.OK,

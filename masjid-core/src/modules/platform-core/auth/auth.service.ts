@@ -15,6 +15,7 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { OtpService } from './services/otp.service';
+import { permissionsForRoles } from '../../../access/permissions';
 import {
   getPhoneSearchVariants,
   normalizePhone,
@@ -30,15 +31,12 @@ const PRIVILEGED_ROLES = new Set([
   'COMMITTEE_MEMBER',
 ]);
 
-/** Prisma include that loads a user's roles and their permissions. */
+/**
+ * Prisma include that loads a user's role names. Permissions are derived from
+ * the roles in code (src/access/permissions.ts), not from the database.
+ */
 export const USER_ACCESS_INCLUDE = {
-  userRoles: {
-    include: {
-      role: {
-        include: { rolePermissions: { include: { permission: true } } },
-      },
-    },
-  },
+  userRoles: { include: { role: { select: { name: true } } } },
 } as const;
 
 type SafeUser = Omit<AuthenticatedUser, 'sessionId'>;
@@ -55,24 +53,13 @@ type UserWithAccess = {
   createdAt: Date;
   updatedAt: Date;
   passwordHash: string;
-  userRoles: Array<{
-    role: {
-      name: string;
-      rolePermissions: Array<{ permission: { name: string } }>;
-    };
-  }>;
+  userRoles: Array<{ role: { name: string } }>;
 };
 
 export function toSafeUser(
   user: Omit<UserWithAccess, 'passwordHash'>,
 ): SafeUser {
-  const permissions = Array.from(
-    new Set(
-      user.userRoles.flatMap((userRole) =>
-        userRole.role.rolePermissions.map((rp) => rp.permission.name),
-      ),
-    ),
-  );
+  const roles = user.userRoles.map((userRole) => userRole.role.name);
 
   return {
     id: user.id,
@@ -85,8 +72,8 @@ export function toSafeUser(
     isPhoneVerified: user.isPhoneVerified,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    roles: user.userRoles.map((userRole) => userRole.role.name),
-    permissions,
+    roles,
+    permissions: permissionsForRoles(roles),
   };
 }
 

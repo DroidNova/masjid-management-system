@@ -4,14 +4,11 @@ Future<List<String>?> showAssignRolesDialog(
   BuildContext c,
   List<String> initial,
 ) {
-  final roles = [
-    'SUPER_ADMIN',
-    'MASJID_ADMIN',
-    'IMAM',
-    'COMMITTEE_MEMBER',
-    'MEMBER',
-  ];
-  final selected = initial.toSet();
+  // Only roles the server lets an admin hand out (ASSIGNABLE_ROLES in
+  // masjid-core/src/access/permissions.ts). SUPER_ADMIN is created by script
+  // and MASJID_ADMIN is intentionally unused.
+  final roles = ['IMAM', 'COMMITTEE_MEMBER', 'MEMBER'];
+  final selected = initial.where(roles.contains).toSet();
   return showDialog<List<String>>(
     context: c,
     builder: (x) => StatefulBuilder(

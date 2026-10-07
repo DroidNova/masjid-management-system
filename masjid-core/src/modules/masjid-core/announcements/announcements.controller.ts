@@ -21,14 +21,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { GetAnnouncementsQueryDto } from './dto/get-announcements-query.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -50,6 +50,7 @@ export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
   @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_READ)
   @ApiOperation({ summary: "Get current masjid's announcements" })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -71,8 +72,7 @@ export class AnnouncementsController {
   }
 
   @Post('my-masjid')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'IMAM', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_MANAGE)
   @ApiOperation({ summary: "Create announcement for current user's masjid" })
   @ApiBody({ type: CreateAnnouncementDto })
   @ApiResponse({
@@ -88,8 +88,7 @@ export class AnnouncementsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'IMAM', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_MANAGE)
   @ApiOperation({ summary: 'Update an announcement from the current masjid' })
   @ApiParam({
     name: 'id',
@@ -111,8 +110,7 @@ export class AnnouncementsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'IMAM', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_MANAGE)
   @ApiOperation({
     summary: 'Deactivate an announcement from the current masjid',
   })

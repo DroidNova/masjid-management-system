@@ -32,14 +32,14 @@ class _State extends State<ImamSalaryScreen>
   bool _moreAssignments = false, _morePayments = false;
   String? _status, _mode;
   String _search = '';
+  List<String> get _permissions => _user?.permissions ?? const <String>[];
+  // Committee: full ledger. Imam: read-only ledger. Others: own payments.
+  bool get _manage => PermissionHelper.canManageImamSalary(_permissions);
   bool get _readOnly =>
-      PermissionHelper.hasRoleInList(_user?.roles ?? const [], 'IMAM') &&
-      !_manage;
+      PermissionHelper.canViewImamSalary(_permissions) && !_manage;
   bool get _member =>
-      PermissionHelper.hasRoleInList(_user?.roles ?? const [], 'MEMBER') &&
-      !PermissionHelper.canManageImamSalary(_user?.roles ?? const []);
-  bool get _manage =>
-      PermissionHelper.canManageImamSalary(_user?.roles ?? const []);
+      !PermissionHelper.canViewImamSalary(_permissions) &&
+      PermissionHelper.canViewOwnContributions(_permissions);
   @override
   void initState() {
     super.initState();

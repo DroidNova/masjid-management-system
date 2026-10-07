@@ -8,13 +8,14 @@ Update the checkboxes and the status table as work lands.
 
 Last updated 2026-10-07.
 
-- **Done:** M0 Hygiene and M1 Backend security foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** M2 Access model and tenancy. Start by writing `src/access/permissions.ts` (catalogue + role matrix from section 1), then the `MasjidMembership` table and data migration, then swap every `@Roles(...)` for `@RequirePermission(...)`.
+- **Done:** M0 Hygiene, M1 Backend security, M2 Access model. Both apps lint, build, and test clean. CI runs on every push to `main`.
+- **Next:** M3 Backend data and code structure. Start with the `TenantContext` helper carried over from M2, then `Prisma.Decimal` for money, then typed Prisma (remove the `as unknown as` delegates and raise the `no-unsafe-*` lint rules back to errors).
+- **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
 - **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
-- **Known debt carried forward:** about 200 ESLint `no-unsafe-*` warnings in the backend are downgraded until M3. `PermissionHelper` in the app still branches on role names until M4.
+- **Known debt carried forward:** about 200 ESLint `no-unsafe-*` warnings in the backend are downgraded until M3. The app still keeps per-screen state (M4 replaces it).
 
 ## 1. What the app is
 
@@ -35,19 +36,27 @@ Deployment goal: website + Android app on Play Store (iOS maybe later), backend 
 - **Low budget, full features.** This is a startup with very little money. Every choice is optimised for cost: one small VPS, self-hosted Postgres, free tiers for CI, monitoring, and backups, cheap Indian SMS. Saving money never removes a feature.
 - **Role matrix** (the product rule; implemented in M2):
 
+Implemented in M2 in `masjid-core/src/access/permissions.ts` (the code is the authority; this table is a summary):
+
 | Capability | SUPER_ADMIN | IMAM | COMMITTEE_MEMBER | MEMBER |
 |---|---|---|---|---|
-| Everything, every masjid | yes | | | |
-| Update namaz times | yes | yes | | |
-| Create, edit, delete announcements | yes | yes | | |
-| Imam salary months, assignments, record payments | yes | | yes | |
-| Projects and project contributions | yes | | yes | |
-| Collections, expenses, finance summary | yes | | yes | |
-| Members: add, edit, status | yes | | yes | |
-| Everything else the app already provides to committee | yes | | yes | |
-| Read namaz times, announcements, own contributions, and whatever members can see today | yes | yes | yes | yes |
+| Everything, every masjid, platform admin | yes | | | |
+| Update namaz times | yes | yes | yes | |
+| Create, edit, delete announcements | yes | yes | yes | |
+| View imam salary ledger and contribution lists | yes | yes | yes | |
+| Imam salary months, amounts, record payments | yes | | yes | |
+| Projects, collections, expenses, record contributions | yes | | yes | |
+| Edit masjid welcome message | yes | | yes | |
+| Members: add villagers, edit, activate/deactivate | yes | | yes | |
+| Appoint imams and committee members | yes | | | |
+| Read dashboard, namaz times, announcements, finance summary, projects, member list, own contributions | yes | yes | yes | yes |
 
-MASJID_ADMIN is not assigned to anyone and appears in no guard.
+MASJID_ADMIN exists in the database but has no permissions.
+
+Owner decisions to confirm (each is a one-line change in the permissions file):
+- Committee keeps namaz times and announcements (it had them before; the owner said the imam can *only* do those, not that the committee loses them).
+- The imam lost the welcome-message edit (it is a masjid profile setting, so it went to the committee).
+- Members still see the full member list with phone numbers, as before. The audit flagged this as a privacy risk; remove `members.read` from MEMBER to hide it.
 
 - **Permissions must be easy to change.** One file holds the permission catalogue and the role-to-permission matrix. Changing who can do what means editing that file and re-seeding. The Flutter app receives the user's permission list at login and shows or hides features from it, never from role names.
 
@@ -172,15 +181,16 @@ Done when: dev auth is explicit and env-driven, challenges survive a restart, an
 
 Goal: implement the product rule. Power is distributed by permissions, scoped per masjid.
 
-- [ ] Add `MasjidMembership` and migrate existing `User.masjidId` + `UserRole` data into it. Then drop the old columns.
-- [ ] Write the permission catalogue and role matrix in one file, `src/access/permissions.ts`, following the table in section 1. Seed from it. Permissions are returned in the login response and in `auth/me`. Super admin bypasses all checks.
-- [ ] Replace every `@Roles(...)` on masjid-core controllers with `@RequirePermission(...)`. Remove MASJID_ADMIN from guards and seed.
-- [ ] Audit every existing endpoint against the matrix: imam gets namaz times and announcements only, committee gets everything else, member keeps today's read access.
-- [ ] `TenantGuard` + `TenantContext`. Services take the masjid id from the context, never from the body or query.
-- [ ] Scope admin endpoints: only SUPER_ADMIN can list all users, change masjid status, or assign roles. Role assignment is transactional.
-- [ ] MEMBER keeps exactly what the current app gives members. Write that list down in the permissions file so it is explicit.
-- [ ] Fix untyped `@Query` and `@Body` in admin controller. All DTOs validated.
-- [ ] Tests: a user of masjid A can never read or write masjid B's rows, member cannot call committee endpoints, imam cannot record money.
+- [ ] Deferred: `MasjidMembership` table. Every user belongs to exactly one masjid today, so roles held globally equal roles in that masjid, and the cross-masjid leaks came from MASJID_ADMIN's global admin rights (fixed below). The table only adds value once one person must belong to two masjids, and it touches every service. Do it when that need is real.
+- [x] Permission catalogue and role matrix in one file, `src/access/permissions.ts`. The API derives permissions from it at runtime (no database lookup; a restart applies changes). `npm run prisma:seed` copies it into the Permission tables for reference. Login and `auth/me` return the list. Super admin simply holds every permission.
+- [x] Every route uses `@RequirePermissions(...)` (`src/access/require-permissions.ts`). Old `@Roles`, `RolesGuard`, `@Permissions` and the unused users/sessions/settings/permissions stub modules are deleted. MASJID_ADMIN has no permissions. A test fails if any new route forgets a permission.
+- [x] Every endpoint audited against the matrix and checked live on the local database as member, imam and committee member.
+- [ ] Deferred to M3 with the service refactor: `TenantContext` helper. Services already take the masjid id from the signed-in user (audited, no leak found); M3 replaces the eight copies of that lookup with one helper.
+- [x] Admin endpoints need `platform.*` permissions, which only SUPER_ADMIN has. Only IMAM, COMMITTEE_MEMBER and MEMBER can be assigned; assignment is transactional and logged.
+- [x] MEMBER keeps today's read access, listed explicitly as `EVERYONE` in the permissions file. Imam salary "my history" now uses `own_contributions.read`, so imams and committee members can see their own payments too.
+- [x] Admin masjid list and status update use validated DTOs; user list filters are validated (status enum, known role, UUID).
+- [x] Tests: role matrix, route coverage, guard behaviour, admin rules (16 new backend tests); app permission helper tests. Cross-masjid isolation is not covered by automated tests yet (needs a test database; planned with M7 e2e tests).
+- [x] App: every show/hide decision reads `user.permissions` (`PermissionHelper` + `AppPermissions`), not role names. The super admin role dialog offers only assignable roles.
 
 Done when: the role matrix in code matches the product rule and the tenancy tests pass.
 
@@ -280,8 +290,8 @@ Still open:
 |---|---|---|
 | M0 Hygiene | done 2026-10-07 | commit `301c235`; `no-unsafe-*` lint rules are warnings until M3 |
 | M1 Backend security | done 2026-10-07 | migrations applied and login flows verified on the local DB |
-| M2 Access model | next | |
-| M3 Backend structure | not started | |
+| M2 Access model | done 2026-10-07 | membership table and tenant helper deferred (see M2 notes) |
+| M3 Backend structure | next | |
 | M4 Flutter foundation | not started | |
 | M5 Flutter features | not started | |
 | M6 Deployment | not started | |

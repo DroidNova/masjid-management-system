@@ -14,11 +14,7 @@ import { ProjectsModule } from './modules/masjid-core/projects/projects.module';
 import { HealthModule } from './modules/platform-core/health/health.module';
 import { ImamSalariesModule } from './modules/masjid-core/imam-salaries/imam-salaries.module';
 import { MasjidRequestsModule } from './modules/platform-core/masjid-requests/masjid-requests.module';
-import { PermissionsModule } from './modules/platform-core/permissions/permissions.module';
 import { RolesModule } from './modules/platform-core/roles/roles.module';
-import { SessionsModule } from './modules/platform-core/sessions/sessions.module';
-import { SettingsModule } from './modules/platform-core/settings/settings.module';
-import { UsersModule } from './modules/platform-core/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AppConfig } from './config/app-config';
 import { AppConfigModule } from './config/app-config.module';
@@ -123,11 +119,7 @@ function usePrettyLogs(config: AppConfig): boolean {
     MasjidsModule,
     NamazTimesModule,
     ProjectsModule,
-    PermissionsModule,
     RolesModule,
-    SessionsModule,
-    SettingsModule,
-    UsersModule,
   ],
   providers: [HttpExceptionFilter],
 })

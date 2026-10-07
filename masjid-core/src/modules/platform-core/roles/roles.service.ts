@@ -1,26 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-
-const ROLE_NAMES = [
-  'SUPER_ADMIN',
-  'MASJID_ADMIN',
-  'IMAM',
-  'COMMITTEE_MEMBER',
-  'MEMBER',
-] as const;
-
-type RoleName = (typeof ROLE_NAMES)[number];
+import { ROLE_NAMES, RoleName } from '../../../access/permissions';
 
 @Injectable()
 export class RolesService {
   constructor(private readonly prisma: PrismaService) {}
-
-  getStatus() {
-    return {
-      success: true,
-      message: 'Roles module is ready',
-    };
-  }
 
   async validateRoleNames(
     roleNames: string[],

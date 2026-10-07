@@ -11,8 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -25,19 +23,20 @@ import {
   UpdateSalaryAmountDto,
 } from './dto/imam-salary-ledger.dto';
 import { ImamSalariesService } from './imam-salaries.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = { user: AuthenticatedUser };
-const managers = ['SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER'] as const;
 
 @ApiTags('Imam Salary Ledger')
 @ApiBearerAuth('bearer')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('imam-salaries')
 export class ImamSalariesController {
   constructor(private readonly service: ImamSalariesService) {}
 
   @Get('my-history')
-  @Roles('MEMBER')
+  @RequirePermissions(PERMISSIONS.OWN_CONTRIBUTIONS_READ)
   myHistory(
     @Query() query: MySalaryHistoryQueryDto,
     @Req() req: AuthenticatedRequest,
@@ -46,7 +45,7 @@ export class ImamSalariesController {
   }
 
   @Post('months')
-  @Roles(...managers)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
   createMonth(
     @Body() dto: CreateSalaryMonthDto,
     @Req() req: AuthenticatedRequest,
@@ -55,7 +54,7 @@ export class ImamSalariesController {
   }
 
   @Get('months')
-  @Roles(...managers, 'IMAM')
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_READ)
   listMonths(
     @Query() query: SalaryMonthsQueryDto,
     @Req() req: AuthenticatedRequest,
@@ -64,7 +63,7 @@ export class ImamSalariesController {
   }
 
   @Get('months/:id/assignments')
-  @Roles(...managers)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
   assignments(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: SalaryAssignmentsQueryDto,
@@ -74,7 +73,7 @@ export class ImamSalariesController {
   }
 
   @Patch('months/:id/amount')
-  @Roles(...managers)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
   updateAmount(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSalaryAmountDto,
@@ -84,7 +83,7 @@ export class ImamSalariesController {
   }
 
   @Get('months/:id')
-  @Roles(...managers, 'IMAM')
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_READ)
   month(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
@@ -93,7 +92,7 @@ export class ImamSalariesController {
   }
 
   @Post('payments')
-  @Roles(...managers)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
   addPayment(
     @Body() dto: CreateSalaryPaymentDto,
     @Req() req: AuthenticatedRequest,
@@ -102,7 +101,7 @@ export class ImamSalariesController {
   }
 
   @Get('payments')
-  @Roles(...managers)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
   payments(
     @Query() query: SalaryPaymentsQueryDto,
     @Req() req: AuthenticatedRequest,

@@ -197,7 +197,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     }
 
     final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
-      _currentUser?.roles ?? const <String>[],
+      _currentUser?.permissions ?? const <String>[],
     );
 
     return Scaffold(

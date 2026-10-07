@@ -11,7 +11,7 @@ class CommunitySection extends StatelessWidget {
     required this.users,
     required this.emptyMessage,
     this.subtitle,
-    this.currentUserRoles = const <String>[],
+    this.currentUserPermissions = const <String>[],
     this.onEditUser,
     this.onChangeUserStatus,
   });
@@ -20,7 +20,7 @@ class CommunitySection extends StatelessWidget {
   final String? subtitle;
   final List<CommunityUserModel> users;
   final String emptyMessage;
-  final List<String> currentUserRoles;
+  final List<String> currentUserPermissions;
   final ValueChanged<CommunityUserModel>? onEditUser;
   final ValueChanged<CommunityUserModel>? onChangeUserStatus;
 
@@ -48,7 +48,7 @@ class CommunitySection extends StatelessWidget {
             else
               ...users.map((user) {
                 final canManage = PermissionHelper.canManageCommunityUser(
-                  currentUserRoles: currentUserRoles,
+                  currentUserPermissions: currentUserPermissions,
                   targetUserRoles: user.roles,
                 );
                 return CommunityUserCard(

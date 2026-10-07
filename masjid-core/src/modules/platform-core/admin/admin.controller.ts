@@ -22,14 +22,18 @@ import {
 } from '@nestjs/swagger';
 import { PaginatedResponseDto } from '../../../common/dto/paginated-response.dto';
 import { SuccessResponseDto } from '../../../common/dto/success-response.dto';
-import { Permissions } from '../../../common/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../../common/guards/permissions.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import { AdminService } from './admin.service';
+import {
+  ListAdminMasjidsDto,
+  UpdateMasjidStatusDto,
+} from './dto/admin-masjids.dto';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { ListAdminUsersDto } from './dto/list-admin-users.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -49,12 +53,12 @@ const standardErrorSchema = {
 @ApiBearerAuth('bearer')
 @ApiExtraModels(SuccessResponseDto, PaginatedResponseDto)
 @Controller('admin/users')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get()
-  @Permissions('users.read')
+  @RequirePermissions(PERMISSIONS.PLATFORM_USERS_READ)
   @ApiOperation({ summary: 'Get users with pagination and optional search' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
@@ -79,7 +83,7 @@ export class AdminController {
   }
 
   @Get(':id')
-  @Permissions('users.read')
+  @RequirePermissions(PERMISSIONS.PLATFORM_USERS_READ)
   @ApiOperation({ summary: 'Get user by id' })
   @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
   @ApiResponse({
@@ -108,7 +112,7 @@ export class AdminController {
   }
 
   @Patch(':id/status')
-  @Permissions('users.update')
+  @RequirePermissions(PERMISSIONS.PLATFORM_USERS_MANAGE)
   @ApiOperation({ summary: 'Update user status' })
   @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
   @ApiBody({ type: UpdateUserStatusDto })
@@ -138,7 +142,7 @@ export class AdminController {
   }
 
   @Post(':id/roles')
-  @Permissions('roles.assign')
+  @RequirePermissions(PERMISSIONS.PLATFORM_ROLES_ASSIGN)
   @ApiOperation({ summary: 'Assign roles to a user' })
   @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
   @ApiBody({ type: AssignUserRolesDto })
@@ -174,12 +178,12 @@ export class AdminController {
 @ApiTags('Admin Dashboard')
 @ApiBearerAuth('bearer')
 @Controller('admin/dashboard')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 export class AdminDashboardController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('summary')
-  @Permissions('users.read')
+  @RequirePermissions(PERMISSIONS.PLATFORM_USERS_READ)
   @ApiOperation({ summary: 'Get optimized super admin dashboard summary' })
   getSummary() {
     return this.adminService.getDashboardSummary();
@@ -189,30 +193,30 @@ export class AdminDashboardController {
 @ApiTags('Admin Masjids')
 @ApiBearerAuth('bearer')
 @Controller('admin/masjids')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 export class AdminMasjidsController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get()
-  @Permissions('users.read')
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJIDS_MANAGE)
   @ApiOperation({ summary: 'Get masjids with pagination and filters' })
-  listMasjids(@Query() query: Record<string, string>) {
+  listMasjids(@Query() query: ListAdminMasjidsDto) {
     return this.adminService.listMasjids(query);
   }
 
   @Get(':id')
-  @Permissions('users.read')
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJIDS_MANAGE)
   @ApiOperation({ summary: 'Get masjid details by id' })
   getMasjid(@Param('id') id: string) {
     return this.adminService.getMasjidById(id);
   }
 
   @Patch(':id/status')
-  @Permissions('users.update')
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJIDS_MANAGE)
   @ApiOperation({ summary: 'Update masjid status' })
   updateMasjidStatus(
     @Param('id') id: string,
-    @Body() dto: { status: string; reason?: string },
+    @Body() dto: UpdateMasjidStatusDto,
   ) {
     return this.adminService.updateMasjidStatus(id, dto);
   }

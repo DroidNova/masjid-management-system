@@ -17,8 +17,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateMasjidUserDto } from './dto/create-masjid-user.dto';
@@ -28,6 +26,8 @@ import {
   UpdateMasjidUserStatusDto,
 } from './dto/update-masjid-user.dto';
 import { MasjidsService } from './masjids.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -49,6 +49,7 @@ export class MasjidsController {
   constructor(private readonly masjidsService: MasjidsService) {}
 
   @Get('my')
+  @RequirePermissions(PERMISSIONS.MASJID_READ)
   @ApiOperation({ summary: "Get the current user's masjid profile" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -61,8 +62,7 @@ export class MasjidsController {
   }
 
   @Patch('my/welcome-message')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'IMAM', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.MASJID_UPDATE)
   @ApiOperation({ summary: "Update the current masjid's welcome message" })
   @ApiBody({ type: UpdateWelcomeMessageDto })
   @ApiResponse({
@@ -79,8 +79,7 @@ export class MasjidsController {
   }
 
   @Post('my/users')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.MEMBERS_MANAGE)
   @ApiOperation({ summary: 'Create a user in current masjid' })
   @ApiBody({ type: CreateMasjidUserDto })
   @ApiResponse({
@@ -97,8 +96,7 @@ export class MasjidsController {
   }
 
   @Patch('my/users/:userId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.MEMBERS_MANAGE)
   @ApiOperation({ summary: 'Update a user in current masjid' })
   @ApiBody({ type: UpdateMasjidUserDto })
   updateMyMasjidUser(
@@ -110,8 +108,7 @@ export class MasjidsController {
   }
 
   @Patch('my/users/:userId/status')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.MEMBERS_MANAGE)
   @ApiOperation({ summary: 'Update a user status in current masjid' })
   @ApiBody({ type: UpdateMasjidUserStatusDto })
   updateMyMasjidUserStatus(
@@ -127,6 +124,7 @@ export class MasjidsController {
   }
 
   @Get('my/users')
+  @RequirePermissions(PERMISSIONS.MEMBERS_READ)
   @ApiOperation({ summary: "Get users linked to the current user's masjid" })
   @ApiResponse({
     status: HttpStatus.OK,

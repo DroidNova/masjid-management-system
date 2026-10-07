@@ -149,20 +149,16 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     }
 
     final dashboard = _dashboard;
-    final roles = _currentUser?.roles ?? const <String>[];
-    final canUpdateNamazTime = PermissionHelper.canUpdateNamazTime(roles);
+    final permissions = _currentUser?.permissions ?? const <String>[];
+    final canUpdateNamazTime = PermissionHelper.canUpdateNamazTime(permissions);
     final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
-      roles,
+      permissions,
     );
-    final canManageFinance = PermissionHelper.canManageFinance(roles);
-    final canManageProjects = PermissionHelper.canManageProjects(roles);
-    final canViewContributions =
-        PermissionHelper.hasRoleInList(roles, PermissionHelper.member) ||
-        PermissionHelper.hasRoleInList(
-          roles,
-          PermissionHelper.committeeMember,
-        ) ||
-        PermissionHelper.hasRoleInList(roles, PermissionHelper.masjidAdmin);
+    final canManageFinance = PermissionHelper.canManageFinance(permissions);
+    final canManageProjects = PermissionHelper.canManageProjects(permissions);
+    final canViewContributions = PermissionHelper.canViewOwnContributions(
+      permissions,
+    );
     if (dashboard == null) {
       return _DashboardErrorView(
         message: 'Unable to load dashboard',

@@ -21,8 +21,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -33,6 +31,8 @@ import {
 import { GetExpensesQueryDto } from './dto/get-expenses-query.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { ExpensesService } from './expenses.service';
+import { PERMISSIONS } from '../../../access/permissions';
+import { RequirePermissions } from '../../../access/require-permissions';
 
 type AuthenticatedRequest = { user: AuthenticatedUser };
 const standardErrorSchema = {
@@ -51,6 +51,7 @@ export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.FINANCE_READ)
   @ApiOperation({ summary: "Get current masjid's expenses" })
   @ApiQuery({ name: 'type', required: false, enum: ExpenseTypeDto })
   @ApiQuery({ name: 'status', required: false, enum: FinanceEntryStatusDto })
@@ -72,8 +73,7 @@ export class ExpensesController {
   }
 
   @Post('my-masjid')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.EXPENSES_MANAGE)
   @ApiOperation({ summary: "Create current masjid's expense" })
   @ApiBody({ type: CreateExpenseDto })
   @ApiResponse({
@@ -85,6 +85,7 @@ export class ExpensesController {
   }
 
   @Get(':id')
+  @RequirePermissions(PERMISSIONS.FINANCE_READ)
   @ApiOperation({ summary: 'Get expense details' })
   @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiResponse({
@@ -99,8 +100,7 @@ export class ExpensesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.EXPENSES_MANAGE)
   @ApiOperation({ summary: 'Update an expense' })
   @ApiBody({ type: UpdateExpenseDto })
   update(
@@ -112,8 +112,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MASJID_ADMIN', 'COMMITTEE_MEMBER')
+  @RequirePermissions(PERMISSIONS.EXPENSES_MANAGE)
   @ApiOperation({ summary: 'Cancel an expense' })
   cancel(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

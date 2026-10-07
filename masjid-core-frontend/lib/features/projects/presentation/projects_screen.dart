@@ -164,7 +164,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     final visibleProjects = _filteredProjects;
     final canManageProjects = PermissionHelper.canManageProjects(
-      _currentUser?.roles ?? const <String>[],
+      _currentUser?.permissions ?? const <String>[],
     );
 
     return SafeArea(

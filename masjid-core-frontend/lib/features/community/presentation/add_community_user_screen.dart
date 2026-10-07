@@ -72,7 +72,7 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
     if (!mounted) return;
     final allowedRoles = user == null
         ? const <String>[]
-        : PermissionHelper.allowedCommunityRolesToCreate(user.roles);
+        : PermissionHelper.allowedCommunityRolesToCreate(user.permissions);
     setState(() {
       _currentUser = user;
       _allowedRoles = allowedRoles;
@@ -179,7 +179,7 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   bool get _shouldShowMasjidIdField {
     final user = _currentUser;
     if (user == null) return false;
-    return PermissionHelper.hasRole(user, PermissionHelper.superAdmin) &&
+    return PermissionHelper.has(user, AppPermissions.platformRolesAssign) &&
         (user.masjidId == null || user.masjidId!.trim().isEmpty);
   }
 

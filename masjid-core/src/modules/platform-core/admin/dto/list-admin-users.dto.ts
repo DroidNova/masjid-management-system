@@ -1,6 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { UserStatus } from '../../../../generated/prisma/enums';
+import { ROLE_NAMES } from '../../../../access/permissions';
 
 export class ListAdminUsersDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -23,18 +34,18 @@ export class ListAdminUsersDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ example: 'ACTIVE' })
+  @ApiPropertyOptional({ enum: UserStatus, example: 'ACTIVE' })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 
-  @ApiPropertyOptional({ example: 'IMAM' })
+  @ApiPropertyOptional({ enum: ROLE_NAMES, example: 'IMAM' })
   @IsOptional()
-  @IsString()
+  @IsIn(ROLE_NAMES)
   role?: string;
 
   @ApiPropertyOptional({ example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   masjidId?: string;
 }
