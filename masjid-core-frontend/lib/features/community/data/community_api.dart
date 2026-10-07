@@ -19,6 +19,15 @@ class CommunityApi {
     }
   }
 
+  /// Leaves the signed-in user's masjid (POST /masjids/my/leave).
+  Future<void> leaveMyMasjid() async {
+    try {
+      await _apiClient.dio.post<Object?>('/masjids/my/leave');
+    } on DioException catch (error) {
+      throw Exception(_readDioErrorMessage(error));
+    }
+  }
+
   Future<List<CommunityUserModel>> getMyMasjidUsers() async {
     try {
       final response = await _apiClient.dio.get<Object?>('/masjids/my/users');

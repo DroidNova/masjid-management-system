@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/shared/widgets/account_menu_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/logout_button.dart';
 
 class MainShellScreen extends StatelessWidget {
@@ -35,7 +36,7 @@ class MainShellScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Masjid Core'),
-        actions: const <Widget>[LogoutButton()],
+        actions: const <Widget>[AccountMenuButton(), LogoutButton()],
       ),
       body: child,
       bottomNavigationBar: BottomNavigationBar(

@@ -9,6 +9,7 @@ import {
   PERMISSIONS as P,
   Permission,
   permissionsForRoles,
+  FIELD_LEVEL_PERMISSIONS,
   ROLE_PERMISSIONS,
 } from './permissions';
 import {
@@ -70,10 +71,20 @@ describe('Role matrix (product rule)', () => {
     }
   });
 
-  it('gives members read access only', () => {
+  it('gives members read access only (plus leaving their masjid)', () => {
     const memberPermissions = permissionsForRoles(['MEMBER']);
-    expect(memberPermissions.every((p) => p.endsWith('.read'))).toBe(true);
+    expect(
+      memberPermissions.every(
+        (p) => p.endsWith('.read') || p === P.MASJID_LEAVE,
+      ),
+    ).toBe(true);
     expect(memberPermissions).toContain(P.OWN_CONTRIBUTIONS_READ);
+  });
+
+  it('shows member phone numbers to imam and committee, not to members', () => {
+    expect(can('IMAM', P.MEMBERS_CONTACT_READ)).toBe(true);
+    expect(can('COMMITTEE_MEMBER', P.MEMBERS_CONTACT_READ)).toBe(true);
+    expect(can('MEMBER', P.MEMBERS_CONTACT_READ)).toBe(false);
   });
 
   it('merges permissions of several roles and ignores unknown roles', () => {
@@ -162,7 +173,11 @@ describe('Route coverage', () => {
 
   it('uses every catalogue permission on at least one route', () => {
     const used = new Set(routes.flatMap((route) => route.permissions ?? []));
-    expect(ALL_PERMISSIONS.filter((p) => !used.has(p))).toEqual([]);
+    expect(
+      ALL_PERMISSIONS.filter(
+        (p) => !used.has(p) && !FIELD_LEVEL_PERMISSIONS.includes(p),
+      ),
+    ).toEqual([]);
   });
 });
 

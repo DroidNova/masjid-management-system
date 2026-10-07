@@ -25,6 +25,8 @@ export const PERMISSIONS = {
   MASJID_READ: 'masjid.read',
   /** Edit the masjid profile (welcome message). */
   MASJID_UPDATE: 'masjid.update',
+  /** Leave the masjid you belong to (so another masjid can add you). */
+  MASJID_LEAVE: 'masjid.leave',
 
   // Prayer times and notices
   NAMAZ_TIMES_READ: 'namaz_times.read',
@@ -34,6 +36,11 @@ export const PERMISSIONS = {
 
   // People of the masjid
   MEMBERS_READ: 'members.read',
+  /**
+   * See phone numbers and emails in the member list. Without it the list
+   * shows names only. Checked inside MasjidsService, not on a route.
+   */
+  MEMBERS_CONTACT_READ: 'members.contact.read',
   /** Add villagers (MEMBER role), edit them, activate/deactivate them. */
   MEMBERS_MANAGE: 'members.manage',
 
@@ -90,6 +97,15 @@ const EVERYONE: Permission[] = [
   P.FINANCE_READ,
   P.PROJECTS_READ,
   P.OWN_CONTRIBUTIONS_READ,
+  P.MASJID_LEAVE,
+];
+
+/**
+ * Permissions checked inside services for individual fields rather than on
+ * a whole route. The route-coverage test skips these.
+ */
+export const FIELD_LEVEL_PERMISSIONS: readonly Permission[] = [
+  PERMISSIONS.MEMBERS_CONTACT_READ,
 ];
 
 export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
@@ -104,10 +120,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
     P.ANNOUNCEMENTS_MANAGE,
     P.IMAM_SALARY_READ,
     P.CONTRIBUTIONS_READ,
+    P.MEMBERS_CONTACT_READ,
   ],
 
   COMMITTEE_MEMBER: [
     ...EVERYONE,
+    P.MEMBERS_CONTACT_READ,
     P.NAMAZ_TIMES_UPDATE,
     P.ANNOUNCEMENTS_MANAGE,
     P.MASJID_UPDATE,

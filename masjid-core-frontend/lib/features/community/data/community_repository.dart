@@ -19,6 +19,8 @@ class CommunityRepository {
     );
   }
 
+  Future<void> leaveMyMasjid() => _communityApi.leaveMyMasjid();
+
   Future<List<CommunityUserModel>> getMyMasjidUsers() {
     return ApiRequestCoordinator.instance.run<List<CommunityUserModel>>(
       key: 'GET:/masjids/my/users',

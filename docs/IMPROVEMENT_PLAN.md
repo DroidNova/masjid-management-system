@@ -49,14 +49,16 @@ Implemented in M2 in `masjid-core/src/access/permissions.ts` (the code is the au
 | Edit masjid welcome message | yes | | yes | |
 | Members: add villagers, edit, activate/deactivate | yes | | yes | |
 | Appoint imams and committee members | yes | | | |
-| Read dashboard, namaz times, announcements, finance summary, projects, member list, own contributions | yes | yes | yes | yes |
+| See members' phone numbers and emails | yes | yes | yes | |
+| Read dashboard, namaz times, announcements, finance summary, projects, member names, own contributions | yes | yes | yes | yes |
+| Leave their masjid | | yes | yes | yes |
 
 MASJID_ADMIN exists in the database but has no permissions.
 
-Owner decisions to confirm (each is a one-line change in the permissions file):
-- Committee keeps namaz times and announcements (it had them before; the owner said the imam can *only* do those, not that the committee loses them).
-- The imam lost the welcome-message edit (it is a masjid profile setting, so it went to the committee).
-- Members still see the full member list with phone numbers, as before. The audit flagged this as a privacy risk; remove `members.read` from MEMBER to hide it.
+Owner decisions (2026-10-08):
+- Members see names only; phone numbers and emails are for the imam and committee (`members.contact.read`). A member always sees their own number.
+- One phone number belongs to one masjid at a time. Adding a person who is in another masjid fails with `USER_IN_ANOTHER_MASJID` ("ask them to leave that masjid first"). Anyone can leave their masjid from the app menu (`POST /masjids/my/leave`); their imam/committee role ends and they become a plain member with no masjid until a committee adds them again. History is kept.
+- Accepted without objection: committee keeps namaz times and announcements; the imam does not edit the welcome message.
 
 - **Permissions must be easy to change.** One file holds the permission catalogue and the role-to-permission matrix. Changing who can do what means editing that file and re-seeding. The Flutter app receives the user's permission list at login and shows or hides features from it, never from role names.
 

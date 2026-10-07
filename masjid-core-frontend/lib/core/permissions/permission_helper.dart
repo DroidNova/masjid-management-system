@@ -11,12 +11,14 @@ class AppPermissions {
   static const String dashboardRead = 'dashboard.read';
   static const String masjidRead = 'masjid.read';
   static const String masjidUpdate = 'masjid.update';
+  static const String masjidLeave = 'masjid.leave';
   static const String namazTimesRead = 'namaz_times.read';
   static const String namazTimesUpdate = 'namaz_times.update';
   static const String announcementsRead = 'announcements.read';
   static const String announcementsManage = 'announcements.manage';
   static const String membersRead = 'members.read';
   static const String membersManage = 'members.manage';
+  static const String membersContactRead = 'members.contact.read';
   static const String financeRead = 'finance.read';
   static const String collectionsManage = 'collections.manage';
   static const String expensesManage = 'expenses.manage';

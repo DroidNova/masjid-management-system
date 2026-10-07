@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   HttpStatus,
@@ -59,6 +60,29 @@ export class MasjidsController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, schema: standardErrorSchema })
   getMyMasjid(@Req() request: AuthenticatedRequest) {
     return this.masjidsService.getMyMasjid(request.user);
+  }
+
+  @Post('my/leave')
+  @RequirePermissions(PERMISSIONS.MASJID_LEAVE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Leave your masjid',
+    description:
+      'Needed before another masjid can add you (one masjid per phone number). Imam and committee roles end; you stay signed in with no masjid until a committee adds you again.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    schema: {
+      example: {
+        success: true,
+        message: 'Request successful',
+        data: { left: true },
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, schema: standardErrorSchema })
+  leaveMyMasjid(@Req() request: AuthenticatedRequest) {
+    return this.masjidsService.leaveMyMasjid(request.user);
   }
 
   @Patch('my/welcome-message')
