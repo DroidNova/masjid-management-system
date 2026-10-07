@@ -10,7 +10,7 @@ Last updated 2026-10-07.
 
 - **Done:** M0 Hygiene and M1 Backend security foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
 - **Next:** M2 Access model and tenancy. Start by writing `src/access/permissions.ts` (catalogue + role matrix from section 1), then the `MasjidMembership` table and data migration, then swap every `@Roles(...)` for `@RequirePermission(...)`.
-- **Before M2 on a real database:** run `npx prisma migrate deploy` (adds `OtpChallenge`, clears old sessions) and optionally `npm run dev:reset-passwords` so existing imams and committee members use `123456`. M1 has only been verified with unit tests and a boot test; no database was available.
+- **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it. Existing imam/committee users still have the old password `12345678` until `npm run dev:reset-passwords` is run.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
@@ -279,7 +279,7 @@ Still open:
 | Milestone | Status | Notes |
 |---|---|---|
 | M0 Hygiene | done 2026-10-07 | commit `301c235`; `no-unsafe-*` lint rules are warnings until M3 |
-| M1 Backend security | done 2026-10-07 | not yet run against a real database; run `prisma migrate deploy` first |
+| M1 Backend security | done 2026-10-07 | migrations applied and login flows verified on the local DB |
 | M2 Access model | next | |
 | M3 Backend structure | not started | |
 | M4 Flutter foundation | not started | |
