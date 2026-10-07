@@ -107,11 +107,7 @@ describe('ContributionsService', () => {
     );
     expect(response.data).toEqual({
       items: [],
-      total: 0,
-      page: 1,
-      limit: 20,
-      totalPages: 0,
-      hasNextPage: false,
+      meta: { total: 0, page: 1, limit: 20, totalPages: 0, hasNextPage: false },
     });
   });
 

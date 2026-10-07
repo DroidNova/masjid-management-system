@@ -11,6 +11,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
 import { MyPaymentsQueryDto } from './dto/my-payments-query.dto';
+import { pageMeta } from '../../../common/pagination';
 
 const contributionOrderBy = [
   { paidAt: 'desc' },
@@ -120,7 +121,7 @@ export class ContributionsService {
     ]);
     return successResponse('Project contributions fetched successfully', {
       items: items.map((item) => this.withAmount(item)),
-      ...this.pagination(total, page, limit),
+      meta: pageMeta(total, page, limit),
     });
   }
 
@@ -157,7 +158,7 @@ export class ContributionsService {
     ]);
     return successResponse('Collection contributions fetched successfully', {
       items: items.map((item) => this.withAmount(item)),
-      ...this.pagination(total, page, limit),
+      meta: pageMeta(total, page, limit),
     });
   }
 
@@ -203,7 +204,7 @@ export class ContributionsService {
           });
 
     return successResponse('Imam salary contributions fetched successfully', {
-      ...this.pagination(total, page, limit),
+      meta: pageMeta(total, page, limit),
       items: assignments.map((assignment) => ({
         month: assignment.imamSalaryMonth.month,
         year: assignment.imamSalaryMonth.year,
@@ -251,7 +252,7 @@ export class ContributionsService {
     ]);
 
     return successResponse('Imam salary payments fetched successfully', {
-      ...this.pagination(total, page, limit),
+      meta: pageMeta(total, page, limit),
       items: payments.map((payment) => this.withAmount(payment)),
     });
   }
@@ -296,17 +297,6 @@ export class ContributionsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     return { page, limit, skip: (page - 1) * limit };
-  }
-
-  private pagination(total: number, page: number, limit: number) {
-    const totalPages = Math.ceil(total / limit);
-    return {
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNextPage: page < totalPages,
-    };
   }
 
   private validateMonthYear(month: number, year: number): void {

@@ -1,5 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
+import {
+  ERROR_CODES,
+  type ErrorCode,
+} from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import {
   AUDIT_ACTION,
@@ -35,6 +38,8 @@ import {
   SalaryPaymentsQueryDto,
   UpdateSalaryAmountDto,
 } from './dto/imam-salary-ledger.dto';
+import { paged } from '../../../common/pagination';
+import { requireMasjidId } from '../../../common/tenant';
 
 type Db = PrismaService | Prisma.TransactionClient;
 type Pagination = { page?: number; limit?: number };
@@ -61,7 +66,11 @@ export class ImamSalariesService {
         select: { id: true },
       });
       if (existing)
-        this.fail('Salary month already exists', HttpStatus.CONFLICT);
+        this.fail(
+          'Salary month already exists',
+          HttpStatus.CONFLICT,
+          ERROR_CODES.IMAM_SALARY_ALREADY_EXISTS,
+        );
       // Read inside the transaction so the head list and the month agree.
       const heads = await tx.user.findMany({
         where: {
@@ -131,7 +140,7 @@ export class ImamSalariesService {
       }),
       this.prisma.imamSalaryMonth.count({ where }),
     ]);
-    return this.envelope(
+    return paged(
       rows.map((row) => this.toMonth(row)),
       total,
       page,
@@ -174,7 +183,7 @@ export class ImamSalariesService {
       }),
       this.prisma.imamSalaryAssignment.count({ where }),
     ]);
-    return this.envelope(
+    return paged(
       rows.map((row) => this.toAssignment(row)),
       total,
       page,
@@ -261,7 +270,11 @@ export class ImamSalariesService {
         include: { imamSalaryMonth: { select: { month: true, year: true } } },
       });
       if (!assignment)
-        this.fail('Salary assignment not found', HttpStatus.NOT_FOUND);
+        this.fail(
+          'Salary assignment not found',
+          HttpStatus.NOT_FOUND,
+          ERROR_CODES.IMAM_SALARY_NOT_FOUND,
+        );
       if (amount.greaterThan(assignment.dueAmount))
         this.fail('Payment amount cannot exceed current due amount');
       const expected = money(assignment.expectedAmount);
@@ -336,7 +349,7 @@ export class ImamSalariesService {
       }),
       this.prisma.imamSalaryPayment.count({ where }),
     ]);
-    return this.envelope(
+    return paged(
       rows.map((row) => this.toPayment(row)),
       total,
       page,
@@ -428,44 +441,32 @@ export class ImamSalariesService {
     const month = await db.imamSalaryMonth.findFirst({
       where: { id, masjidId },
     });
-    if (!month) this.fail('Salary month not found', HttpStatus.NOT_FOUND);
+    if (!month) {
+      this.fail(
+        'Salary month not found',
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.IMAM_SALARY_NOT_FOUND,
+      );
+    }
     return month;
   }
 
-  /**
-   * Same check as requireMasjidId() in common/tenant.ts, kept local so the
-   * response keeps its current errorCode (BAD_REQUEST, see fail()).
-   */
   private masjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId)
-      this.fail(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-      );
-    return actor.masjidId;
+    return requireMasjidId(actor);
   }
 
-  /** Note: stamps errorCode BAD_REQUEST on every status, 404/409/403 too. */
-  private fail(message: string, status = HttpStatus.BAD_REQUEST): never {
-    throw new ApiException(message, status, ERROR_CODES.BAD_REQUEST);
+  private fail(
+    message: string,
+    status = HttpStatus.BAD_REQUEST,
+    errorCode: ErrorCode = ERROR_CODES.BAD_REQUEST,
+  ): never {
+    throw new ApiException(message, status, errorCode);
   }
 
   private paging(query: Pagination) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     return { page, limit, skip: (page - 1) * limit };
-  }
-
-  private envelope<T>(items: T[], total: number, page: number, limit: number) {
-    const totalPages = Math.ceil(total / limit);
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNextPage: page < totalPages,
-    };
   }
 
   private toMonth(month: ImamSalaryMonth) {

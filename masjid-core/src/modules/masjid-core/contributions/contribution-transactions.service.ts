@@ -20,6 +20,7 @@ import {
   CreateCollectionContributionDto,
   CreateContributionDto,
 } from './dto/create-contribution.dto';
+import { paged } from '../../../common/pagination';
 
 const contributionSelect = {
   id: true,
@@ -133,7 +134,7 @@ export class ContributionTransactionsService {
     ]);
     return successResponse(
       'Project contributions fetched successfully',
-      this.pageResult(
+      paged(
         items.map((item) => this.serialize(item)),
         total,
         page,
@@ -209,7 +210,7 @@ export class ContributionTransactionsService {
     ]);
     return successResponse(
       'Collection contributions fetched successfully',
-      this.pageResult(
+      paged(
         items.map((item) => this.serialize(item)),
         total,
         page,
@@ -284,23 +285,6 @@ export class ContributionTransactionsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     return { page, limit, skip: (page - 1) * limit };
-  }
-
-  private pageResult<T>(
-    items: T[],
-    total: number,
-    page: number,
-    limit: number,
-  ) {
-    const totalPages = Math.ceil(total / limit);
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNextPage: page < totalPages,
-    };
   }
 
   private serialize<T extends { amount: Prisma.Decimal }>(item: T) {

@@ -15,6 +15,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { GetCollectionsQueryDto } from './dto/get-collections-query.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
+import { pageMeta } from '../../../common/pagination';
 
 const collectionSelect = {
   id: true,
@@ -67,7 +68,7 @@ export class CollectionsService {
 
     return {
       items: items.map((item) => this.toResponse(item)),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: pageMeta(total, page, limit),
     };
   }
 

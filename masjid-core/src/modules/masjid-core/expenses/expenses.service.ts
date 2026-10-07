@@ -15,6 +15,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { GetExpensesQueryDto } from './dto/get-expenses-query.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { pageMeta } from '../../../common/pagination';
 
 const expenseSelect = {
   id: true,
@@ -65,7 +66,7 @@ export class ExpensesService {
 
     return {
       items: items.map((item) => this.toResponse(item)),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: pageMeta(total, page, limit),
     };
   }
 

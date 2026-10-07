@@ -43,6 +43,7 @@ import {
   RequestUser,
   requestUserSelect,
 } from './masjid-requests.selects';
+import { pageMeta } from '../../../common/pagination';
 
 /** Committee member as stored in the request's committeeMembers JSON. */
 type CommitteeMember = {
@@ -147,12 +148,7 @@ export class MasjidRequestsService {
 
     return {
       items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: pageMeta(total, page, limit),
     };
   }
 

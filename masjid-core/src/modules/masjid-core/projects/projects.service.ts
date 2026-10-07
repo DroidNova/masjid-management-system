@@ -15,6 +15,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateProjectDto } from './dto/create-project.dto';
 import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { PageMeta, pageMeta } from '../../../common/pagination';
 
 const projectSelect = {
   id: true,
@@ -46,12 +47,7 @@ type ProjectResponse = Omit<
 
 type ProjectsListResponse = {
   items: ProjectResponse[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  meta: PageMeta;
 };
 
 @Injectable()
@@ -85,12 +81,7 @@ export class ProjectsService {
 
     return {
       items: items.map((project) => this.toProjectResponse(project)),
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: pageMeta(total, page, limit),
     };
   }
 

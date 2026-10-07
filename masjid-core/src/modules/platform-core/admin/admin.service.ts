@@ -23,6 +23,7 @@ import {
   ListAdminMasjidsDto,
   UpdateMasjidStatusDto,
 } from './dto/admin-masjids.dto';
+import { pageMeta } from '../../../common/pagination';
 
 const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';
 
@@ -100,10 +101,7 @@ export class AdminService {
         roles: user.userRoles.map((userRole) => userRole.role.name),
         masjidName: user.masjid?.name ?? null,
       })),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      meta: pageMeta(total, page, limit),
     };
   }
 
@@ -344,10 +342,7 @@ export class AdminService {
         imamName: masjid.imamUser?.fullName ?? null,
         usersCount: masjid._count.users,
       })),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      meta: pageMeta(total, page, limit),
     };
   }
 

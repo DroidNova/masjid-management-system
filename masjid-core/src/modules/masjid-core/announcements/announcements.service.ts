@@ -8,6 +8,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { GetAnnouncementsQueryDto } from './dto/get-announcements-query.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { PageMeta, pageMeta } from '../../../common/pagination';
 
 const announcementSelect = {
   id: true,
@@ -30,12 +31,7 @@ type AnnouncementRecord = Prisma.AnnouncementGetPayload<{
 
 type AnnouncementListResponse = {
   items: AnnouncementRecord[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  meta: PageMeta;
 };
 
 @Injectable()
@@ -66,12 +62,7 @@ export class AnnouncementsService {
 
     return {
       items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: pageMeta(total, page, limit),
     };
   }
 

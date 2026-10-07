@@ -23,6 +23,7 @@ import { AuthenticatedUser } from '../../modules/platform-core/auth/types/jwt-pa
 import { PrismaService } from '../../prisma/prisma.service';
 import { requireMasjidId } from '../tenant';
 import { AUDIT_ENTITY } from './audit.service';
+import { pageMeta } from '../pagination';
 
 export class AuditLogQueryDto {
   @ApiPropertyOptional({ enum: Object.values(AUDIT_ENTITY) })
@@ -80,7 +81,7 @@ export class AuditController {
 
     return {
       items,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: pageMeta(total, page, limit),
     };
   }
 }
