@@ -16,7 +16,7 @@ Last updated 2026-10-07.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
-- **Known debt carried forward:** about 200 ESLint `no-unsafe-*` warnings in the backend are downgraded until M3. The app still keeps per-screen state (M4 replaces it).
+- **Known debt carried forward:** The app still keeps per-screen state (M4 replaces it).
 
 ## 1. What the app is
 
