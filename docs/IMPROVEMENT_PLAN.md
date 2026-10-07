@@ -20,6 +20,7 @@ Deployment goal: website + Android app on Play Store (iOS maybe later), backend 
 
 - **Dev auth:** while developing, the OTP is fixed to `1111` and the default password is `123456`. These are env-driven dev values. The real OTP generator and SMS provider are built, configured, and tested only when shipping (M6). Production refuses to start with dev auth enabled.
 - **No UI work now.** Functionality first. Visual polish of the Flutter app happens at the end.
+- **Low budget, full features.** This is a startup with very little money. Every choice is optimised for cost: one small VPS, self-hosted Postgres, free tiers for CI, monitoring, and backups, cheap Indian SMS. Saving money never removes a feature.
 - **Role matrix** (the product rule; implemented in M2):
 
 | Capability | SUPER_ADMIN | IMAM | COMMITTEE_MEMBER | MEMBER |
@@ -108,10 +109,15 @@ Flutter:
 
 ### Infrastructure
 
-- VPS runs `docker compose` with Postgres (internal network only), the API, and Caddy as reverse proxy with automatic TLS. Caddy also serves the Flutter web build.
-- Nightly `pg_dump` to off-server storage. Restore tested once.
-- GitHub Actions: lint, test, and build on every push to `main`. Deploy to the VPS over SSH on a tag.
-- Android App Bundle built with a real upload keystore kept outside the repo.
+Budget target: roughly 400 to 600 INR per month total until there is real traffic.
+
+- One small VPS (2 vCPU, 2 to 4 GB RAM, Hetzner or a cheap Indian provider) runs `docker compose` with Postgres (internal network only), the API, and Caddy as reverse proxy with free automatic TLS. Caddy also serves the Flutter web build. No managed database, no separate hosting for the website.
+- Keep memory low: single API container, Node in production mode, Postgres tuned for 1 GB, Flutter web built with `--release` and served with long cache headers.
+- Nightly `pg_dump` to Backblaze B2 or Cloudflare R2 (both have a free tier that covers this database for years). Restore tested once.
+- GitHub Actions free tier for lint, test, build, and the deploy over SSH on a tag. Keep workflows short so free minutes last.
+- Sentry free tier for error reporting on backend and app. UptimeRobot free tier for uptime checks.
+- SMS: cheapest Indian transactional provider at ship time (Fast2SMS or MSG91, roughly 0.15 to 0.25 INR per OTP). Resend cooldown and attempt limits keep the bill small.
+- Android App Bundle built with a real upload keystore kept outside the repo. Play Console one-time fee is the only platform cost.
 
 ## 4. Milestones
 
