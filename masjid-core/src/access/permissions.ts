@@ -54,6 +54,8 @@ export const PERMISSIONS = {
   CONTRIBUTIONS_READ: 'contributions.read',
   /** Record a contribution received from someone. */
   CONTRIBUTIONS_RECORD: 'contributions.record',
+  /** Who changed what (money records, members) in the masjid. */
+  AUDIT_READ: 'audit.read',
   /** A user's own contribution and imam-salary payment history. */
   OWN_CONTRIBUTIONS_READ: 'own_contributions.read',
 
@@ -121,6 +123,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
     P.IMAM_SALARY_READ,
     P.CONTRIBUTIONS_READ,
     P.MEMBERS_CONTACT_READ,
+    P.AUDIT_READ,
   ],
 
   COMMITTEE_MEMBER: [
@@ -137,6 +140,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
     P.CONTRIBUTIONS_RECORD,
     P.IMAM_SALARY_READ,
     P.IMAM_SALARY_MANAGE,
+    P.AUDIT_READ,
   ],
 
   MEMBER: [...EVERYONE],

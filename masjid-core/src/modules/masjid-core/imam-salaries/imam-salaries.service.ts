@@ -1,7 +1,18 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { type Money, money, sumMoney, toAmount } from '../../../common/money';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
+import {
+  type Money,
+  formatMoney,
+  money,
+  sumMoney,
+  toAmount,
+} from '../../../common/money';
 import {
   Prisma,
   type ImamSalaryAssignment,
@@ -34,7 +45,10 @@ const SERIALIZABLE = {
 
 @Injectable()
 export class ImamSalariesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async createMonth(dto: CreateSalaryMonthDto, actor: AuthenticatedUser) {
     const masjidId = this.masjidId(actor);
@@ -85,6 +99,18 @@ export class ImamSalariesService {
             dueAmount: amountPerHead,
           })),
         });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.SALARY_MONTH,
+          entityId: month.id,
+          summary: `Salary month ${month.month}/${month.year} at ${formatMoney(month.amountPerHead)} per head for ${heads.length} heads, total ${formatMoney(month.totalExpected)}`,
+          after: month,
+        },
+        tx,
+      );
       return this.toMonth(month);
     }, SERIALIZABLE);
   }
@@ -165,6 +191,7 @@ export class ImamSalariesService {
     const amountPerHead = money(dto.amountPerHead);
     return this.prisma.$transaction(async (tx) => {
       const month = await this.findMonth(id, masjidId, tx);
+      const before = { ...month };
       if (amountPerHead.lessThan(month.amountPerHead))
         this.fail('Monthly amount can only be increased');
       const assignments = await tx.imamSalaryAssignment.findMany({
@@ -207,7 +234,21 @@ export class ImamSalariesService {
           updatedByName: actor.fullName,
         },
       });
-      return this.recalculate(tx, id);
+      const updated = await this.recalculate(tx, id);
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.UPDATE,
+          entity: AUDIT_ENTITY.SALARY_MONTH,
+          entityId: id,
+          summary: `Salary month ${before.month}/${before.year} amount per head ${formatMoney(before.amountPerHead)} -> ${formatMoney(amountPerHead)}${reason ? ` (${reason})` : ''}`,
+          before,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     }, SERIALIZABLE);
   }
 
@@ -253,6 +294,18 @@ export class ImamSalariesService {
         },
       });
       await this.recalculate(tx, assignment.imamSalaryMonthId);
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.SALARY_PAYMENT,
+          entityId: payment.id,
+          summary: `Payment ${formatMoney(payment.amount)} ${payment.paymentMode} from ${payment.memberName} for ${payment.paymentForMonth}/${payment.paymentForYear}`,
+          after: payment,
+        },
+        tx,
+      );
       return this.toPayment(payment);
     }, SERIALIZABLE);
   }

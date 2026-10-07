@@ -7,6 +7,11 @@ import {
 } from '../../../common/utils/phone.util';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
 import { requireMasjidId } from '../../../common/tenant';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
@@ -46,6 +51,7 @@ export class MasjidsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
+    private readonly audit: AuditService,
   ) {}
 
   async getMyMasjid(actor: AuthenticatedUser): Promise<MasjidProfile> {
@@ -72,10 +78,30 @@ export class MasjidsService {
     const masjidId = requireMasjidId(actor);
 
     try {
-      const masjid = await this.prisma.masjid.update({
-        where: { id: masjidId },
-        data: { welcomeMsg: dto.welcomeMsg },
-        select: masjidWelcomeSelect,
+      const masjid = await this.prisma.$transaction(async (tx) => {
+        const before = await tx.masjid.findUnique({
+          where: { id: masjidId },
+          select: masjidWelcomeSelect,
+        });
+        const updated = await tx.masjid.update({
+          where: { id: masjidId },
+          data: { welcomeMsg: dto.welcomeMsg },
+          select: masjidWelcomeSelect,
+        });
+        await this.audit.record(
+          {
+            masjidId,
+            actor,
+            action: AUDIT_ACTION.UPDATE,
+            entity: AUDIT_ENTITY.MASJID,
+            entityId: updated.id,
+            summary: `Welcome message updated for ${updated.name}`,
+            before,
+            after: updated,
+          },
+          tx,
+        );
+        return updated;
       });
       this.logger.log({ message: 'Masjid welcome message updated', masjidId });
       return masjid;
@@ -181,6 +207,8 @@ export class MasjidsService {
 
     if (existingByPhone) {
       return this.linkExistingUser({
+        actor,
+        existing: existingByPhone,
         userId: existingByPhone.id,
         masjidId,
         dto,
@@ -223,10 +251,23 @@ export class MasjidsService {
         });
       }
 
-      return tx.user.findUnique({
+      const created = await tx.user.findUnique({
         where: { id: user.id },
         select: masjidUserCreateSelect,
       });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.MEMBER,
+          entityId: user.id,
+          summary: `Member "${dto.fullName.trim()}" added as ${dto.role}`,
+          after: created,
+        },
+        tx,
+      );
+      return created;
     });
 
     const response = this.toCreatedMasjidUserResponse(
@@ -300,19 +341,35 @@ export class MasjidsService {
       }
     }
 
-    const updated = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: dto.fullName.trim(),
-        phone,
-        email,
-        fatherName: dto.fatherName.trim(),
-        age: dto.age,
-        gender: dto.gender,
-        isFamilyHead: dto.isFamilyHead ?? false,
-        familyMemberCount: dto.familyMemberCount ?? null,
-      },
-      select: masjidMemberSelect,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: {
+          fullName: dto.fullName.trim(),
+          phone,
+          email,
+          fatherName: dto.fatherName.trim(),
+          age: dto.age,
+          gender: dto.gender,
+          isFamilyHead: dto.isFamilyHead ?? false,
+          familyMemberCount: dto.familyMemberCount ?? null,
+        },
+        select: masjidMemberSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId: user.masjidId ?? target.masjidId,
+          actor,
+          action: AUDIT_ACTION.UPDATE,
+          entity: AUDIT_ENTITY.MEMBER,
+          entityId: user.id,
+          summary: `Member "${user.fullName}" profile updated`,
+          before: target,
+          after: user,
+        },
+        tx,
+      );
+      return user;
     });
     this.logger.log({
       message: 'Masjid user updated',
@@ -327,11 +384,27 @@ export class MasjidsService {
     userId: string,
     dto: UpdateMasjidUserStatusDto,
   ): Promise<MasjidMemberResponse> {
-    await this.ensureCanManageTargetUser(actor, userId);
-    const updated = await this.prisma.user.update({
-      where: { id: userId },
-      data: { status: dto.status },
-      select: masjidMemberSelect,
+    const target = await this.ensureCanManageTargetUser(actor, userId);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: { status: dto.status },
+        select: masjidMemberSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId: user.masjidId ?? target.masjidId,
+          actor,
+          action: AUDIT_ACTION.STATUS_CHANGE,
+          entity: AUDIT_ENTITY.MEMBER,
+          entityId: user.id,
+          summary: `Member "${user.fullName}" status ${target.status} -> ${user.status}`,
+          before: target,
+          after: user,
+        },
+        tx,
+      );
+      return user;
     });
     this.logger.warn({
       message: 'Masjid user status changed',
@@ -398,21 +471,34 @@ export class MasjidsService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: actor.id },
         data: { masjidId: null },
-      }),
-      this.prisma.userRole.deleteMany({ where: { userId: actor.id } }),
-      this.prisma.userRole.create({
+      });
+      await tx.userRole.deleteMany({ where: { userId: actor.id } });
+      await tx.userRole.create({
         data: { userId: actor.id, roleId: memberRole.id },
-      }),
+      });
       // If they were this masjid's imam, the masjid no longer has one.
-      this.prisma.masjid.updateMany({
+      await tx.masjid.updateMany({
         where: { id: masjidId, imamUserId: actor.id },
         data: { imamUserId: null },
-      }),
-    ]);
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.LEAVE,
+          entity: AUDIT_ENTITY.MEMBER,
+          entityId: actor.id,
+          summary: `Member "${actor.fullName}" left the masjid (was ${actor.roles.join(', ')})`,
+          before: { masjidId, roles: actor.roles },
+          after: { masjidId: null, roles: [CreateMasjidUserRoleDto.MEMBER] },
+        },
+        tx,
+      );
+    });
 
     this.logger.log({
       message: 'User left masjid',
@@ -453,6 +539,8 @@ export class MasjidsService {
 
   /** Adds a person who has no masjid (for example after leaving one) to this masjid. */
   private async linkExistingUser(params: {
+    actor: AuthenticatedUser;
+    existing: ExistingUserByPhone;
     userId: string;
     masjidId: string;
     dto: CreateMasjidUserDto;
@@ -483,10 +571,24 @@ export class MasjidsService {
           select: { id: true },
         });
       }
-      return tx.user.findUnique({
+      const user = await tx.user.findUnique({
         where: { id: userId },
         select: masjidUserCreateSelect,
       });
+      await this.audit.record(
+        {
+          masjidId,
+          actor: params.actor,
+          action: AUDIT_ACTION.JOIN,
+          entity: AUDIT_ENTITY.MEMBER,
+          entityId: userId,
+          summary: `Existing user "${user?.fullName ?? dto.fullName.trim()}" joined as ${dto.role}`,
+          before: params.existing,
+          after: user,
+        },
+        tx,
+      );
+      return user;
     });
 
     const response = this.toCreatedMasjidUserResponse(

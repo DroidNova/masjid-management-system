@@ -13,7 +13,11 @@ describe('ContributionTransactionsService', () => {
       operation(tx),
     ),
   };
-  const service = new ContributionTransactionsService(prisma as never);
+  const audit = { record: jest.fn() };
+  const service = new ContributionTransactionsService(
+    prisma as never,
+    audit as never,
+  );
   const actor = {
     id: 'collector',
     fullName: 'Rafiq',
@@ -55,6 +59,14 @@ describe('ContributionTransactionsService', () => {
       where: { id: 'project-1' },
       data: { collectedAmount: { increment: 500 } },
     });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'PROJECT_CONTRIBUTION',
+        action: 'CREATE',
+        masjidId: 'masjid-1',
+      }),
+      tx,
+    );
   });
 
   it('creates both the collection transaction and finance collection entry', async () => {
@@ -80,5 +92,12 @@ describe('ContributionTransactionsService', () => {
         amount: 100,
       }) as unknown,
     });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'COLLECTION_CONTRIBUTION',
+        action: 'CREATE',
+      }),
+      tx,
+    );
   });
 });

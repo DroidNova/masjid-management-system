@@ -16,6 +16,11 @@ import {
   RoleName,
   UserStatus,
 } from '../../../generated/prisma/enums';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
 import { BCRYPT_ROUNDS } from '../auth/auth.service';
@@ -63,6 +68,7 @@ export class MasjidRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
+    private readonly audit: AuditService,
   ) {}
 
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
@@ -260,7 +266,7 @@ export class MasjidRequestsService {
 
       await this.createOrLinkCommitteeMembers(request, masjid.id, tx);
 
-      return tx.masjidRegistrationRequest.update({
+      const updated = await tx.masjidRegistrationRequest.update({
         where: { id: request.id },
         data: {
           status: MasjidRegistrationStatus.APPROVED,
@@ -271,6 +277,20 @@ export class MasjidRequestsService {
         },
         select: masjidRequestSelect,
       });
+      await this.audit.record(
+        {
+          masjidId: masjid.id,
+          actor,
+          action: AUDIT_ACTION.APPROVE,
+          entity: AUDIT_ENTITY.MASJID_REQUEST,
+          entityId: request.id,
+          summary: `Masjid request "${request.masjidName}" approved`,
+          before: request,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
     this.logger.log({
       message: 'Masjid request approved',
@@ -303,15 +323,31 @@ export class MasjidRequestsService {
       );
     }
 
-    const rejectedRequest = await this.prisma.masjidRegistrationRequest.update({
-      where: { id: request.id },
-      data: {
-        status: MasjidRegistrationStatus.REJECTED,
-        reviewedById: actor.id,
-        reviewedAt: new Date(),
-        rejectionReason: this.nullableString(dto.reason),
-      },
-      select: masjidRequestSelect,
+    const rejectedRequest = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.masjidRegistrationRequest.update({
+        where: { id: request.id },
+        data: {
+          status: MasjidRegistrationStatus.REJECTED,
+          reviewedById: actor.id,
+          reviewedAt: new Date(),
+          rejectionReason: this.nullableString(dto.reason),
+        },
+        select: masjidRequestSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId: null,
+          actor,
+          action: AUDIT_ACTION.REJECT,
+          entity: AUDIT_ENTITY.MASJID_REQUEST,
+          entityId: request.id,
+          summary: `Masjid request "${request.masjidName}" rejected: ${updated.rejectionReason ?? ''}`,
+          before: request,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
     this.logger.warn({
       message: 'Masjid request rejected',
@@ -408,6 +444,7 @@ export class MasjidRequestsService {
 
     const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
     if (existingUser) {
+      this.assertHasNoMasjid(existingUser, 'Imam', phone);
       return existingUser;
     }
 
@@ -471,8 +508,28 @@ export class MasjidRequestsService {
         continue;
       }
 
+      this.assertHasNoMasjid(user, 'Committee member', phone ?? fullName ?? '');
       await this.linkUserToMasjid(user.id, masjidId, db);
       await this.assignRoleToUser(user.id, RoleName.COMMITTEE_MEMBER, db);
+    }
+  }
+
+  /**
+   * One phone number belongs to one masjid at a time. Approval stops (and the
+   * whole transaction rolls back) if the imam or a committee member already
+   * belongs to a masjid, so the super admin can ask them to leave it first.
+   */
+  private assertHasNoMasjid(
+    user: { masjidId: string | null },
+    label: string,
+    contact: string,
+  ): void {
+    if (user.masjidId) {
+      throw new ApiException(
+        `${label} ${contact} is already a member of another masjid. Ask them to leave that masjid from the app first, or change the request.`,
+        HttpStatus.CONFLICT,
+        ERROR_CODES.USER_IN_ANOTHER_MASJID,
+      );
     }
   }
 
@@ -651,6 +708,15 @@ export class MasjidRequestsService {
           typeof member.phone === 'string'
             ? (this.normalizeNullablePhone(member.phone) ?? undefined)
             : undefined,
+        // Profile details entered on the request form (previously dropped).
+        fatherName:
+          typeof member.fatherName === 'string'
+            ? (this.nullableString(member.fatherName) ?? undefined)
+            : undefined,
+        age: typeof member.age === 'number' ? member.age : undefined,
+        gender: Object.values(Gender).includes(member.gender as Gender)
+          ? (member.gender as Gender)
+          : undefined,
       }))
       .filter((member) => member.name || member.phone);
   }

@@ -49,7 +49,7 @@ function createService() {
       }),
     },
     userRole: { deleteMany: jest.fn(), create: jest.fn() },
-    masjid: { update: jest.fn() },
+    masjid: { update: jest.fn(), updateMany: jest.fn() },
   };
   const prisma = {
     masjid: {
@@ -74,7 +74,13 @@ function createService() {
         : Promise.all(arg as Promise<unknown>[]),
     ),
   };
-  return { service: new MasjidsService(prisma as never, config), prisma, tx };
+  const audit = { record: jest.fn() };
+  return {
+    service: new MasjidsService(prisma as never, config, audit as never),
+    prisma,
+    tx,
+    audit,
+  };
 }
 
 const newMember: CreateMasjidUserDto = {
@@ -126,7 +132,7 @@ describe('MasjidsService: one masjid per phone number', () => {
   });
 
   it('adds a person who left their previous masjid, keeping their account', async () => {
-    const { service, prisma, tx } = createService();
+    const { service, prisma, tx, audit } = createService();
     prisma.user.findFirst.mockResolvedValue({
       id: 'existing-1',
       masjidId: null,
@@ -149,6 +155,15 @@ describe('MasjidsService: one masjid per phone number', () => {
     expect(tx.userRole.create).toHaveBeenCalledWith({
       data: { userId: 'existing-1', roleId: 'role-MEMBER' },
     });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'MEMBER',
+        action: 'JOIN',
+        entityId: 'existing-1',
+        masjidId: MASJID_A,
+      }),
+      tx,
+    );
   });
 
   it('never links a super admin phone number to a masjid', async () => {
@@ -168,25 +183,34 @@ describe('MasjidsService: one masjid per phone number', () => {
 
 describe('MasjidsService: leave masjid', () => {
   it('removes the masjid, resets roles to MEMBER and clears the imam slot', async () => {
-    const { service, prisma } = createService();
+    const { service, tx, audit } = createService();
     const imam = actor('IMAM');
 
     await expect(service.leaveMyMasjid(imam)).resolves.toEqual({ left: true });
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: imam.id },
       data: { masjidId: null },
     });
-    expect(prisma.userRole.deleteMany).toHaveBeenCalledWith({
+    expect(tx.userRole.deleteMany).toHaveBeenCalledWith({
       where: { userId: imam.id },
     });
-    expect(prisma.userRole.create).toHaveBeenCalledWith({
+    expect(tx.userRole.create).toHaveBeenCalledWith({
       data: { userId: imam.id, roleId: 'role-MEMBER' },
     });
-    expect(prisma.masjid.updateMany).toHaveBeenCalledWith({
+    expect(tx.masjid.updateMany).toHaveBeenCalledWith({
       where: { id: MASJID_A, imamUserId: imam.id },
       data: { imamUserId: null },
     });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'MEMBER',
+        action: 'LEAVE',
+        entityId: imam.id,
+        masjidId: MASJID_A,
+      }),
+      tx,
+    );
   });
 
   it('refuses when the user has no masjid', async () => {

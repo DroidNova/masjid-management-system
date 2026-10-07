@@ -122,7 +122,6 @@ model User {
   masjidRegistrationRequests       MasjidRegistrationRequest[] @relation("MasjidRequestRequestedBy")
   reviewedMasjidRequests           MasjidRegistrationRequest[] @relation("MasjidRequestReviewedBy")
   masjid                           Masjid?                     @relation("MasjidUsers", fields: [masjidId], references: [id])
-  imamSalaries                     ImamSalary[]
   imamSalaryAssignments            ImamSalaryAssignment[]      @relation("SalaryAssignmentMember")
   imamSalaryPayments               ImamSalaryPayment[]         @relation("SalaryPaymentMember")
   collectedSalaryPayments          ImamSalaryPayment[]         @relation("SalaryPaymentCollector")
@@ -251,7 +250,6 @@ model Masjid {
   imamUser                User?                       @relation("MasjidImam", fields: [imamUserId], references: [id])
   approvedBy              User?                       @relation("MasjidApprovedBy", fields: [approvedById], references: [id])
   namazTime               NamazTime?
-  imamSalaries            ImamSalary[]
   imamSalaryMonths        ImamSalaryMonth[]
   imamSalaryAssignments   ImamSalaryAssignment[]
   imamSalaryPayments      ImamSalaryPayment[]
@@ -318,6 +316,7 @@ model MasjidRegistrationRequest {
   @@index([reviewedById])
   @@index([status])
   @@index([createdMasjidId])
+  @@index([requesterPhone])
 }
 
 model NamazTime {
@@ -336,32 +335,9 @@ model NamazTime {
   masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
 }
 
-model ImamSalary {
-  id           String        @id @default(uuid()) @db.Uuid
-  masjidId     String        @db.Uuid
-  imamId       String        @db.Uuid
-  month        Int
-  year         Int
-  salaryAmount Decimal       @db.Decimal(12, 2)
-  paidAmount   Decimal       @default(0) @db.Decimal(12, 2)
-  dueAmount    Decimal       @default(0) @db.Decimal(12, 2)
-  status       PaymentStatus @default(UNPAID)
-  paidDate     DateTime?
-  note         String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
-  imam   User   @relation(fields: [imamId], references: [id])
-
-  @@unique([masjidId, month, year])
-  @@index([masjidId])
-  @@index([imamId])
-  @@index([status])
-}
-
-/// Ledger replacement for the legacy ImamSalary model. Legacy rows are retained
-/// unchanged; all new monthly family-head collection flows use this model.
+/// One imam-salary month. Each family head gets an ImamSalaryAssignment;
+/// payments are ImamSalaryPayment rows. Totals and counts are kept in sync
+/// by ImamSalariesService.
 model ImamSalaryMonth {
   id             String        @id @default(uuid()) @db.Uuid
   masjidId       String        @db.Uuid
@@ -494,6 +470,7 @@ model ProjectContribution {
   @@index([memberId])
   @@index([paidAt])
   @@index([paymentMode])
+  @@index([projectId, paidAt])
 }
 
 model CollectionContribution {
@@ -521,6 +498,7 @@ model CollectionContribution {
   @@index([paidAt])
   @@index([collectionType])
   @@index([paymentMode])
+  @@index([masjidId, paidAt])
 }
 
 model Announcement {
@@ -536,6 +514,7 @@ model Announcement {
 
   @@index([masjidId])
   @@index([isActive])
+  @@index([masjidId, isActive, createdAt])
 }
 
 model Collection {
@@ -559,6 +538,7 @@ model Collection {
   @@index([status])
   @@index([collectedAt])
   @@index([createdById])
+  @@index([masjidId, status, collectedAt])
 }
 
 model Expense {
@@ -582,4 +562,29 @@ model Expense {
   @@index([status])
   @@index([spentAt])
   @@index([createdById])
+  @@index([masjidId, status, spentAt])
+}
+
+/// Who changed what. Written for every create, update and cancel of money
+/// records and for membership changes, so committee decisions are traceable.
+/// Rows are never updated or deleted. No foreign keys, so history survives
+/// even if a user or masjid is removed.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  masjidId  String?  @db.Uuid
+  actorId   String?  @db.Uuid
+  actorName String
+  /// CREATE, UPDATE, CANCEL, STATUS_CHANGE, ... (see src/common/audit)
+  action    String
+  /// COLLECTION, EXPENSE, PROJECT, ... (see src/common/audit)
+  entity    String
+  entityId  String
+  /// One readable line, e.g. "Expense ELECTRICITY_BILL 845.30".
+  summary   String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  @@index([masjidId, createdAt])
+  @@index([entity, entityId])
 }

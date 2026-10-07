@@ -1,0 +1,4880 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/audit-log/my-masjid": {
+      "get": {
+        "operationId": "AuditController_findMyMasjidLog",
+        "parameters": [
+          {
+            "name": "entity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "COLLECTION",
+                "EXPENSE",
+                "PROJECT",
+                "PROJECT_CONTRIBUTION",
+                "COLLECTION_CONTRIBUTION",
+                "SALARY_MONTH",
+                "SALARY_PAYMENT",
+                "MEMBER",
+                "MASJID",
+                "MASJID_REQUEST",
+                "USER"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires permission: audit.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who changed what in the current user's masjid, newest first",
+        "tags": [
+          "Audit log"
+        ]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "AdminController_listUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "alex",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "ACTIVE",
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "SUSPENDED"
+              ]
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "IMAM",
+              "type": "string",
+              "enum": [
+                "SUPER_ADMIN",
+                "MASJID_ADMIN",
+                "IMAM",
+                "COMMITTEE_MEMBER",
+                "MEMBER"
+              ]
+            }
+          },
+          {
+            "name": "masjidId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PaginatedResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires permission: platform.users.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 403,
+                    "message": "Forbidden resource",
+                    "timestamp": "2026-04-01T00:00:00.000Z",
+                    "path": "/api/v1/admin/users"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get users with pagination and optional search",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminController_getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "usr_01HXYZ123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "example": {
+                            "id": "usr_01HXYZ123",
+                            "fullName": "Alex Johnson",
+                            "status": "ACTIVE"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires permission: platform.users.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user by id",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/users/{id}/status": {
+      "patch": {
+        "operationId": "AdminController_updateUserStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "usr_01HXYZ123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "example": {
+                            "id": "usr_01HXYZ123",
+                            "status": "SUSPENDED"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires permission: platform.users.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update user status",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/users/{id}/roles": {
+      "post": {
+        "operationId": "AdminController_assignRoles",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "usr_01HXYZ123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignUserRolesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Roles assigned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "example": {
+                            "id": "usr_01HXYZ123",
+                            "roles": [
+                              "MASJID_ADMIN",
+                              "IMAM"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires permission: platform.roles.assign"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign roles to a user",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/dashboard/summary": {
+      "get": {
+        "operationId": "AdminDashboardController_getSummary",
+        "parameters": [],
+        "responses": {
+          "403": {
+            "description": "Requires permission: platform.users.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get optimized super admin dashboard summary",
+        "tags": [
+          "Admin Dashboard"
+        ]
+      }
+    },
+    "/admin/masjids": {
+      "get": {
+        "operationId": "AdminMasjidsController_listMasjids",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Jama Masjid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SUSPENDED"
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Uttar Pradesh",
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "India",
+              "type": "string"
+            }
+          },
+          {
+            "name": "district",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Bareilly",
+              "type": "string"
+            }
+          },
+          {
+            "name": "locality",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Barota",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: platform.masjids.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get masjids with pagination and filters",
+        "tags": [
+          "Admin Masjids"
+        ]
+      }
+    },
+    "/admin/masjids/{id}": {
+      "get": {
+        "operationId": "AdminMasjidsController_getMasjid",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: platform.masjids.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get masjid details by id",
+        "tags": [
+          "Admin Masjids"
+        ]
+      }
+    },
+    "/admin/masjids/{id}/status": {
+      "patch": {
+        "operationId": "AdminMasjidsController_updateMasjidStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMasjidStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: platform.masjids.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update masjid status",
+        "tags": [
+          "Admin Masjids"
+        ]
+      }
+    },
+    "/auth/login/start": {
+      "post": {
+        "operationId": "AuthController_startLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginStartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login next step resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "nextStep": "OTP_REQUIRED",
+                      "challengeId": "d0f5ec4c-7d04-4bb0-b481-efc2cd981a63",
+                      "otpLength": 4,
+                      "phone": "9876543210",
+                      "message": "OTP sent successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Start phone-first login and determine next step",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login/password": {
+      "post": {
+        "operationId": "AuthController_verifyPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password accepted and OTP challenge created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "nextStep": "OTP_REQUIRED",
+                      "challengeId": "d0f5ec4c-7d04-4bb0-b481-efc2cd981a63",
+                      "otpLength": 4,
+                      "phone": "9876543210",
+                      "message": "OTP sent successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify password for privileged phone login",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login/verify-otp": {
+      "post": {
+        "operationId": "AuthController_verifyOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified and tokens issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid OTP or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify OTP challenge and issue tokens",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "description": "Each refresh token works once. Reusing an old one signs the session out (errorCode SESSION_REVOKED).",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refresh successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotate the refresh token and issue a new access token",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "example": {
+                            "loggedOut": true
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "summary": "Invalidate a refresh token session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_logoutAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All sessions revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "revokedSessions": 3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign out every session of the current user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/password/change": {
+      "post": {
+        "description": "Requires the current password. Other sessions are signed out; the current one stays valid. Members have no password (403 PASSWORD_CHANGE_NOT_ALLOWED).",
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "passwordChanged": true,
+                      "otherSessionsSignedOut": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current password is incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the password of an imam, committee member or admin",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current user fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AuthUserDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get currently authenticated user profile",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service health response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "status": "ok",
+                      "database": "up"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database is unreachable"
+          }
+        },
+        "summary": "Get service health status",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/imam-salaries/my-history": {
+      "get": {
+        "operationId": "ImamSalariesController_myHistory",
+        "parameters": [
+          {
+            "name": "monthsBack",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 24,
+              "default": 6,
+              "example": 6,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/months": {
+      "post": {
+        "operationId": "ImamSalariesController_createMonth",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSalaryMonthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      },
+      "get": {
+        "operationId": "ImamSalariesController_listMonths",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 12,
+              "example": 6,
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 2000,
+              "maximum": 2200,
+              "example": 2026,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/months/{id}/assignments": {
+      "get": {
+        "operationId": "ImamSalariesController_assignments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "PARTIAL",
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "PARTIAL",
+                "PAID"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Matches member name (case-insensitive) or phone.",
+            "schema": {
+              "maxLength": 100,
+              "example": "Ahmed",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/months/{id}/amount": {
+      "patch": {
+        "operationId": "ImamSalariesController_updateAmount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSalaryAmountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/months/{id}": {
+      "get": {
+        "operationId": "ImamSalariesController_month",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/payments": {
+      "post": {
+        "operationId": "ImamSalariesController_addPayment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSalaryPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      },
+      "get": {
+        "operationId": "ImamSalariesController_payments",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 12,
+              "example": 6,
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 2000,
+              "maximum": 2200,
+              "example": 2026,
+              "type": "number"
+            }
+          },
+          {
+            "name": "paymentMode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "CASH",
+              "type": "string",
+              "enum": [
+                "CASH",
+                "ONLINE"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Matches member name (case-insensitive) or phone.",
+            "schema": {
+              "maxLength": 100,
+              "example": "98765",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/announcements/my-masjid": {
+      "get": {
+        "operationId": "AnnouncementsController_findMyMasjidAnnouncements",
+        "parameters": [
+          {
+            "name": "isActive",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "jumma",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcements retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: announcements.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current masjid's announcements",
+        "tags": [
+          "Announcements"
+        ]
+      },
+      "post": {
+        "operationId": "AnnouncementsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Announcement created successfully"
+          },
+          "403": {
+            "description": "Requires permission: announcements.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create announcement for current user's masjid",
+        "tags": [
+          "Announcements"
+        ]
+      }
+    },
+    "/announcements/{id}": {
+      "patch": {
+        "operationId": "AnnouncementsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Announcement updated successfully"
+          },
+          "403": {
+            "description": "Requires permission: announcements.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an announcement from the current masjid",
+        "tags": [
+          "Announcements"
+        ]
+      },
+      "delete": {
+        "operationId": "AnnouncementsController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcement deactivated successfully"
+          },
+          "403": {
+            "description": "Requires permission: announcements.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate an announcement from the current masjid",
+        "tags": [
+          "Announcements"
+        ]
+      }
+    },
+    "/dashboard/my-masjid": {
+      "get": {
+        "operationId": "DashboardController_getMyMasjidDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current masjid dashboard retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: dashboard.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the current user's masjid dashboard",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/finance/my-masjid/summary": {
+      "get": {
+        "operationId": "FinanceController_getMyMasjidSummary",
+        "parameters": [
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 2026,
+              "type": "number"
+            }
+          },
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 6,
+              "type": "number"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Finance summary retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: finance.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current masjid's finance summary",
+        "tags": [
+          "Finance"
+        ]
+      }
+    },
+    "/expenses/my-masjid": {
+      "get": {
+        "operationId": "ExpensesController_findMyMasjidExpenses",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ELECTRICITY_BILL",
+                "WATER_BILL",
+                "IMAM_SALARY",
+                "CLEANING",
+                "REPAIR",
+                "CONSTRUCTION",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-30T23:59:59.999Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "bill",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expenses retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: finance.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current masjid's expenses",
+        "tags": [
+          "Expenses"
+        ]
+      },
+      "post": {
+        "operationId": "ExpensesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Expense created successfully"
+          },
+          "403": {
+            "description": "Requires permission: expenses.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create current masjid's expense",
+        "tags": [
+          "Expenses"
+        ]
+      }
+    },
+    "/expenses/{id}": {
+      "get": {
+        "operationId": "ExpensesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expense retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: finance.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get expense details",
+        "tags": [
+          "Expenses"
+        ]
+      },
+      "patch": {
+        "operationId": "ExpensesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: expenses.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an expense",
+        "tags": [
+          "Expenses"
+        ]
+      },
+      "delete": {
+        "operationId": "ExpensesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: expenses.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an expense",
+        "tags": [
+          "Expenses"
+        ]
+      }
+    },
+    "/collections/my-masjid": {
+      "get": {
+        "operationId": "CollectionsController_findMyMasjidCollections",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "JUMMA_COLLECTION",
+                "DONATION_BOX",
+                "RAMADAN_FUND",
+                "ZAKAT",
+                "SADAQAH",
+                "CONSTRUCTION_FUND",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-30T23:59:59.999Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "jumma",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collections retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: finance.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current masjid's collections",
+        "tags": [
+          "Collections"
+        ]
+      },
+      "post": {
+        "operationId": "CollectionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCollectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Collection created successfully"
+          },
+          "403": {
+            "description": "Requires permission: collections.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create current masjid's collection",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
+    "/collections/contributions": {
+      "post": {
+        "operationId": "CollectionsController_addContribution",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCollectionContributionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: contributions.record"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Collections"
+        ]
+      },
+      "get": {
+        "operationId": "CollectionsController_listContributions",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Contributor name or phone",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CASH",
+                "ONLINE"
+              ]
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "collectionType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "JUMMA_COLLECTION",
+                "DONATION_BOX",
+                "RAMADAN_FUND",
+                "ZAKAT",
+                "SADAQAH",
+                "CONSTRUCTION_FUND",
+                "OTHER"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
+    "/collections/{id}": {
+      "get": {
+        "operationId": "CollectionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: finance.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get collection details",
+        "tags": [
+          "Collections"
+        ]
+      },
+      "patch": {
+        "operationId": "CollectionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCollectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: collections.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a collection",
+        "tags": [
+          "Collections"
+        ]
+      },
+      "delete": {
+        "operationId": "CollectionsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: collections.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a collection",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
+    "/contributions/my/summary": {
+      "get": {
+        "operationId": "ContributionsController_getSummary",
+        "parameters": [],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "My Contributions"
+        ]
+      }
+    },
+    "/contributions/my/projects": {
+      "get": {
+        "operationId": "ContributionsController_getProjectContributions",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "My Contributions"
+        ]
+      }
+    },
+    "/contributions/my/collections": {
+      "get": {
+        "operationId": "ContributionsController_getCollectionContributions",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "My Contributions"
+        ]
+      }
+    },
+    "/contributions/my/imam-salary": {
+      "get": {
+        "operationId": "ContributionsController_getImamSalaryHistory",
+        "parameters": [
+          {
+            "name": "monthsBack",
+            "required": false,
+            "in": "query",
+            "description": "Imam salary months to include",
+            "schema": {
+              "minimum": 1,
+              "maximum": 24,
+              "default": 6,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "My Contributions"
+        ]
+      }
+    },
+    "/contributions/my/imam-salary/{month}/{year}/payments": {
+      "get": {
+        "operationId": "ContributionsController_getImamSalaryPayments",
+        "parameters": [
+          {
+            "name": "month",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: own_contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "My Contributions"
+        ]
+      }
+    },
+    "/masjid-requests": {
+      "post": {
+        "description": "Public endpoint. No bearer token is required.",
+        "operationId": "MasjidRequestsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMasjidRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Masjid request created successfully"
+          }
+        },
+        "summary": "Submit a public masjid registration request",
+        "tags": [
+          "Masjid Requests"
+        ]
+      },
+      "get": {
+        "operationId": "MasjidRequestsController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "jama",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          },
+          {
+            "name": "masjidName",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Jama Masjid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "locality",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Nighasan",
+              "type": "string"
+            }
+          },
+          {
+            "name": "district",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Bhopal",
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "India",
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Madhya Pradesh",
+              "type": "string"
+            }
+          },
+          {
+            "name": "requesterPhone",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "9876543210",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Masjid requests retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: platform.masjid_requests.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Forbidden resource",
+                    "errorCode": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all masjid requests with filters",
+        "tags": [
+          "Masjid Requests"
+        ]
+      }
+    },
+    "/masjid-requests/track": {
+      "post": {
+        "description": "Public endpoint. No bearer token or tracking token is required.",
+        "operationId": "MasjidRequestsController_track",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackMasjidRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applications fetched successfully"
+          }
+        },
+        "summary": "Track public masjid registration requests by requester phone",
+        "tags": [
+          "Masjid Requests"
+        ]
+      }
+    },
+    "/masjid-requests/{id}/status": {
+      "patch": {
+        "operationId": "MasjidRequestsController_updateStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMasjidRequestStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Masjid request status updated successfully"
+          },
+          "403": {
+            "description": "Requires permission: platform.masjid_requests.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Forbidden resource",
+                    "errorCode": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Forbidden resource",
+                    "errorCode": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve or reject a masjid request",
+        "tags": [
+          "Masjid Requests"
+        ]
+      }
+    },
+    "/masjids/my": {
+      "get": {
+        "operationId": "MasjidsController_getMyMasjid",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current masjid profile retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: masjid.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the current user's masjid profile",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/masjids/my/leave": {
+      "post": {
+        "description": "Needed before another masjid can add you (one masjid per phone number). Imam and committee roles end; you stay signed in with no masjid until a committee adds you again.",
+        "operationId": "MasjidsController_leaveMyMasjid",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Request successful",
+                    "data": {
+                      "left": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires permission: masjid.leave"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Leave your masjid",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/masjids/my/welcome-message": {
+      "patch": {
+        "operationId": "MasjidsController_updateWelcomeMessage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWelcomeMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Welcome message updated successfully"
+          },
+          "403": {
+            "description": "Requires permission: masjid.update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the current masjid's welcome message",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/masjids/my/users": {
+      "post": {
+        "operationId": "MasjidsController_createMyMasjidUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMasjidUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Masjid user created successfully"
+          },
+          "403": {
+            "description": "Requires permission: members.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a user in current masjid",
+        "tags": [
+          "Masjids"
+        ]
+      },
+      "get": {
+        "operationId": "MasjidsController_findMyMasjidUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current masjid users retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: members.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get users linked to the current user's masjid",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/masjids/my/users/{userId}": {
+      "patch": {
+        "operationId": "MasjidsController_updateMyMasjidUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMasjidUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: members.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a user in current masjid",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/masjids/my/users/{userId}/status": {
+      "patch": {
+        "operationId": "MasjidsController_updateMyMasjidUserStatus",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMasjidUserStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: members.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a user status in current masjid",
+        "tags": [
+          "Masjids"
+        ]
+      }
+    },
+    "/namaz-times/{masjidId}": {
+      "get": {
+        "operationId": "NamazTimesController_findByMasjidId",
+        "parameters": [
+          {
+            "name": "masjidId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Namaz times retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: namaz_times.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get namaz times by masjid id",
+        "tags": [
+          "Namaz Times"
+        ]
+      },
+      "put": {
+        "operationId": "NamazTimesController_upsert",
+        "parameters": [
+          {
+            "name": "masjidId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertNamazTimeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Namaz times saved successfully"
+          },
+          "403": {
+            "description": "Requires permission: namaz_times.update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Insert or update namaz times by masjid id",
+        "tags": [
+          "Namaz Times"
+        ]
+      }
+    },
+    "/projects/my-masjid": {
+      "get": {
+        "operationId": "ProjectsController_findMyMasjidProjects",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PLANNED",
+                "ONGOING",
+                "COMPLETED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "wuzu",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: projects.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current masjid's projects",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "post": {
+        "operationId": "ProjectsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created successfully"
+          },
+          "403": {
+            "description": "Requires permission: projects.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a project for current user's masjid",
+        "tags": [
+          "Projects"
+        ]
+      }
+    },
+    "/projects/{projectId}/contributions": {
+      "post": {
+        "operationId": "ProjectsController_addContribution",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContributionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: contributions.record"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ]
+      },
+      "get": {
+        "operationId": "ProjectsController_listContributions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Contributor name or phone",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CASH",
+                "ONLINE"
+              ]
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: contributions.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ]
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "operationId": "ProjectsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: projects.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get project details from the current masjid",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "patch": {
+        "operationId": "ProjectsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated successfully"
+          },
+          "403": {
+            "description": "Requires permission: projects.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a project from the current masjid",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "delete": {
+        "operationId": "ProjectsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project cancelled successfully"
+          },
+          "403": {
+            "description": "Requires permission: projects.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a project from the current masjid",
+        "tags": [
+          "Projects"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Masjid Core API",
+    "description": "Backend for the masjid management system. Every masjid route needs a permission; see src/access/permissions.ts.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Access token from /auth/login/verify-otp"
+      }
+    },
+    "schemas": {
+      "SuccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Request successful"
+          },
+          "data": {
+            "type": "object",
+            "description": "Payload returned by the endpoint",
+            "example": {
+              "id": "usr_123",
+              "fullName": "Alex Johnson"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 10
+          },
+          "totalItems": {
+            "type": "number",
+            "example": 43
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 5
+          },
+          "hasPreviousPage": {
+            "type": "boolean",
+            "example": false
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "totalItems",
+          "totalPages",
+          "hasPreviousPage",
+          "hasNextPage"
+        ]
+      },
+      "PaginatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Page items. Item shape depends on the endpoint.",
+            "example": []
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ]
+      },
+      "UpdateUserStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ],
+            "example": "ACTIVE"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AssignUserRolesDto": {
+        "type": "object",
+        "properties": {
+          "roleNames": {
+            "example": [
+              "MASJID_ADMIN",
+              "IMAM"
+            ],
+            "description": "Role names to assign to the user",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "roleNames"
+        ]
+      },
+      "UpdateMasjidStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED",
+              "SUSPENDED"
+            ],
+            "example": "APPROVED"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Duplicate registration"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AuthUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "usr_01HXYZ123"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Alex Johnson"
+          },
+          "email": {
+            "type": "object",
+            "example": "alex@platformcore.dev",
+            "nullable": true
+          },
+          "phone": {
+            "type": "object",
+            "example": "+14155550123",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE"
+          },
+          "masjidId": {
+            "type": "object",
+            "example": "7f2f58ad-02a7-43fb-9d7d-384047d41f25",
+            "nullable": true
+          },
+          "isEmailVerified": {
+            "type": "boolean",
+            "example": true
+          },
+          "isPhoneVerified": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-06-19T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-06-19T00:00:00.000Z"
+          },
+          "roles": {
+            "example": [
+              "SUPER_ADMIN"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "example": [
+              "users.read",
+              "users.update"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "phone",
+          "status",
+          "masjidId",
+          "isEmailVerified",
+          "isPhoneVerified",
+          "createdAt",
+          "updatedAt",
+          "roles",
+          "permissions"
+        ]
+      },
+      "AuthTokensDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.token"
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.token"
+          },
+          "accessTokenExpiresIn": {
+            "type": "number",
+            "example": 900
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "accessTokenExpiresIn"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/AuthUserDto"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/AuthTokensDto"
+          }
+        },
+        "required": [
+          "user",
+          "tokens"
+        ]
+      },
+      "LoginStartDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "description": "Phone number used to start the login flow",
+            "minLength": 6,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "LoginPasswordDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "description": "Phone number used to continue the login flow",
+            "minLength": 6,
+            "maxLength": 20
+          },
+          "password": {
+            "type": "string",
+            "example": "StrongPass123!",
+            "format": "password"
+          }
+        },
+        "required": [
+          "phone",
+          "password"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "description": "Phone number associated with the OTP challenge",
+            "minLength": 6,
+            "maxLength": 20
+          },
+          "challengeId": {
+            "type": "string",
+            "example": "d0f5ec4c-7d04-4bb0-b481-efc2cd981a63"
+          },
+          "otp": {
+            "type": "string",
+            "example": "1111",
+            "description": "Digits only. The expected length is returned as otpLength when the challenge is created.",
+            "minLength": 4,
+            "maxLength": 8
+          }
+        },
+        "required": [
+          "phone",
+          "challengeId",
+          "otp"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.token",
+            "description": "Valid refresh token from a previous authentication response"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "example": "12345678",
+            "format": "password"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "a-new-strong-password",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "CreateSalaryMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "number",
+            "example": 6,
+            "minimum": 1,
+            "maximum": 12
+          },
+          "year": {
+            "type": "number",
+            "example": 2026,
+            "minimum": 2000,
+            "maximum": 2200
+          },
+          "amountPerHead": {
+            "type": "number",
+            "example": 600,
+            "minimum": 0.01,
+            "description": "Amount each family head owes for the month (2 decimals)."
+          },
+          "note": {
+            "type": "string",
+            "example": "Imam salary for June",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "month",
+          "year",
+          "amountPerHead"
+        ]
+      },
+      "UpdateSalaryAmountDto": {
+        "type": "object",
+        "properties": {
+          "amountPerHead": {
+            "type": "number",
+            "example": 700,
+            "minimum": 0.01,
+            "description": "New amount per head. Can only be increased, and never below an amount already paid."
+          },
+          "reason": {
+            "type": "string",
+            "example": "Salary revised by committee",
+            "maxLength": 500,
+            "description": "Appended to the month note."
+          }
+        },
+        "required": [
+          "amountPerHead"
+        ]
+      },
+      "CreateSalaryPaymentDto": {
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "string",
+            "example": "3f1c2a4e-8b7d-4c1e-9a2b-5d6e7f8a9b0c",
+            "description": "Salary assignment id"
+          },
+          "amount": {
+            "type": "number",
+            "example": 250.5,
+            "minimum": 0.01,
+            "description": "Must not exceed the assignment due amount."
+          },
+          "paymentMode": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "ONLINE"
+            ],
+            "example": "CASH"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-06-05T10:30:00.000Z"
+          },
+          "note": {
+            "type": "string",
+            "example": "Paid after Jumma",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "assignmentId",
+          "amount",
+          "paymentMode",
+          "paidAt"
+        ]
+      },
+      "CreateAnnouncementDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Jumma Timing Update",
+            "maxLength": 150
+          },
+          "message": {
+            "type": "string",
+            "example": "Jumma namaz will be at 1:15 PM.",
+            "maxLength": 2000
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true,
+            "default": true
+          }
+        },
+        "required": [
+          "title",
+          "message"
+        ]
+      },
+      "UpdateAnnouncementDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Updated title",
+            "maxLength": 150
+          },
+          "message": {
+            "type": "string",
+            "example": "Updated message",
+            "maxLength": 2000
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "CreateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ELECTRICITY_BILL",
+              "WATER_BILL",
+              "IMAM_SALARY",
+              "CLEANING",
+              "REPAIR",
+              "CONSTRUCTION",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 1200,
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "example": "Electricity bill",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "string",
+            "example": "June electricity bill",
+            "maxLength": 1000
+          },
+          "spentAt": {
+            "type": "string",
+            "example": "2026-06-15T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "type",
+          "amount"
+        ]
+      },
+      "UpdateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ELECTRICITY_BILL",
+              "WATER_BILL",
+              "IMAM_SALARY",
+              "CLEANING",
+              "REPAIR",
+              "CONSTRUCTION",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 3000,
+            "minimum": 0
+          },
+          "title": {
+            "type": "object",
+            "example": "Fan repair",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "object",
+            "example": "Repair work",
+            "maxLength": 1000
+          },
+          "spentAt": {
+            "type": "string",
+            "example": "2026-06-16T00:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CANCELLED"
+            ]
+          }
+        }
+      },
+      "CreateCollectionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "JUMMA_COLLECTION",
+              "DONATION_BOX",
+              "RAMADAN_FUND",
+              "ZAKAT",
+              "SADAQAH",
+              "CONSTRUCTION_FUND",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 5000,
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "example": "Friday collection",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "string",
+            "example": "Collected after Jumma prayer",
+            "maxLength": 1000
+          },
+          "collectedAt": {
+            "type": "string",
+            "example": "2026-06-15T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "type",
+          "amount"
+        ]
+      },
+      "CreateCollectionContributionDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "description": "Member who paid, if they belong to this masjid",
+            "format": "uuid"
+          },
+          "contributorName": {
+            "type": "string",
+            "example": "Rafiq Ahmed",
+            "maxLength": 150
+          },
+          "contributorPhone": {
+            "type": "string",
+            "example": "+919876543210",
+            "maxLength": 30
+          },
+          "amount": {
+            "type": "number",
+            "example": 1000.5,
+            "minimum": 0.01,
+            "description": "Rupees, up to 2 decimals"
+          },
+          "paymentMode": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "ONLINE"
+            ],
+            "example": "CASH"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-09-10T10:00:00.000Z",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "example": "Paid at Jumma",
+            "maxLength": 500
+          },
+          "collectionType": {
+            "type": "string",
+            "enum": [
+              "JUMMA_COLLECTION",
+              "DONATION_BOX",
+              "RAMADAN_FUND",
+              "ZAKAT",
+              "SADAQAH",
+              "CONSTRUCTION_FUND",
+              "OTHER"
+            ],
+            "example": "ZAKAT"
+          }
+        },
+        "required": [
+          "contributorName",
+          "amount",
+          "paymentMode",
+          "paidAt",
+          "collectionType"
+        ]
+      },
+      "UpdateCollectionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "JUMMA_COLLECTION",
+              "DONATION_BOX",
+              "RAMADAN_FUND",
+              "ZAKAT",
+              "SADAQAH",
+              "CONSTRUCTION_FUND",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 7000,
+            "minimum": 0
+          },
+          "title": {
+            "type": "object",
+            "example": "Donation box collection",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "object",
+            "example": "Updated note",
+            "maxLength": 1000
+          },
+          "collectedAt": {
+            "type": "string",
+            "example": "2026-06-16T00:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CANCELLED"
+            ]
+          }
+        }
+      },
+      "ImamDetailsDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Imam Name",
+            "maxLength": 150
+          },
+          "email": {
+            "type": "string",
+            "example": "imam@example.com",
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "maxLength": 20
+          },
+          "address": {
+            "type": "string",
+            "example": "Single line address",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ]
+      },
+      "CommitteeMemberDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Committee Member Name",
+            "maxLength": 150
+          },
+          "phone": {
+            "type": "string",
+            "example": "9876543211",
+            "maxLength": 20
+          },
+          "fatherName": {
+            "type": "string",
+            "example": "Abdul Kareem",
+            "maxLength": 150
+          },
+          "age": {
+            "type": "number",
+            "example": 42,
+            "minimum": 1,
+            "maximum": 120
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ],
+            "example": "MALE"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "fatherName",
+          "age",
+          "gender"
+        ]
+      },
+      "CreateMasjidRequestDto": {
+        "type": "object",
+        "properties": {
+          "requesterName": {
+            "type": "string",
+            "example": "Person Name",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "requesterPhone": {
+            "type": "string",
+            "example": "9876543210",
+            "maxLength": 20
+          },
+          "requesterEmail": {
+            "type": "string",
+            "example": "person@example.com",
+            "maxLength": 255
+          },
+          "masjidName": {
+            "type": "string",
+            "example": "Jama Masjid",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "country": {
+            "type": "string",
+            "example": "India",
+            "maxLength": 100
+          },
+          "district": {
+            "type": "string",
+            "example": "District",
+            "maxLength": 100,
+            "description": "Required when country is India or IN"
+          },
+          "locality": {
+            "type": "string",
+            "example": "Nighasan",
+            "maxLength": 100,
+            "description": "City / Village / Town"
+          },
+          "state": {
+            "type": "string",
+            "example": "State",
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "example": "Address",
+            "maxLength": 500
+          },
+          "contactNo": {
+            "type": "string",
+            "example": "9876543210",
+            "maxLength": 20
+          },
+          "description": {
+            "type": "string",
+            "example": "Short description",
+            "maxLength": 1000
+          },
+          "welcomeMsg": {
+            "type": "string",
+            "example": "Assalamu Alaikum",
+            "maxLength": 500
+          },
+          "imamName": {
+            "type": "string",
+            "example": "Imam Name",
+            "maxLength": 150
+          },
+          "imamPhone": {
+            "type": "string",
+            "example": "9876543210",
+            "maxLength": 20
+          },
+          "imamEmail": {
+            "type": "string",
+            "example": "imam@example.com",
+            "maxLength": 255
+          },
+          "imamAddress": {
+            "type": "string",
+            "example": "Single line imam address",
+            "maxLength": 500
+          },
+          "imamFatherName": {
+            "type": "string",
+            "example": "Abdul Kareem",
+            "maxLength": 150
+          },
+          "imamAge": {
+            "type": "number",
+            "example": 50,
+            "minimum": 1,
+            "maximum": 120
+          },
+          "imamGender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ],
+            "example": "MALE"
+          },
+          "imam": {
+            "deprecated": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImamDetailsDto"
+              }
+            ]
+          },
+          "committeeMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommitteeMemberDto"
+            }
+          }
+        },
+        "required": [
+          "requesterName",
+          "requesterPhone",
+          "masjidName",
+          "country",
+          "locality",
+          "state",
+          "address",
+          "imamName",
+          "imamPhone",
+          "imamAddress",
+          "imamFatherName",
+          "imamAge",
+          "imamGender",
+          "committeeMembers"
+        ]
+      },
+      "TrackMasjidRequestDto": {
+        "type": "object",
+        "properties": {
+          "requesterPhone": {
+            "type": "string",
+            "example": "+919876543210"
+          }
+        },
+        "required": [
+          "requesterPhone"
+        ]
+      },
+      "UpdateMasjidRequestStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "APPROVED"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Verified successfully",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "UpdateWelcomeMessageDto": {
+        "type": "object",
+        "properties": {
+          "welcomeMsg": {
+            "type": "string",
+            "example": "Assalamu Alaikum, welcome to Jama Masjid",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "welcomeMsg"
+        ]
+      },
+      "CreateMasjidUserDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Ali Khan",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "minLength": 6,
+            "maxLength": 20
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "maxLength": 254
+          },
+          "fatherName": {
+            "type": "string",
+            "example": "Rahim Khan",
+            "maxLength": 150
+          },
+          "age": {
+            "type": "number",
+            "example": 45,
+            "minimum": 1,
+            "maximum": 120
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ],
+            "example": "MALE"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "MEMBER",
+              "IMAM",
+              "COMMITTEE_MEMBER"
+            ],
+            "example": "MEMBER"
+          },
+          "isFamilyHead": {
+            "type": "boolean",
+            "example": false,
+            "description": "Required when role is MEMBER"
+          },
+          "familyMemberCount": {
+            "type": "number",
+            "example": 5,
+            "minimum": 0
+          },
+          "masjidId": {
+            "type": "string",
+            "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+            "description": "Only SUPER_ADMIN may provide this when not assigned to a masjid"
+          }
+        },
+        "required": [
+          "fullName",
+          "phone",
+          "fatherName",
+          "age",
+          "gender",
+          "role"
+        ]
+      },
+      "UpdateMasjidUserDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Ahmed Khan"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+919876543210"
+          },
+          "email": {
+            "type": "string",
+            "example": "member@example.com",
+            "nullable": true
+          },
+          "fatherName": {
+            "type": "string",
+            "example": "Rahim Khan"
+          },
+          "age": {
+            "type": "number",
+            "example": 45,
+            "minimum": 1,
+            "maximum": 120
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ],
+            "example": "MALE"
+          },
+          "isFamilyHead": {
+            "type": "boolean",
+            "example": false,
+            "description": "Required for MEMBER users"
+          },
+          "familyMemberCount": {
+            "type": "number",
+            "example": 5,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "fullName",
+          "phone",
+          "fatherName",
+          "age",
+          "gender"
+        ]
+      },
+      "UpdateMasjidUserStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ],
+            "example": "ACTIVE"
+          }
+        }
+      },
+      "UpsertNamazTimeDto": {
+        "type": "object",
+        "properties": {
+          "fajr": {
+            "type": "string",
+            "example": "05:00 AM",
+            "maxLength": 20
+          },
+          "zuhr": {
+            "type": "string",
+            "example": "01:30 PM",
+            "maxLength": 20
+          },
+          "asr": {
+            "type": "string",
+            "example": "05:00 PM",
+            "maxLength": 20
+          },
+          "maghrib": {
+            "type": "string",
+            "example": "06:45 PM",
+            "maxLength": 20
+          },
+          "isha": {
+            "type": "string",
+            "example": "08:15 PM",
+            "maxLength": 20
+          },
+          "jumma": {
+            "type": "string",
+            "example": "01:15 PM",
+            "maxLength": 20
+          },
+          "note": {
+            "type": "string",
+            "example": "Jumma time may change in Ramadan",
+            "maxLength": 500
+          }
+        }
+      },
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "New Wuzu Area",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "string",
+            "example": "Construction of new wuzu area",
+            "maxLength": 2000
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 200000,
+            "minimum": 0
+          },
+          "collectedAmount": {
+            "type": "number",
+            "example": 80000,
+            "minimum": 0
+          },
+          "spentAmount": {
+            "type": "number",
+            "example": 30000,
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "ONGOING",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "default": "ONGOING"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-06-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "object",
+            "example": null,
+            "nullable": true
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "CreateContributionDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "description": "Member who paid, if they belong to this masjid",
+            "format": "uuid"
+          },
+          "contributorName": {
+            "type": "string",
+            "example": "Rafiq Ahmed",
+            "maxLength": 150
+          },
+          "contributorPhone": {
+            "type": "string",
+            "example": "+919876543210",
+            "maxLength": 30
+          },
+          "amount": {
+            "type": "number",
+            "example": 1000.5,
+            "minimum": 0.01,
+            "description": "Rupees, up to 2 decimals"
+          },
+          "paymentMode": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "ONLINE"
+            ],
+            "example": "CASH"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-09-10T10:00:00.000Z",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "example": "Paid at Jumma",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "contributorName",
+          "amount",
+          "paymentMode",
+          "paidAt"
+        ]
+      },
+      "UpdateProjectDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Updated project title",
+            "maxLength": 150
+          },
+          "description": {
+            "type": "object",
+            "example": "Updated description",
+            "maxLength": 2000
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 250000,
+            "minimum": 0
+          },
+          "collectedAmount": {
+            "type": "number",
+            "example": 120000,
+            "minimum": 0
+          },
+          "spentAmount": {
+            "type": "number",
+            "example": 50000,
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "ONGOING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "startDate": {
+            "type": "object",
+            "example": "2026-06-01T00:00:00.000Z"
+          },
+          "endDate": {
+            "type": "object",
+            "example": null,
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}

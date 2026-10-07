@@ -8,8 +8,9 @@ Update the checkboxes and the status table as work lands.
 
 Last updated 2026-10-07.
 
-- **Done:** M0 Hygiene, M1 Backend security, M2 Access model. Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** M3 Backend data and code structure. Start with the `TenantContext` helper carried over from M2, then `Prisma.Decimal` for money, then typed Prisma (remove the `as unknown as` delegates and raise the `no-unsafe-*` lint rules back to errors).
+- **Done:** M0 Hygiene, M1 Backend security, M2 Access model, M3 Backend data and structure. Both apps lint, build, and test clean. CI runs on every push to `main`.
+- **Next:** M4 Flutter foundation (Riverpod, one Dio client, auth state, router redirects). Use `docs/openapi.json` as the API contract; regenerate it with `npm run openapi` after backend changes.
+- **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
 - **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
 - **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
@@ -200,17 +201,19 @@ Done when: the role matrix in code matches the product rule and the tenancy test
 
 Goal: correct money handling and a codebase that is pleasant to extend.
 
-- [ ] `Prisma.Decimal` everywhere. Delete all `toNumber` helpers.
-- [ ] Typed Prisma client. Delete every `as unknown as` delegate and the hand-written delegate types.
-- [ ] `FinanceEntry` ledger table. Salary payments, project contributions, collections, and expenses each write one entry. Finance summary and dashboard read from it. Remove the `CollectionContribution` double write.
-- [ ] Drop legacy `ImamSalary` model. Fix the dashboard salary summary to read `ImamSalaryMonth`.
-- [ ] Soft delete on financial tables and `AuditLog` (who, what, before, after) for create, update, cancel of money rows.
-- [ ] Shared helpers: tenant scoping, one `PaginatedResponse<T>`, one error code enum, `trimString` transformer, Prisma enums reused in DTOs.
-- [ ] Add composite indexes for list queries and an index on `MasjidRegistrationRequest.requesterPhone`. Canonical phone format enforced on write.
-- [ ] Cache role and permission lookup per request or per short TTL instead of a 4-level include on every call.
-- [ ] Split `masjids.service.ts` and `masjid-requests.service.ts`.
-- [ ] Swagger complete for every endpoint. Export the OpenAPI JSON as a build artefact for the app.
-- [ ] Tests for the salary ledger and finance ledger math.
+- [x] Money math uses `Prisma.Decimal` through `src/common/money.ts` (`money`, `sumMoney`, `toAmount`). Responses return plain numbers; imam salary amounts used to be strings and are now numbers like everywhere else.
+- [x] Typed Prisma client everywhere; delegate types and `as unknown as` casts deleted. `no-unsafe-*` lint rules are errors again for app code (relaxed only in specs).
+- [x] Changed approach: no separate ledger table. `FinanceCalculator` (finance module) sums every source of money in (collections, project contributions, imam-salary payments) and expenses, and both the finance screen and the dashboard use it, so they always agree. The response keeps the old field names (`totalCollection` now means all money received) and adds a `breakdown`. The `CollectionContribution` → `Collection` double write is kept on purpose: it is how a contribution shows up in the collections list.
+- [x] Legacy `ImamSalary` table dropped (it was empty). The dashboard salary card reads the latest `ImamSalaryMonth` (it was always empty before).
+- [x] `AuditLog` table: every create, update and cancel of money records, salary months and payments, member joins, edits, status changes and leaves, masjid approvals and admin changes are recorded with who, what, before and after, in the same transaction. Readable at `GET /audit-log/my-masjid` with `audit.read` (imam and committee). Soft delete already exists as CANCELLED status on collections, expenses and projects; nothing is hard-deleted by the API.
+- [x] Shared tenant helpers (`src/common/tenant.ts`) and money helpers. DTO transforms are typed.
+- [ ] Deferred to M4/M5: one pagination envelope and the imam salary error codes (salary errors still report `BAD_REQUEST` for 404/409). The app parses today's shapes, so these change together with the app rework. DTO enums duplicating Prisma enums also move then.
+- [x] Composite indexes for collection, expense, announcement and contribution lists; index on `MasjidRegistrationRequest.requesterPhone`. Phones are already normalised on write by the services.
+- [x] Done in M2: permissions come from code, the per-request query only loads role names and the session.
+- [x] Both services shrank by about a third; select objects and response types moved to `*.selects.ts`.
+- [x] Salary and contribution DTOs documented. `npm run openapi` writes `docs/openapi.json` (committed) for the app rework.
+- [x] Tests: salary ledger math, finance calculator, money helpers, one-masjid rule, audit entries. An end-to-end scenario on a throwaway database (two masjids, every write flow, every read per role) was diffed before and after the refactor: identical except salary amounts turning from strings into numbers.
+- [x] Also fixed: approving a masjid request no longer silently moves an imam or committee member out of another masjid (`USER_IN_ANOTHER_MASJID`), and committee members' father name, age and gender from the request form are no longer dropped.
 
 Done when: sums in the finance summary equal the sum of ledger entries and every service compiles against real Prisma types.
 
@@ -293,8 +296,8 @@ Still open:
 | M0 Hygiene | done 2026-10-07 | commit `301c235`; `no-unsafe-*` lint rules are warnings until M3 |
 | M1 Backend security | done 2026-10-07 | migrations applied and login flows verified on the local DB |
 | M2 Access model | done 2026-10-07 | membership table and tenant helper deferred (see M2 notes) |
-| M3 Backend structure | next | |
-| M4 Flutter foundation | not started | |
+| M3 Backend structure | done 2026-10-08 | pagination envelope and salary error codes deferred to M4/M5 |
+| M4 Flutter foundation | next | |
 | M5 Flutter features | not started | |
 | M6 Deployment | not started | |
 | M7 Polish | not started | |

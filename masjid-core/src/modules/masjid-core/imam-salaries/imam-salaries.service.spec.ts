@@ -138,10 +138,12 @@ describe('ImamSalariesService money math', () => {
   ];
   let fake: ReturnType<typeof createFakePrisma>;
   let service: ImamSalariesService;
+  let audit: { record: jest.Mock };
 
   beforeEach(() => {
     fake = createFakePrisma(heads);
-    service = new ImamSalariesService(fake.db as never);
+    audit = { record: jest.fn() };
+    service = new ImamSalariesService(fake.db as never, audit as never);
   });
 
   const createMonth = (amountPerHead: number) =>
@@ -179,6 +181,14 @@ describe('ImamSalariesService money math', () => {
     expect(assignment('u2').memberPhone).toBe('');
     // Head list is read through the transaction client.
     expect(fake.db.$transaction).toHaveBeenCalledTimes(1);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'SALARY_MONTH',
+        action: 'CREATE',
+        masjidId: 'masjid-1',
+      }),
+      expect.anything(),
+    );
   });
 
   it('leaves the right due after a partial payment', async () => {
@@ -186,6 +196,14 @@ describe('ImamSalariesService money math', () => {
     const payment = await pay(assignment('u1').id as string, 250.5);
 
     expect(payment.amount).toBe(250.5);
+    expect(audit.record).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        entity: 'SALARY_PAYMENT',
+        action: 'CREATE',
+        summary: 'Payment 250.50 CASH from Ahmed for 6/2026',
+      }),
+      expect.anything(),
+    );
     expect(amounts(assignment('u1'))).toEqual({
       expected: '600',
       paid: '250.5',
@@ -293,6 +311,15 @@ describe('ImamSalariesService money math', () => {
       unpaidCount: 1,
       note: 'Revised',
     });
+    expect(audit.record).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        entity: 'SALARY_MONTH',
+        action: 'UPDATE',
+        summary:
+          'Salary month 6/2026 amount per head 600.00 -> 750.50 (Revised)',
+      }),
+      expect.anything(),
+    );
   });
 
   it('rejects lowering the amount per head', async () => {

@@ -81,7 +81,7 @@ describe('ContributionsService', () => {
         unpaidMonths: 1,
       },
     });
-    expect(response.data.user).not.toHaveProperty('masjidId');
+    expect(response.data?.user).not.toHaveProperty('masjidId');
   });
 
   it('always scopes payment history to the authenticated user and masjid', async () => {

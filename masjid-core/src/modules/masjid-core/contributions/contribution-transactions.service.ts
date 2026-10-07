@@ -2,7 +2,12 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { successResponse } from '../../../common/helpers/api-response.helper';
-import { toAmount } from '../../../common/money';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
+import { formatMoney, toAmount } from '../../../common/money';
 import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -48,7 +53,10 @@ const contributionOrderBy = [
 
 @Injectable()
 export class ContributionTransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async createProjectContribution(
     projectId: string,
@@ -76,6 +84,18 @@ export class ContributionTransactionsService {
         where: { id: projectId },
         data: { collectedAmount: { increment: dto.amount } },
       });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.PROJECT_CONTRIBUTION,
+          entityId: contribution.id,
+          summary: `Project contribution ${formatMoney(contribution.amount)} ${contribution.paymentMode} from ${contribution.contributorName}`,
+          after: { ...contribution, masjidId },
+        },
+        tx,
+      );
       return successResponse(
         'Project contribution added successfully',
         this.serialize(contribution),
@@ -148,6 +168,18 @@ export class ContributionTransactionsService {
           createdById: actor.id,
         },
       });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.COLLECTION_CONTRIBUTION,
+          entityId: contribution.id,
+          summary: `Collection contribution ${contribution.collectionType} ${formatMoney(contribution.amount)} ${contribution.paymentMode} from ${contribution.contributorName}`,
+          after: { ...contribution, masjidId },
+        },
+        tx,
+      );
       return successResponse(
         'Collection contribution added successfully',
         this.serialize(contribution),

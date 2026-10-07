@@ -103,7 +103,8 @@ describe('Role matrix (product rule)', () => {
 
 /* ------------------------------------------------------------------ */
 
-const MODULES_DIR = path.join(__dirname, '..', 'modules');
+// Every controller under src/ (modules and shared ones like the audit log).
+const MODULES_DIR = path.join(__dirname, '..');
 
 /** Routes that are intentionally open or only need a signed-in user. */
 const ROUTES_WITHOUT_PERMISSION = new Set([

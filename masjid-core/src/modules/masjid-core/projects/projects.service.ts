@@ -1,7 +1,12 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { toAmount } from '../../../common/money';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
+import { formatMoney, toAmount } from '../../../common/money';
 import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { ProjectStatus } from '../../../generated/prisma/enums';
@@ -53,7 +58,10 @@ type ProjectsListResponse = {
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async findMyMasjidProjects(
     query: GetProjectsQueryDto,
@@ -92,9 +100,24 @@ export class ProjectsService {
   ): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
 
-    const project = await this.prisma.project.create({
-      data: this.buildCreateData(dto, masjidId),
-      select: projectSelect,
+    const project = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.project.create({
+        data: this.buildCreateData(dto, masjidId),
+        select: projectSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.PROJECT,
+          entityId: created.id,
+          summary: this.auditSummary(created),
+          after: created,
+        },
+        tx,
+      );
+      return created;
     });
 
     this.logger.log({
@@ -121,7 +144,7 @@ export class ProjectsService {
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureProjectBelongsToMasjid(id, masjidId);
+    const before = await this.ensureProjectBelongsToMasjid(id, masjidId);
 
     const data = this.buildUpdateData(dto);
 
@@ -133,10 +156,26 @@ export class ProjectsService {
       );
     }
 
-    const project = await this.prisma.project.update({
-      where: { id },
-      data,
-      select: projectSelect,
+    const project = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.project.update({
+        where: { id },
+        data,
+        select: projectSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.UPDATE,
+          entity: AUDIT_ENTITY.PROJECT,
+          entityId: updated.id,
+          summary: this.auditSummary(updated),
+          before,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
 
     this.logger.log({
@@ -149,12 +188,28 @@ export class ProjectsService {
 
   async cancel(id: string, actor: AuthenticatedUser): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureProjectBelongsToMasjid(id, masjidId);
+    const before = await this.ensureProjectBelongsToMasjid(id, masjidId);
 
-    const project = await this.prisma.project.update({
-      where: { id },
-      data: { status: ProjectStatus.CANCELLED },
-      select: projectSelect,
+    const project = await this.prisma.$transaction(async (tx) => {
+      const cancelled = await tx.project.update({
+        where: { id },
+        data: { status: ProjectStatus.CANCELLED },
+        select: projectSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CANCEL,
+          entity: AUDIT_ENTITY.PROJECT,
+          entityId: cancelled.id,
+          summary: `${this.auditSummary(cancelled)} cancelled`,
+          before,
+          after: cancelled,
+        },
+        tx,
+      );
+      return cancelled;
     });
 
     this.logger.warn({
@@ -253,6 +308,10 @@ export class ProjectsService {
     }
 
     return data;
+  }
+
+  private auditSummary(project: ProjectRecord): string {
+    return `Project "${project.title}" target ${formatMoney(project.targetAmount)} ${project.status}`;
   }
 
   private toProjectResponse(project: ProjectRecord): ProjectResponse {

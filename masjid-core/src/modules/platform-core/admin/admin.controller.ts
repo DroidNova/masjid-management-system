@@ -217,7 +217,8 @@ export class AdminMasjidsController {
   updateMasjidStatus(
     @Param('id') id: string,
     @Body() dto: UpdateMasjidStatusDto,
+    @Req() request: AuthenticatedRequest,
   ) {
-    return this.adminService.updateMasjidStatus(id, dto);
+    return this.adminService.updateMasjidStatus(id, dto, request.user);
   }
 }

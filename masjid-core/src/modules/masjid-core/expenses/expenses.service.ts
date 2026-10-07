@@ -1,7 +1,12 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { toAmount } from '../../../common/money';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
+import { formatMoney, toAmount } from '../../../common/money';
 import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { FinanceEntryStatus } from '../../../generated/prisma/enums';
@@ -33,7 +38,10 @@ type ExpenseResponse = Omit<ExpenseRecord, 'amount'> & { amount: number };
 export class ExpensesService {
   private readonly logger = new Logger(ExpensesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async findMyMasjidExpenses(
     query: GetExpensesQueryDto,
@@ -66,19 +74,34 @@ export class ExpensesService {
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    const expense = await this.prisma.expense.create({
-      data: {
-        masjidId,
-        createdById: actor.id,
-        type: dto.type,
-        amount: dto.amount,
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.description !== undefined
-          ? { description: dto.description }
-          : {}),
-        ...(dto.spentAt ? { spentAt: new Date(dto.spentAt) } : {}),
-      },
-      select: expenseSelect,
+    const expense = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.expense.create({
+        data: {
+          masjidId,
+          createdById: actor.id,
+          type: dto.type,
+          amount: dto.amount,
+          ...(dto.title !== undefined ? { title: dto.title } : {}),
+          ...(dto.description !== undefined
+            ? { description: dto.description }
+            : {}),
+          ...(dto.spentAt ? { spentAt: new Date(dto.spentAt) } : {}),
+        },
+        select: expenseSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.EXPENSE,
+          entityId: created.id,
+          summary: this.auditSummary(created),
+          after: created,
+        },
+        tx,
+      );
+      return created;
     });
 
     this.logger.log({
@@ -104,7 +127,7 @@ export class ExpensesService {
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureExpenseBelongsToMasjid(id, masjidId);
+    const before = await this.ensureExpenseBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -115,10 +138,26 @@ export class ExpensesService {
       );
     }
 
-    const expense = await this.prisma.expense.update({
-      where: { id },
-      data,
-      select: expenseSelect,
+    const expense = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.expense.update({
+        where: { id },
+        data,
+        select: expenseSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.UPDATE,
+          entity: AUDIT_ENTITY.EXPENSE,
+          entityId: updated.id,
+          summary: this.auditSummary(updated),
+          before,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
     this.logger.log({
       message: 'Expense updated',
@@ -130,11 +169,27 @@ export class ExpensesService {
 
   async cancel(id: string, actor: AuthenticatedUser): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureExpenseBelongsToMasjid(id, masjidId);
-    const expense = await this.prisma.expense.update({
-      where: { id },
-      data: { status: FinanceEntryStatus.CANCELLED },
-      select: expenseSelect,
+    const before = await this.ensureExpenseBelongsToMasjid(id, masjidId);
+    const expense = await this.prisma.$transaction(async (tx) => {
+      const cancelled = await tx.expense.update({
+        where: { id },
+        data: { status: FinanceEntryStatus.CANCELLED },
+        select: expenseSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CANCEL,
+          entity: AUDIT_ENTITY.EXPENSE,
+          entityId: cancelled.id,
+          summary: `${this.auditSummary(cancelled)} cancelled`,
+          before,
+          after: cancelled,
+        },
+        tx,
+      );
+      return cancelled;
     });
     this.logger.warn({
       message: 'Expense cancelled',
@@ -202,6 +257,10 @@ export class ExpensesService {
     if (dto.spentAt !== undefined) data.spentAt = new Date(dto.spentAt);
     if (dto.status !== undefined) data.status = dto.status;
     return data;
+  }
+
+  private auditSummary(expense: ExpenseRecord): string {
+    return `Expense ${expense.type} ${formatMoney(expense.amount)}`;
   }
 
   private toResponse(expense: ExpenseRecord): ExpenseResponse {

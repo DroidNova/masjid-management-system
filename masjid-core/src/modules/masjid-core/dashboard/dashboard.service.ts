@@ -5,6 +5,7 @@ import { money, toAmount } from '../../../common/money';
 import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { FinanceCalculator } from '../finance/finance-calculator';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 
 const basicUserSelect = {
@@ -61,17 +62,16 @@ const dashboardMasjidSelect = {
       status: true,
     },
   },
-  // Legacy ImamSalary model; kept as-is until the dashboard is moved to
-  // ImamSalaryMonth/Assignment.
-  imamSalaries: {
+  // Latest month of the imam salary ledger.
+  imamSalaryMonths: {
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
     take: 1,
     select: {
       month: true,
       year: true,
-      salaryAmount: true,
-      paidAmount: true,
-      dueAmount: true,
+      totalExpected: true,
+      totalCollected: true,
+      totalDue: true,
       status: true,
     },
   },
@@ -81,11 +81,14 @@ type DashboardMasjid = Prisma.MasjidGetPayload<{
   select: typeof dashboardMasjidSelect;
 }>;
 type DashboardProject = DashboardMasjid['projects'][number];
-type DashboardImamSalary = DashboardMasjid['imamSalaries'][number];
+type DashboardImamSalary = DashboardMasjid['imamSalaryMonths'][number];
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly finance: FinanceCalculator,
+  ) {}
 
   async getMyMasjidDashboard(actor: AuthenticatedUser) {
     const masjidId = requireMasjidId(actor);
@@ -103,45 +106,28 @@ export class DashboardService {
       );
     }
 
-    const currentMonthRange = this.getCurrentMonthRange();
-
-    const [
-      membersCount,
-      activeProjectsCount,
-      totalCollection,
-      totalExpense,
-      thisMonthCollection,
-      thisMonthExpense,
-    ] = await Promise.all([
-      this.prisma.user.count({
-        where: { masjidId, status: 'ACTIVE' },
-      }),
-      this.prisma.project.count({
-        where: {
-          masjidId,
-          status: { in: ['ONGOING', 'PLANNED'] },
-        },
-      }),
-      this.sumCollection({ masjidId, status: 'ACTIVE' }),
-      this.sumExpense({ masjidId, status: 'ACTIVE' }),
-      this.sumCollection({
-        masjidId,
-        status: 'ACTIVE',
-        collectedAt: currentMonthRange,
-      }),
-      this.sumExpense({
-        masjidId,
-        status: 'ACTIVE',
-        spentAt: currentMonthRange,
-      }),
-    ]);
+    const [membersCount, activeProjectsCount, total, thisMonth] =
+      await Promise.all([
+        this.prisma.user.count({
+          where: { masjidId, status: 'ACTIVE' },
+        }),
+        this.prisma.project.count({
+          where: {
+            masjidId,
+            status: { in: ['ONGOING', 'PLANNED'] },
+          },
+        }),
+        // Same numbers as the finance screen (FinanceCalculator).
+        this.finance.totals(masjidId),
+        this.finance.totals(masjidId, this.finance.currentMonth()),
+      ]);
 
     const {
       namazTime,
       imamUser,
       announcements,
       projects,
-      imamSalaries,
+      imamSalaryMonths,
       ...masjid
     } = masjidRecord;
 
@@ -157,15 +143,15 @@ export class DashboardService {
           this.toDashboardProjectResponse(project),
         ),
       },
-      imamSalarySummary: imamSalaries[0]
-        ? this.toDashboardImamSalaryResponse(imamSalaries[0])
+      imamSalarySummary: imamSalaryMonths[0]
+        ? this.toDashboardImamSalaryResponse(imamSalaryMonths[0])
         : null,
       financeSummary: {
-        totalCollection: toAmount(totalCollection),
-        totalExpense: toAmount(totalExpense),
-        currentBalance: toAmount(totalCollection.minus(totalExpense)),
-        thisMonthCollection: toAmount(thisMonthCollection),
-        thisMonthExpense: toAmount(thisMonthExpense),
+        totalCollection: toAmount(total.income),
+        totalExpense: toAmount(total.expenses),
+        currentBalance: toAmount(total.balance),
+        thisMonthCollection: toAmount(thisMonth.income),
+        thisMonthExpense: toAmount(thisMonth.expenses),
       },
     };
   }
@@ -191,44 +177,11 @@ export class DashboardService {
     return {
       latestMonth: salary.month,
       latestYear: salary.year,
-      salaryAmount: toAmount(salary.salaryAmount),
-      paidAmount: toAmount(salary.paidAmount),
-      dueAmount: toAmount(salary.dueAmount),
+      // Field names kept for the app: salary = expected from all families.
+      salaryAmount: toAmount(salary.totalExpected),
+      paidAmount: toAmount(salary.totalCollected),
+      dueAmount: toAmount(salary.totalDue),
       status: salary.status,
     };
-  }
-
-  private getCurrentMonthRange(): { gte: Date; lte: Date } {
-    const now = new Date();
-    return {
-      gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-      lte: new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999,
-        ),
-      ),
-    };
-  }
-
-  private async sumCollection(where: Prisma.CollectionWhereInput) {
-    const result = await this.prisma.collection.aggregate({
-      where,
-      _sum: { amount: true },
-    });
-    return money(result._sum.amount);
-  }
-
-  private async sumExpense(where: Prisma.ExpenseWhereInput) {
-    const result = await this.prisma.expense.aggregate({
-      where,
-      _sum: { amount: true },
-    });
-    return money(result._sum.amount);
   }
 }

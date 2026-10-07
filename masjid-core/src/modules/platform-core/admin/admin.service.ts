@@ -5,6 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '../../../generated/prisma/client';
 import { RoleName } from '../../../generated/prisma/enums';
@@ -28,6 +33,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rolesService: RolesService,
+    private readonly audit: AuditService,
   ) {}
 
   async listUsers(query: ListAdminUsersDto) {
@@ -157,6 +163,9 @@ export class AdminService {
       where: { id },
       select: {
         id: true,
+        fullName: true,
+        status: true,
+        masjidId: true,
         userRoles: {
           select: {
             role: {
@@ -177,17 +186,38 @@ export class AdminService {
       targetRoleNames: user.userRoles.map((userRole) => userRole.role.name),
     });
 
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: { status: dto.status },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        status: true,
-        updatedAt: true,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({
+        where: { id },
+        data: { status: dto.status },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          status: true,
+          updatedAt: true,
+        },
+      });
+      await this.audit.record(
+        {
+          masjidId: user.masjidId ?? null,
+          actor,
+          action: AUDIT_ACTION.STATUS_CHANGE,
+          entity: AUDIT_ENTITY.USER,
+          entityId: id,
+          summary: `User "${user.fullName}" status ${user.status} -> ${dto.status}`,
+          before: {
+            id: user.id,
+            fullName: user.fullName,
+            status: user.status,
+            masjidId: user.masjidId,
+          },
+          after: result,
+        },
+        tx,
+      );
+      return result;
     });
     this.logger.log({
       message: 'User status changed',
@@ -359,31 +389,51 @@ export class AdminService {
     };
   }
 
-  async updateMasjidStatus(id: string, dto: UpdateMasjidStatusDto) {
+  async updateMasjidStatus(
+    id: string,
+    dto: UpdateMasjidStatusDto,
+    actor: AuthenticatedUser,
+  ) {
     const masjid = await this.prisma.masjid.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, name: true, status: true, rejectionReason: true },
     });
 
     if (!masjid) throw new NotFoundException('Masjid not found');
 
-    return this.prisma.masjid.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        rejectionReason: dto.reason?.trim() || null,
-      },
-      select: {
-        id: true,
-        name: true,
-        country: true,
-        state: true,
-        address: true,
-        contactNo: true,
-        status: true,
-        rejectionReason: true,
-        updatedAt: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.masjid.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          rejectionReason: dto.reason?.trim() || null,
+        },
+        select: {
+          id: true,
+          name: true,
+          country: true,
+          state: true,
+          address: true,
+          contactNo: true,
+          status: true,
+          rejectionReason: true,
+          updatedAt: true,
+        },
+      });
+      await this.audit.record(
+        {
+          masjidId: id,
+          actor,
+          action: AUDIT_ACTION.STATUS_CHANGE,
+          entity: AUDIT_ENTITY.MASJID,
+          entityId: id,
+          summary: `Masjid "${updated.name}" status ${masjid.status} -> ${updated.status}${updated.rejectionReason ? ` (${updated.rejectionReason})` : ''}`,
+          before: masjid,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
   }
 
@@ -396,6 +446,9 @@ export class AdminService {
       where: { id },
       select: {
         id: true,
+        fullName: true,
+        status: true,
+        masjidId: true,
         userRoles: {
           select: {
             role: {
@@ -452,13 +505,28 @@ export class AdminService {
       await this.rolesService.validateRoleNames(normalizedRoleNames);
 
     // Replace roles atomically so a failure never leaves the user with none.
-    await this.prisma.$transaction([
-      this.prisma.userRole.deleteMany({ where: { userId: id } }),
-      this.prisma.userRole.createMany({
+    const beforeRoles = user.userRoles.map((userRole) => userRole.role.name);
+    const afterRoles = roles.map((role) => role.name);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userRole.deleteMany({ where: { userId: id } });
+      await tx.userRole.createMany({
         data: roles.map((role) => ({ userId: id, roleId: role.id })),
         skipDuplicates: true,
-      }),
-    ]);
+      });
+      await this.audit.record(
+        {
+          masjidId: user.masjidId ?? null,
+          actor,
+          action: AUDIT_ACTION.ROLES_CHANGE,
+          entity: AUDIT_ENTITY.USER,
+          entityId: id,
+          summary: `User "${user.fullName}" roles ${beforeRoles.join(', ') || 'none'} -> ${afterRoles.join(', ')}`,
+          before: { roles: beforeRoles },
+          after: { roles: afterRoles },
+        },
+        tx,
+      );
+    });
     this.logger.log({
       message: 'User roles replaced',
       userId: id,

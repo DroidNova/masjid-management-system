@@ -40,3 +40,8 @@ export function toAmountOrNull(value: MoneyInput): number | null {
 export function nonNegative(value: Money): Money {
   return value.isNegative() ? ZERO : value;
 }
+
+/** For readable text (audit summaries): always 2 decimals, e.g. "845.30". */
+export function formatMoney(value: MoneyInput): string {
+  return money(value).toFixed(2);
+}

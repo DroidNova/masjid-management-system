@@ -1,7 +1,12 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { toAmount } from '../../../common/money';
+import {
+  AUDIT_ACTION,
+  AUDIT_ENTITY,
+  AuditService,
+} from '../../../common/audit/audit.service';
+import { formatMoney, toAmount } from '../../../common/money';
 import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { FinanceEntryStatus } from '../../../generated/prisma/enums';
@@ -35,7 +40,10 @@ type CollectionResponse = Omit<CollectionRecord, 'amount'> & { amount: number };
 export class CollectionsService {
   private readonly logger = new Logger(CollectionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async findMyMasjidCollections(
     query: GetCollectionsQueryDto,
@@ -68,19 +76,36 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    const collection = await this.prisma.collection.create({
-      data: {
-        masjidId,
-        createdById: actor.id,
-        type: dto.type,
-        amount: dto.amount,
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.description !== undefined
-          ? { description: dto.description }
-          : {}),
-        ...(dto.collectedAt ? { collectedAt: new Date(dto.collectedAt) } : {}),
-      },
-      select: collectionSelect,
+    const collection = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.collection.create({
+        data: {
+          masjidId,
+          createdById: actor.id,
+          type: dto.type,
+          amount: dto.amount,
+          ...(dto.title !== undefined ? { title: dto.title } : {}),
+          ...(dto.description !== undefined
+            ? { description: dto.description }
+            : {}),
+          ...(dto.collectedAt
+            ? { collectedAt: new Date(dto.collectedAt) }
+            : {}),
+        },
+        select: collectionSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CREATE,
+          entity: AUDIT_ENTITY.COLLECTION,
+          entityId: created.id,
+          summary: this.auditSummary(created),
+          after: created,
+        },
+        tx,
+      );
+      return created;
     });
 
     this.logger.log({
@@ -106,7 +131,7 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureCollectionBelongsToMasjid(id, masjidId);
+    const before = await this.ensureCollectionBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -117,10 +142,26 @@ export class CollectionsService {
       );
     }
 
-    const collection = await this.prisma.collection.update({
-      where: { id },
-      data,
-      select: collectionSelect,
+    const collection = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.collection.update({
+        where: { id },
+        data,
+        select: collectionSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.UPDATE,
+          entity: AUDIT_ENTITY.COLLECTION,
+          entityId: updated.id,
+          summary: this.auditSummary(updated),
+          before,
+          after: updated,
+        },
+        tx,
+      );
+      return updated;
     });
     this.logger.log({
       message: 'Collection updated',
@@ -135,11 +176,27 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureCollectionBelongsToMasjid(id, masjidId);
-    const collection = await this.prisma.collection.update({
-      where: { id },
-      data: { status: FinanceEntryStatus.CANCELLED },
-      select: collectionSelect,
+    const before = await this.ensureCollectionBelongsToMasjid(id, masjidId);
+    const collection = await this.prisma.$transaction(async (tx) => {
+      const cancelled = await tx.collection.update({
+        where: { id },
+        data: { status: FinanceEntryStatus.CANCELLED },
+        select: collectionSelect,
+      });
+      await this.audit.record(
+        {
+          masjidId,
+          actor,
+          action: AUDIT_ACTION.CANCEL,
+          entity: AUDIT_ENTITY.COLLECTION,
+          entityId: cancelled.id,
+          summary: `${this.auditSummary(cancelled)} cancelled`,
+          before,
+          after: cancelled,
+        },
+        tx,
+      );
+      return cancelled;
     });
     this.logger.warn({
       message: 'Collection cancelled',
@@ -210,6 +267,10 @@ export class CollectionsService {
       data.collectedAt = new Date(dto.collectedAt);
     if (dto.status !== undefined) data.status = dto.status;
     return data;
+  }
+
+  private auditSummary(collection: CollectionRecord): string {
+    return `Collection ${collection.type} ${formatMoney(collection.amount)}`;
   }
 
   private toResponse(collection: CollectionRecord): CollectionResponse {

@@ -19,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AppConfig } from './config/app-config';
 import { AppConfigModule } from './config/app-config.module';
 import { RateLimitModule } from './common/rate-limit/rate-limit';
+import { AuditModule } from './common/audit/audit.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { getLogUser } from './common/utils/log-user.util';
 import { getOrCreateRequestId } from './common/utils/request-id.util';
@@ -104,6 +105,7 @@ function usePrettyLogs(config: AppConfig): boolean {
       }),
     }),
     RateLimitModule,
+    AuditModule,
     PrismaModule,
     AdminModule,
     AuthModule,

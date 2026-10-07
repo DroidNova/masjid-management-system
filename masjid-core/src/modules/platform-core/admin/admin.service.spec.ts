@@ -10,12 +10,19 @@ describe('AdminService', () => {
   const mockPrisma = {
     user: { findUnique: jest.fn(), update: jest.fn() },
     userRole: { deleteMany: jest.fn(), createMany: jest.fn() },
-    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    $transaction: jest.fn(
+      (arg: unknown): Promise<unknown> =>
+        typeof arg === 'function'
+          ? Promise.resolve((arg as (tx: unknown) => unknown)(mockPrisma))
+          : Promise.all(arg as Promise<unknown>[]),
+    ),
   };
   const mockRolesService = { validateRoleNames: jest.fn() };
+  const mockAudit = { record: jest.fn() };
   const service = new AdminService(
     mockPrisma as never,
     mockRolesService as never,
+    mockAudit as never,
   );
   const superAdmin = {
     id: 'super-admin',
@@ -57,6 +64,14 @@ describe('AdminService', () => {
         superAdmin,
       ),
     ).resolves.toEqual({ id: 'cm-1', status: 'SUSPENDED' });
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'USER',
+        action: 'STATUS_CHANGE',
+        entityId: 'cm-1',
+      }),
+      mockPrisma,
+    );
   });
 
   it.each([['SUPER_ADMIN'], ['MASJID_ADMIN']])(
@@ -94,5 +109,14 @@ describe('AdminService', () => {
       data: [{ userId: 'u-1', roleId: 'role-imam' }],
       skipDuplicates: true,
     });
+    expect(mockAudit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'USER',
+        action: 'ROLES_CHANGE',
+        before: { roles: ['MEMBER'] },
+        after: { roles: ['IMAM'] },
+      }),
+      mockPrisma,
+    );
   });
 });
