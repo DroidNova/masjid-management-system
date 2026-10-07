@@ -1,31 +1,32 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { toAmount } from '../../../common/money';
+import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
+import { ProjectStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
-import { CreateProjectDto, ProjectStatusDto } from './dto/create-project.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
 import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
-type DecimalLike =
-  | number
-  | string
-  | { toNumber?: () => number; toString: () => string };
+const projectSelect = {
+  id: true,
+  masjidId: true,
+  title: true,
+  description: true,
+  targetAmount: true,
+  collectedAmount: true,
+  spentAmount: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.ProjectSelect;
 
-type ProjectRecord = {
-  id: string;
-  masjidId: string;
-  title: string;
-  description: string | null;
-  targetAmount: DecimalLike;
-  collectedAmount: DecimalLike;
-  spentAmount: DecimalLike;
-  status: string;
-  startDate: Date | null;
-  endDate: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+type ProjectRecord = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>;
 
 type ProjectResponse = Omit<
   ProjectRecord,
@@ -48,109 +49,30 @@ type ProjectsListResponse = {
   };
 };
 
-type ProjectWhereInput = {
-  masjidId: string;
-  status?: ProjectStatusDto;
-  OR?: Array<{
-    title?: { contains: string; mode: 'insensitive' };
-    description?: { contains: string; mode: 'insensitive' };
-  }>;
-};
-
-type ProjectCreateData = {
-  masjidId: string;
-  title: string;
-  description?: string;
-  targetAmount?: number;
-  collectedAmount?: number;
-  spentAmount?: number;
-  status?: ProjectStatusDto;
-  startDate?: Date;
-  endDate?: Date;
-};
-
-type ProjectUpdateData = Partial<{
-  title: string;
-  description: string | null;
-  targetAmount: number;
-  collectedAmount: number;
-  spentAmount: number;
-  status: ProjectStatusDto;
-  startDate: Date | null;
-  endDate: Date | null;
-}>;
-
-type ProjectsProjectDelegate = {
-  findMany(args: {
-    where: ProjectWhereInput;
-    skip: number;
-    take: number;
-    orderBy: { createdAt: 'desc' };
-    select: typeof projectSelect;
-  }): Promise<ProjectRecord[]>;
-  count(args: { where: ProjectWhereInput }): Promise<number>;
-  create(args: {
-    data: ProjectCreateData;
-    select: typeof projectSelect;
-  }): Promise<ProjectRecord>;
-  findUnique(args: {
-    where: { id: string };
-    select: typeof projectSelect;
-  }): Promise<ProjectRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: ProjectUpdateData;
-    select: typeof projectSelect;
-  }): Promise<ProjectRecord>;
-};
-
-type ProjectsPrismaDelegate = {
-  project: ProjectsProjectDelegate;
-};
-
-const projectSelect = {
-  id: true,
-  masjidId: true,
-  title: true,
-  description: true,
-  targetAmount: true,
-  collectedAmount: true,
-  spentAmount: true,
-  status: true,
-  startDate: true,
-  endDate: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private get db(): ProjectsPrismaDelegate {
-    return this.prisma as unknown as ProjectsPrismaDelegate;
-  }
-
   async findMyMasjidProjects(
     query: GetProjectsQueryDto,
     actor: AuthenticatedUser,
   ): Promise<ProjectsListResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where = this.buildProjectWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
-      this.db.project.findMany({
+      this.prisma.project.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
         select: projectSelect,
       }),
-      this.db.project.count({ where }),
+      this.prisma.project.count({ where }),
     ]);
 
     return {
@@ -168,9 +90,9 @@ export class ProjectsService {
     dto: CreateProjectDto,
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
 
-    const project = await this.db.project.create({
+    const project = await this.prisma.project.create({
       data: this.buildCreateData(dto, masjidId),
       select: projectSelect,
     });
@@ -187,7 +109,7 @@ export class ProjectsService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const project = await this.ensureProjectBelongsToMasjid(id, masjidId);
 
     return this.toProjectResponse(project);
@@ -198,7 +120,7 @@ export class ProjectsService {
     dto: UpdateProjectDto,
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureProjectBelongsToMasjid(id, masjidId);
 
     const data = this.buildUpdateData(dto);
@@ -211,7 +133,7 @@ export class ProjectsService {
       );
     }
 
-    const project = await this.db.project.update({
+    const project = await this.prisma.project.update({
       where: { id },
       data,
       select: projectSelect,
@@ -226,12 +148,12 @@ export class ProjectsService {
   }
 
   async cancel(id: string, actor: AuthenticatedUser): Promise<ProjectResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureProjectBelongsToMasjid(id, masjidId);
 
-    const project = await this.db.project.update({
+    const project = await this.prisma.project.update({
       where: { id },
-      data: { status: ProjectStatusDto.CANCELLED },
+      data: { status: ProjectStatus.CANCELLED },
       select: projectSelect,
     });
 
@@ -243,23 +165,11 @@ export class ProjectsService {
     return this.toProjectResponse(project);
   }
 
-  private getCurrentUserMasjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    return actor.masjidId;
-  }
-
   private async ensureProjectBelongsToMasjid(
     id: string,
     masjidId: string,
   ): Promise<ProjectRecord> {
-    const project = await this.db.project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id },
       select: projectSelect,
     });
@@ -272,13 +182,12 @@ export class ProjectsService {
       );
     }
 
-    if (project.masjidId !== masjidId) {
-      throw new ApiException(
-        'You are not allowed to access this project',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.PROJECT_ACCESS_FORBIDDEN,
-      );
-    }
+    assertSameMasjid(
+      project.masjidId,
+      masjidId,
+      'You are not allowed to access this project',
+      ERROR_CODES.PROJECT_ACCESS_FORBIDDEN,
+    );
 
     return project;
   }
@@ -286,8 +195,8 @@ export class ProjectsService {
   private buildProjectWhere(
     masjidId: string,
     query: GetProjectsQueryDto,
-  ): ProjectWhereInput {
-    const where: ProjectWhereInput = { masjidId };
+  ): Prisma.ProjectWhereInput {
+    const where: Prisma.ProjectWhereInput = { masjidId };
 
     if (query.status !== undefined) {
       where.status = query.status;
@@ -306,11 +215,11 @@ export class ProjectsService {
   private buildCreateData(
     dto: CreateProjectDto,
     masjidId: string,
-  ): ProjectCreateData {
-    const data: ProjectCreateData = {
+  ): Prisma.ProjectUncheckedCreateInput {
+    const data: Prisma.ProjectUncheckedCreateInput = {
       masjidId,
       title: dto.title,
-      status: dto.status ?? ProjectStatusDto.ONGOING,
+      status: dto.status ?? ProjectStatus.ONGOING,
     };
 
     if (dto.description !== undefined) data.description = dto.description;
@@ -326,8 +235,8 @@ export class ProjectsService {
     return data;
   }
 
-  private buildUpdateData(dto: UpdateProjectDto): ProjectUpdateData {
-    const data: ProjectUpdateData = {};
+  private buildUpdateData(dto: UpdateProjectDto): Prisma.ProjectUpdateInput {
+    const data: Prisma.ProjectUpdateInput = {};
 
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
@@ -347,10 +256,12 @@ export class ProjectsService {
   }
 
   private toProjectResponse(project: ProjectRecord): ProjectResponse {
-    const targetAmount = this.toNumber(project.targetAmount);
-    const collectedAmount = this.toNumber(project.collectedAmount);
-    const spentAmount = this.toNumber(project.spentAmount);
-    const remainingAmount = targetAmount - collectedAmount;
+    const targetAmount = toAmount(project.targetAmount);
+    const collectedAmount = toAmount(project.collectedAmount);
+    const spentAmount = toAmount(project.spentAmount);
+    const remainingAmount = toAmount(
+      project.targetAmount.minus(project.collectedAmount),
+    );
     const progressPercentage =
       targetAmount === 0
         ? 0
@@ -364,13 +275,5 @@ export class ProjectsService {
       remainingAmount,
       progressPercentage: Math.round(progressPercentage * 100) / 100,
     };
-  }
-
-  private toNumber(value: DecimalLike): number {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') return Number(value);
-    if (typeof value.toNumber === 'function') return value.toNumber();
-
-    return Number(value.toString());
   }
 }

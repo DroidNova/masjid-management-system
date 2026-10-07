@@ -1,94 +1,15 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { toAmount } from '../../../common/money';
+import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
+import { FinanceEntryStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
-import {
-  CreateExpenseDto,
-  ExpenseTypeDto,
-  FinanceEntryStatusDto,
-} from './dto/create-expense.dto';
+import { CreateExpenseDto } from './dto/create-expense.dto';
 import { GetExpensesQueryDto } from './dto/get-expenses-query.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
-
-type DecimalLike =
-  | number
-  | string
-  | { toNumber?: () => number; toString: () => string };
-
-type ExpenseRecord = {
-  id: string;
-  masjidId: string;
-  type: string;
-  amount: DecimalLike;
-  title: string | null;
-  description: string | null;
-  spentAt: Date;
-  status: string;
-  createdById: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type ExpenseResponse = Omit<ExpenseRecord, 'amount'> & { amount: number };
-
-type ExpenseWhereInput = {
-  masjidId: string;
-  type?: ExpenseTypeDto;
-  status?: FinanceEntryStatusDto;
-  spentAt?: { gte?: Date; lte?: Date };
-  OR?: Array<{
-    title?: { contains: string; mode: 'insensitive' };
-    description?: { contains: string; mode: 'insensitive' };
-  }>;
-};
-
-type ExpenseCreateData = {
-  masjidId: string;
-  createdById: string;
-  type: ExpenseTypeDto;
-  amount: number;
-  title?: string;
-  description?: string;
-  spentAt?: Date;
-};
-
-type ExpenseUpdateData = Partial<{
-  type: ExpenseTypeDto;
-  amount: number;
-  title: string | null;
-  description: string | null;
-  spentAt: Date;
-  status: FinanceEntryStatusDto;
-}>;
-
-type ExpensesDelegate = {
-  findMany(args: {
-    where: ExpenseWhereInput;
-    skip: number;
-    take: number;
-    orderBy: { spentAt: 'desc' };
-    select: typeof expenseSelect;
-  }): Promise<ExpenseRecord[]>;
-  count(args: { where: ExpenseWhereInput }): Promise<number>;
-  create(args: {
-    data: ExpenseCreateData;
-    select: typeof expenseSelect;
-  }): Promise<ExpenseRecord>;
-  findUnique(args: {
-    where: { id: string };
-    select: typeof expenseSelect;
-  }): Promise<ExpenseRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: ExpenseUpdateData;
-    select: typeof expenseSelect;
-  }): Promise<ExpenseRecord>;
-};
-
-type ExpensesPrismaDelegate = {
-  expense: ExpensesDelegate;
-};
 
 const expenseSelect = {
   id: true,
@@ -102,7 +23,11 @@ const expenseSelect = {
   createdById: true,
   createdAt: true,
   updatedAt: true,
-} as const;
+} as const satisfies Prisma.ExpenseSelect;
+
+type ExpenseRecord = Prisma.ExpenseGetPayload<{ select: typeof expenseSelect }>;
+
+type ExpenseResponse = Omit<ExpenseRecord, 'amount'> & { amount: number };
 
 @Injectable()
 export class ExpensesService {
@@ -110,28 +35,24 @@ export class ExpensesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private get db(): ExpensesPrismaDelegate {
-    return this.prisma as unknown as ExpensesPrismaDelegate;
-  }
-
   async findMyMasjidExpenses(
     query: GetExpensesQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where = this.buildWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
-      this.db.expense.findMany({
+      this.prisma.expense.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { spentAt: 'desc' },
         select: expenseSelect,
       }),
-      this.db.expense.count({ where }),
+      this.prisma.expense.count({ where }),
     ]);
 
     return {
@@ -144,8 +65,8 @@ export class ExpensesService {
     dto: CreateExpenseDto,
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
-    const expense = await this.db.expense.create({
+    const masjidId = requireMasjidId(actor);
+    const expense = await this.prisma.expense.create({
       data: {
         masjidId,
         createdById: actor.id,
@@ -172,7 +93,7 @@ export class ExpensesService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const expense = await this.ensureExpenseBelongsToMasjid(id, masjidId);
     return this.toResponse(expense);
   }
@@ -182,7 +103,7 @@ export class ExpensesService {
     dto: UpdateExpenseDto,
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureExpenseBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
@@ -194,7 +115,7 @@ export class ExpensesService {
       );
     }
 
-    const expense = await this.db.expense.update({
+    const expense = await this.prisma.expense.update({
       where: { id },
       data,
       select: expenseSelect,
@@ -208,11 +129,11 @@ export class ExpensesService {
   }
 
   async cancel(id: string, actor: AuthenticatedUser): Promise<ExpenseResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureExpenseBelongsToMasjid(id, masjidId);
-    const expense = await this.db.expense.update({
+    const expense = await this.prisma.expense.update({
       where: { id },
-      data: { status: FinanceEntryStatusDto.CANCELLED },
+      data: { status: FinanceEntryStatus.CANCELLED },
       select: expenseSelect,
     });
     this.logger.warn({
@@ -223,23 +144,11 @@ export class ExpensesService {
     return this.toResponse(expense);
   }
 
-  private getCurrentUserMasjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    return actor.masjidId;
-  }
-
   private async ensureExpenseBelongsToMasjid(
     id: string,
     masjidId: string,
   ): Promise<ExpenseRecord> {
-    const expense = await this.db.expense.findUnique({
+    const expense = await this.prisma.expense.findUnique({
       where: { id },
       select: expenseSelect,
     });
@@ -252,13 +161,12 @@ export class ExpensesService {
       );
     }
 
-    if (expense.masjidId !== masjidId) {
-      throw new ApiException(
-        'You are not allowed to access this finance entry',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
-      );
-    }
+    assertSameMasjid(
+      expense.masjidId,
+      masjidId,
+      'You are not allowed to access this finance entry',
+      ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
+    );
 
     return expense;
   }
@@ -266,14 +174,15 @@ export class ExpensesService {
   private buildWhere(
     masjidId: string,
     query: GetExpensesQueryDto,
-  ): ExpenseWhereInput {
-    const where: ExpenseWhereInput = { masjidId };
+  ): Prisma.ExpenseWhereInput {
+    const where: Prisma.ExpenseWhereInput = { masjidId };
     if (query.type !== undefined) where.type = query.type;
     if (query.status !== undefined) where.status = query.status;
     if (query.fromDate || query.toDate) {
-      where.spentAt = {};
-      if (query.fromDate) where.spentAt.gte = new Date(query.fromDate);
-      if (query.toDate) where.spentAt.lte = new Date(query.toDate);
+      const spentAt: Prisma.DateTimeFilter<'Expense'> = {};
+      if (query.fromDate) spentAt.gte = new Date(query.fromDate);
+      if (query.toDate) spentAt.lte = new Date(query.toDate);
+      where.spentAt = spentAt;
     }
     if (query.search) {
       where.OR = [
@@ -284,8 +193,8 @@ export class ExpensesService {
     return where;
   }
 
-  private buildUpdateData(dto: UpdateExpenseDto): ExpenseUpdateData {
-    const data: ExpenseUpdateData = {};
+  private buildUpdateData(dto: UpdateExpenseDto): Prisma.ExpenseUpdateInput {
+    const data: Prisma.ExpenseUpdateInput = {};
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.amount !== undefined) data.amount = dto.amount;
     if (dto.title !== undefined) data.title = dto.title;
@@ -296,13 +205,6 @@ export class ExpensesService {
   }
 
   private toResponse(expense: ExpenseRecord): ExpenseResponse {
-    return { ...expense, amount: this.toNumber(expense.amount) };
-  }
-
-  private toNumber(value: DecimalLike): number {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') return Number(value);
-    if (typeof value.toNumber === 'function') return value.toNumber();
-    return Number(value.toString());
+    return { ...expense, amount: toAmount(expense.amount) };
   }
 }

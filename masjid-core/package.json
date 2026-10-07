@@ -29,6 +29,7 @@
     "prisma:seed:prod": "node dist/prisma/seed.js",
     "bootstrap:super-admin": "ts-node scripts/bootstrap-super-admin.ts",
     "bootstrap:super-admin:prod": "node dist/scripts/bootstrap-super-admin.js",
+    "openapi": "ts-node scripts/export-openapi.ts",
     "dev:reset-passwords": "ts-node scripts/reset-dev-passwords.ts",
     "dev:reset-passwords:prod": "node dist/scripts/reset-dev-passwords.js",
     "prisma:migrate:deploy": "prisma migrate deploy"

@@ -3,10 +3,11 @@ import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { buildOpenApiDocument } from './swagger';
 import { AppConfig } from './config/app-config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiException } from './common/exceptions/api.exception';
@@ -81,23 +82,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new SuccessResponseInterceptor());
 
   if (config.swaggerEnabled) {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Masjid Core API')
-      .setDescription('Backend for the masjid management system')
-      .setVersion('1.0')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'Input JWT access token',
-        },
-        'bearer',
-      )
-      .build();
-
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api', app, document);
+    SwaggerModule.setup('api', app, buildOpenApiDocument(app));
   }
 
   app.enableShutdownHooks();

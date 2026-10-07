@@ -45,7 +45,7 @@ export class CreateMasjidUserDto {
   phone!: string;
 
   @ApiPropertyOptional({ example: 'user@example.com', maxLength: 254 })
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
   @IsOptional()

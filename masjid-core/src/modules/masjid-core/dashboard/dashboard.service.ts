@@ -1,157 +1,18 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { money, toAmount } from '../../../common/money';
+import { requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
-
-type BasicUser = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-};
-
-type DecimalLike =
-  | number
-  | string
-  | { toNumber?: () => number; toString: () => string };
-
-type DashboardMasjid = {
-  id: string;
-  name: string;
-  country: string | null;
-  locality: string | null;
-  district: string | null;
-  state: string | null;
-  address: string | null;
-  contactNo: string | null;
-  description: string | null;
-  welcomeMsg: string | null;
-  status: string;
-  namazTime: DashboardNamazTime | null;
-  imamUser: BasicUser | null;
-  announcements: DashboardAnnouncement[];
-  projects: DashboardProject[];
-  imamSalaries: DashboardImamSalary[];
-};
-
-type DashboardNamazTime = {
-  fajr: string | null;
-  zuhr: string | null;
-  asr: string | null;
-  maghrib: string | null;
-  isha: string | null;
-  jumma: string | null;
-  note: string | null;
-};
-
-type DashboardAnnouncement = {
-  id: string;
-  title: string;
-  message: string;
-  createdAt: Date;
-};
-
-type DashboardProject = {
-  id: string;
-  title: string;
-  targetAmount: DecimalLike;
-  collectedAmount: DecimalLike;
-  status: string;
-};
-
-type DashboardImamSalary = {
-  month: number;
-  year: number;
-  salaryAmount: DecimalLike;
-  paidAmount: DecimalLike;
-  dueAmount: DecimalLike;
-  status: string;
-};
-
-type DashboardProjectResponse = {
-  id: string;
-  title: string;
-  targetAmount: number;
-  collectedAmount: number;
-  progressPercentage: number;
-  status: string;
-};
-
-type DashboardImamSalaryResponse = {
-  latestMonth: number;
-  latestYear: number;
-  salaryAmount: number;
-  paidAmount: number;
-  dueAmount: number;
-  status: string;
-};
-
-type DashboardFinanceSummary = {
-  totalCollection: number;
-  totalExpense: number;
-  currentBalance: number;
-  thisMonthCollection: number;
-  thisMonthExpense: number;
-};
-
-type DashboardResponse = {
-  masjid: Omit<
-    DashboardMasjid,
-    'namazTime' | 'imamUser' | 'announcements' | 'projects' | 'imamSalaries'
-  >;
-  namazTime: DashboardNamazTime | null;
-  imam: BasicUser | null;
-  membersCount: number;
-  latestAnnouncements: DashboardAnnouncement[];
-  projectsSummary: {
-    activeProjectsCount: number;
-    latestProjects: DashboardProjectResponse[];
-  };
-  imamSalarySummary: DashboardImamSalaryResponse | null;
-  financeSummary: DashboardFinanceSummary;
-};
-
-type DashboardUserDelegate = {
-  count(args: {
-    where: { masjidId: string; status: 'ACTIVE' };
-  }): Promise<number>;
-};
-
-type DashboardMasjidDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: typeof dashboardMasjidSelect;
-  }): Promise<DashboardMasjid | null>;
-};
-
-type DashboardProjectDelegate = {
-  count(args: {
-    where: { masjidId: string; status: { in: ['ONGOING', 'PLANNED'] } };
-  }): Promise<number>;
-};
-
-type DashboardAggregateDelegate = {
-  aggregate(args: {
-    where: Record<string, unknown>;
-    _sum: { amount: true };
-  }): Promise<{ _sum: { amount: DecimalLike | null } }>;
-};
-
-type DashboardPrismaDelegate = {
-  user: DashboardUserDelegate;
-  masjid: DashboardMasjidDelegate;
-  project: DashboardProjectDelegate;
-  collection: DashboardAggregateDelegate;
-  expense: DashboardAggregateDelegate;
-};
 
 const basicUserSelect = {
   id: true,
   fullName: true,
   email: true,
   phone: true,
-} as const;
+} satisfies Prisma.UserSelect;
 
 const dashboardMasjidSelect = {
   id: true,
@@ -200,6 +61,8 @@ const dashboardMasjidSelect = {
       status: true,
     },
   },
+  // Legacy ImamSalary model; kept as-is until the dashboard is moved to
+  // ImamSalaryMonth/Assignment.
   imamSalaries: {
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
     take: 1,
@@ -212,29 +75,23 @@ const dashboardMasjidSelect = {
       status: true,
     },
   },
-} as const;
+} satisfies Prisma.MasjidSelect;
+
+type DashboardMasjid = Prisma.MasjidGetPayload<{
+  select: typeof dashboardMasjidSelect;
+}>;
+type DashboardProject = DashboardMasjid['projects'][number];
+type DashboardImamSalary = DashboardMasjid['imamSalaries'][number];
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private get db(): DashboardPrismaDelegate {
-    return this.prisma as unknown as DashboardPrismaDelegate;
-  }
+  async getMyMasjidDashboard(actor: AuthenticatedUser) {
+    const masjidId = requireMasjidId(actor);
 
-  async getMyMasjidDashboard(
-    actor: AuthenticatedUser,
-  ): Promise<DashboardResponse> {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    const masjidRecord = await this.db.masjid.findUnique({
-      where: { id: actor.masjidId },
+    const masjidRecord = await this.prisma.masjid.findUnique({
+      where: { id: masjidId },
       select: dashboardMasjidSelect,
     });
 
@@ -256,24 +113,24 @@ export class DashboardService {
       thisMonthCollection,
       thisMonthExpense,
     ] = await Promise.all([
-      this.db.user.count({
-        where: { masjidId: actor.masjidId, status: 'ACTIVE' },
+      this.prisma.user.count({
+        where: { masjidId, status: 'ACTIVE' },
       }),
-      this.db.project.count({
+      this.prisma.project.count({
         where: {
-          masjidId: actor.masjidId,
+          masjidId,
           status: { in: ['ONGOING', 'PLANNED'] },
         },
       }),
-      this.sumCollection({ masjidId: actor.masjidId, status: 'ACTIVE' }),
-      this.sumExpense({ masjidId: actor.masjidId, status: 'ACTIVE' }),
+      this.sumCollection({ masjidId, status: 'ACTIVE' }),
+      this.sumExpense({ masjidId, status: 'ACTIVE' }),
       this.sumCollection({
-        masjidId: actor.masjidId,
+        masjidId,
         status: 'ACTIVE',
         collectedAt: currentMonthRange,
       }),
       this.sumExpense({
-        masjidId: actor.masjidId,
+        masjidId,
         status: 'ACTIVE',
         spentAt: currentMonthRange,
       }),
@@ -304,44 +161,39 @@ export class DashboardService {
         ? this.toDashboardImamSalaryResponse(imamSalaries[0])
         : null,
       financeSummary: {
-        totalCollection,
-        totalExpense,
-        currentBalance: totalCollection - totalExpense,
-        thisMonthCollection,
-        thisMonthExpense,
+        totalCollection: toAmount(totalCollection),
+        totalExpense: toAmount(totalExpense),
+        currentBalance: toAmount(totalCollection.minus(totalExpense)),
+        thisMonthCollection: toAmount(thisMonthCollection),
+        thisMonthExpense: toAmount(thisMonthExpense),
       },
     };
   }
 
-  private toDashboardProjectResponse(
-    project: DashboardProject,
-  ): DashboardProjectResponse {
-    const targetAmount = this.toNumber(project.targetAmount);
-    const collectedAmount = this.toNumber(project.collectedAmount);
-    const progressPercentage =
-      targetAmount === 0
-        ? 0
-        : Math.min((collectedAmount / targetAmount) * 100, 100);
+  private toDashboardProjectResponse(project: DashboardProject) {
+    const targetAmount = money(project.targetAmount);
+    const collectedAmount = money(project.collectedAmount);
+    const progressPercentage = targetAmount.isZero()
+      ? money(0)
+      : Prisma.Decimal.min(collectedAmount.div(targetAmount).times(100), 100);
 
     return {
       id: project.id,
       title: project.title,
-      targetAmount,
-      collectedAmount,
-      progressPercentage: Math.round(progressPercentage * 100) / 100,
+      targetAmount: toAmount(targetAmount),
+      collectedAmount: toAmount(collectedAmount),
+      progressPercentage: toAmount(progressPercentage),
       status: project.status,
     };
   }
 
-  private toDashboardImamSalaryResponse(
-    salary: DashboardImamSalary,
-  ): DashboardImamSalaryResponse {
+  private toDashboardImamSalaryResponse(salary: DashboardImamSalary) {
     return {
       latestMonth: salary.month,
       latestYear: salary.year,
-      salaryAmount: this.toNumber(salary.salaryAmount),
-      paidAmount: this.toNumber(salary.paidAmount),
-      dueAmount: this.toNumber(salary.dueAmount),
+      salaryAmount: toAmount(salary.salaryAmount),
+      paidAmount: toAmount(salary.paidAmount),
+      dueAmount: toAmount(salary.dueAmount),
       status: salary.status,
     };
   }
@@ -364,28 +216,19 @@ export class DashboardService {
     };
   }
 
-  private async sumCollection(where: Record<string, unknown>): Promise<number> {
-    const result = await this.db.collection.aggregate({
+  private async sumCollection(where: Prisma.CollectionWhereInput) {
+    const result = await this.prisma.collection.aggregate({
       where,
       _sum: { amount: true },
     });
-    return this.toNumber(result._sum.amount);
+    return money(result._sum.amount);
   }
 
-  private async sumExpense(where: Record<string, unknown>): Promise<number> {
-    const result = await this.db.expense.aggregate({
+  private async sumExpense(where: Prisma.ExpenseWhereInput) {
+    const result = await this.prisma.expense.aggregate({
       where,
       _sum: { amount: true },
     });
-    return this.toNumber(result._sum.amount);
-  }
-
-  private toNumber(value: DecimalLike | null): number {
-    if (value === null) return 0;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') return Number(value);
-    if (typeof value.toNumber === 'function') return value.toNumber();
-
-    return Number(value.toString());
+    return money(result._sum.amount);
   }
 }

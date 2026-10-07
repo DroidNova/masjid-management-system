@@ -8,8 +8,17 @@ import {
   isValidNormalizedPhone,
   normalizePhone,
 } from '../../../common/utils/phone.util';
+import { Prisma } from '../../../generated/prisma/client';
+import {
+  Gender,
+  MasjidRegistrationStatus,
+  MasjidStatus,
+  RoleName,
+  UserStatus,
+} from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
+import { BCRYPT_ROUNDS } from '../auth/auth.service';
 import { initialPasswordFor } from '../auth/initial-password';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
@@ -21,324 +30,31 @@ import {
   MasjidRequestStatusActionDto,
   UpdateMasjidRequestStatusDto,
 } from './dto/update-masjid-request-status.dto';
+import {
+  createdMasjidSelect,
+  MasjidRequestRecord,
+  masjidRequestSelect,
+  masjidRequestTrackingSelect,
+  RequestUser,
+  requestUserSelect,
+} from './masjid-requests.selects';
 
-const IMAM_ROLE = 'IMAM';
-const COMMITTEE_MEMBER_ROLE = 'COMMITTEE_MEMBER';
-const BCRYPT_SALT_ROUNDS = 10;
-
-const MasjidRegistrationRequestStatus = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-} as const;
-type MasjidRegistrationRequestStatus =
-  (typeof MasjidRegistrationRequestStatus)[keyof typeof MasjidRegistrationRequestStatus];
-
-enum MasjidStatus {
-  APPROVED = 'APPROVED',
-}
-
-type BasicUser = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-};
-
-type RequestUser = BasicUser & {
-  masjidId: string | null;
-};
-
-type CreatedMasjid = {
-  id: string;
-  name: string;
-  status?: string;
-  createdAt: Date;
-};
-
+/** Committee member as stored in the request's committeeMembers JSON. */
 type CommitteeMember = {
   name?: string;
   phone?: string;
   fatherName?: string;
   age?: number;
-  gender?: string;
+  gender?: Gender;
 };
 
-type MasjidRequestRecord = {
-  id: string;
-  requestedById: string | null;
-  reviewedById: string | null;
-  requesterName: string | null;
-  requesterPhone: string | null;
-  requesterEmail: string | null;
-  status: string;
-  masjidName: string;
-  locality: string;
-  district: string | null;
-  country: string;
-  state: string;
-  address: string;
-  contactNo: string | null;
-  description: string | null;
-  welcomeMsg: string | null;
-  imamName: string | null;
-  imamEmail: string | null;
-  imamPhone: string | null;
-  imamAddress: string | null;
-  imamFatherName: string | null;
-  imamAge: number | null;
-  imamGender: string | null;
-  committeeMembers: unknown;
-  rejectionReason: string | null;
-  reviewedAt: Date | null;
-  createdMasjidId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  requestedBy?: BasicUser | null;
-  reviewedBy?: BasicUser | null;
-  createdMasjid?: CreatedMasjid | null;
-};
+/** Either the PrismaService or the client of an open transaction. */
+type Db = Prisma.TransactionClient;
 
-type TrackedMasjidRequestRecord = {
-  masjidName: string;
-  status: string;
-  imamName: string | null;
-  createdAt: Date;
-  reviewedAt: Date | null;
-};
-
-type RoleName = typeof IMAM_ROLE | typeof COMMITTEE_MEMBER_ROLE;
-
-type RequestCreateData = {
-  requestedById?: string | null;
-  requesterName: string;
-  requesterPhone: string;
-  requesterEmail?: string | null;
-  status: MasjidRegistrationRequestStatus;
-  masjidName: string;
-  locality: string;
-  district?: string | null;
-  country: string;
-  state: string;
-  address: string;
-  contactNo?: string | null;
-  description?: string | null;
-  welcomeMsg?: string | null;
-  imamName: string;
-  imamEmail?: string | null;
-  imamPhone: string;
-  imamAddress: string;
-  imamFatherName?: string | null;
-  imamAge?: number | null;
-  imamGender?: string | null;
-  committeeMembers: CommitteeMember[];
-};
-
-type RequestUpdateData = {
-  status?: MasjidRegistrationRequestStatus;
-  reviewedById?: string | null;
-  reviewedAt?: Date | null;
-  rejectionReason?: string | null;
-  createdMasjidId?: string | null;
-};
-
-type UserCreateData = {
-  fullName: string;
-  email?: string | null;
-  phone?: string | null;
-  passwordHash: string;
-  status: string;
-  fatherName?: string | null;
-  age?: number | null;
-  gender?: string | null;
-  isFamilyHead?: boolean;
-  familyMemberCount?: number | null;
-};
-
-type UserUpdateData = {
-  masjidId?: string | null;
-};
-
-type MasjidCreateData = {
-  name: string;
-  locality: string;
-  district?: string | null;
-  country: string;
-  state: string;
-  address: string;
-  contactNo?: string | null;
-  description?: string | null;
-  welcomeMsg?: string | null;
-  requestedByName?: string | null;
-  requestedByPhone?: string | null;
-  requestedByEmail?: string | null;
-  createdById?: string | null;
-  imamName?: string | null;
-  imamPhone?: string | null;
-  imamEmail?: string | null;
-  imamAddress?: string | null;
-  imamUserId?: string | null;
-  status?: MasjidStatus;
-  approvedById?: string;
-  approvedAt?: Date;
-  rejectionReason?: string | null;
-};
-
-type MasjidRequestDelegate = {
-  create(args: {
-    data: RequestCreateData;
-    select: typeof masjidRequestDetailSelect;
-  }): Promise<MasjidRequestRecord>;
-  findMany(args: {
-    where: Record<string, unknown>;
-    skip?: number;
-    take?: number;
-    orderBy: { createdAt: 'desc' };
-    select: typeof masjidRequestListSelect;
-  }): Promise<MasjidRequestRecord[]>;
-  findMany(args: {
-    where: Record<string, unknown>;
-    orderBy: { createdAt: 'desc' };
-    select: typeof masjidRequestTrackingSelect;
-  }): Promise<TrackedMasjidRequestRecord[]>;
-  count(args: { where: Record<string, unknown> }): Promise<number>;
-  findUnique(args: {
-    where: { id: string };
-    select: typeof masjidRequestDetailSelect;
-  }): Promise<MasjidRequestRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: RequestUpdateData;
-    select: typeof masjidRequestDetailSelect;
-  }): Promise<MasjidRequestRecord>;
-};
-
-type UserDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser | null>;
-  findFirst(args: {
-    where: Record<string, unknown>;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser | null>;
-  create(args: {
-    data: UserCreateData;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser>;
-  update(args: {
-    where: { id: string };
-    data: UserUpdateData;
-    select: typeof requestUserSelect;
-  }): Promise<RequestUser>;
-};
-
-type RoleDelegate = {
-  findFirst(args: {
-    where: { name: string };
-    select: { id: true };
-  }): Promise<{ id: string } | null>;
-};
-
-type UserRoleDelegate = {
-  findFirst(args: {
-    where: { userId: string; roleId: string };
-    select: { id: true };
-  }): Promise<{ id: string } | null>;
-  create(args: {
-    data: { userId: string; roleId: string };
-    select: { id: true };
-  }): Promise<{ id: string }>;
-};
-
-type MasjidDelegate = {
-  create(args: {
-    data: MasjidCreateData;
-    select: typeof createdMasjidSelect;
-  }): Promise<CreatedMasjid>;
-};
-
-type MasjidRequestsPrismaDelegate = {
-  masjidRegistrationRequest: MasjidRequestDelegate;
-  user: UserDelegate;
-  role: RoleDelegate;
-  userRole: UserRoleDelegate;
-  masjid: MasjidDelegate;
-  $transaction<T>(
-    callback: (tx: MasjidRequestsPrismaDelegate) => Promise<T>,
-  ): Promise<T>;
-};
-
-const basicUserSelect = {
-  id: true,
-  fullName: true,
-  email: true,
-  phone: true,
-} as const;
-
-const requestUserSelect = {
-  ...basicUserSelect,
-  masjidId: true,
-  fatherName: true,
-  age: true,
-  gender: true,
-  isFamilyHead: true,
-  familyMemberCount: true,
-} as const;
-
-const createdMasjidSelect = {
-  id: true,
-  name: true,
-  status: true,
-  createdAt: true,
-} as const;
-
-const masjidRequestListSelect = {
-  id: true,
-  requestedById: true,
-  reviewedById: true,
-  requesterName: true,
-  requesterPhone: true,
-  requesterEmail: true,
-  status: true,
-  masjidName: true,
-  locality: true,
-  district: true,
-  country: true,
-  state: true,
-  address: true,
-  contactNo: true,
-  description: true,
-  welcomeMsg: true,
-  imamName: true,
-  imamEmail: true,
-  imamPhone: true,
-  imamAddress: true,
-  imamFatherName: true,
-  imamAge: true,
-  imamGender: true,
-  committeeMembers: true,
-  rejectionReason: true,
-  reviewedAt: true,
-  createdMasjidId: true,
-  createdAt: true,
-  updatedAt: true,
-  requestedBy: { select: basicUserSelect },
-  reviewedBy: { select: basicUserSelect },
-  createdMasjid: { select: createdMasjidSelect },
-} as const;
-
-const masjidRequestDetailSelect = {
-  ...masjidRequestListSelect,
-} as const;
-
-const masjidRequestTrackingSelect = {
-  masjidName: true,
-  status: true,
-  imamName: true,
-  createdAt: true,
-  reviewedAt: true,
-} as const;
+const insensitiveContains = (value: string) => ({
+  contains: value,
+  mode: Prisma.QueryMode.insensitive,
+});
 
 @Injectable()
 export class MasjidRequestsService {
@@ -348,10 +64,6 @@ export class MasjidRequestsService {
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
   ) {}
-
-  private get db(): MasjidRequestsPrismaDelegate {
-    return this.prisma as unknown as MasjidRequestsPrismaDelegate;
-  }
 
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
     const imamName = dto.imamName ?? dto.imam?.name;
@@ -376,7 +88,7 @@ export class MasjidRequestsService {
       message: 'Masjid request submission started',
       masjidName: dto.masjidName,
     });
-    const request = await this.db.masjidRegistrationRequest.create({
+    const request = await this.prisma.masjidRegistrationRequest.create({
       data: {
         requesterName: dto.requesterName.trim(),
         requesterPhone: normalizePhone(dto.requesterPhone),
@@ -401,9 +113,9 @@ export class MasjidRequestsService {
         imamGender: dto.imamGender,
         committeeMembers,
         requestedById: null,
-        status: MasjidRegistrationRequestStatus.PENDING,
+        status: MasjidRegistrationStatus.PENDING,
       },
-      select: masjidRequestDetailSelect,
+      select: masjidRequestSelect,
     });
     this.logger.log({
       message: 'Masjid request submitted',
@@ -417,14 +129,14 @@ export class MasjidRequestsService {
     const limit = query.limit ?? 20;
     const where = this.buildWhere(query);
     const [items, total] = await Promise.all([
-      this.db.masjidRegistrationRequest.findMany({
+      this.prisma.masjidRegistrationRequest.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: masjidRequestListSelect,
+        select: masjidRequestSelect,
       }),
-      this.db.masjidRegistrationRequest.count({ where }),
+      this.prisma.masjidRegistrationRequest.count({ where }),
     ]);
 
     return {
@@ -449,9 +161,10 @@ export class MasjidRequestsService {
       );
     }
 
-    const phoneVariants = getPhoneSearchVariants(normalizedPhone);
-    const items = await this.db.masjidRegistrationRequest.findMany({
-      where: { requesterPhone: { in: phoneVariants } },
+    const items = await this.prisma.masjidRegistrationRequest.findMany({
+      where: {
+        requesterPhone: { in: getPhoneSearchVariants(normalizedPhone) },
+      },
       orderBy: { createdAt: 'desc' },
       select: masjidRequestTrackingSelect,
     });
@@ -495,6 +208,11 @@ export class MasjidRequestsService {
     return this.approve(id, actor);
   }
 
+  /**
+   * Creates the masjid, then finds or creates the imam and committee members
+   * (one query each), links them to the masjid and gives them their role.
+   * Everything happens in one transaction.
+   */
   private async approve(
     id: string,
     actor: AuthenticatedUser,
@@ -504,7 +222,7 @@ export class MasjidRequestsService {
       masjidRequestId: id,
       actorId: actor.id,
     });
-    const approvedRequest = await this.db.$transaction(async (tx) => {
+    const approvedRequest = await this.prisma.$transaction(async (tx) => {
       const request = await this.findByIdOrThrow(id, tx);
       this.assertCanApprove(request);
 
@@ -528,7 +246,7 @@ export class MasjidRequestsService {
           imamEmail: request.imamEmail,
           imamAddress: request.imamAddress,
           createdById: actor.id,
-          imamUserId: imamUser?.id ?? null,
+          imamUserId: imamUser.id,
           status: MasjidStatus.APPROVED,
           approvedById: actor.id,
           approvedAt: new Date(),
@@ -537,23 +255,21 @@ export class MasjidRequestsService {
         select: createdMasjidSelect,
       });
 
-      if (imamUser) {
-        await this.linkUserToMasjid(imamUser.id, masjid.id, tx);
-        await this.assignRoleToUser(imamUser.id, IMAM_ROLE, tx);
-      }
+      await this.linkUserToMasjid(imamUser.id, masjid.id, tx);
+      await this.assignRoleToUser(imamUser.id, RoleName.IMAM, tx);
 
       await this.createOrLinkCommitteeMembers(request, masjid.id, tx);
 
       return tx.masjidRegistrationRequest.update({
         where: { id: request.id },
         data: {
-          status: MasjidRegistrationRequestStatus.APPROVED,
+          status: MasjidRegistrationStatus.APPROVED,
           reviewedById: actor.id,
           reviewedAt: new Date(),
           createdMasjidId: masjid.id,
           rejectionReason: null,
         },
-        select: masjidRequestDetailSelect,
+        select: masjidRequestSelect,
       });
     });
     this.logger.log({
@@ -569,9 +285,9 @@ export class MasjidRequestsService {
     dto: UpdateMasjidRequestStatusDto,
     actor: AuthenticatedUser,
   ): Promise<MasjidRequestRecord> {
-    const request = await this.findByIdOrThrow(id, this.db);
+    const request = await this.findByIdOrThrow(id, this.prisma);
 
-    if (request.status === MasjidRegistrationRequestStatus.APPROVED) {
+    if (request.status === MasjidRegistrationStatus.APPROVED) {
       throw new ApiException(
         'Approved masjid request cannot be rejected',
         HttpStatus.CONFLICT,
@@ -579,7 +295,7 @@ export class MasjidRequestsService {
       );
     }
 
-    if (request.status === MasjidRegistrationRequestStatus.REJECTED) {
+    if (request.status === MasjidRegistrationStatus.REJECTED) {
       throw new ApiException(
         'Masjid request is already rejected',
         HttpStatus.CONFLICT,
@@ -587,15 +303,15 @@ export class MasjidRequestsService {
       );
     }
 
-    const rejectedRequest = await this.db.masjidRegistrationRequest.update({
+    const rejectedRequest = await this.prisma.masjidRegistrationRequest.update({
       where: { id: request.id },
       data: {
-        status: MasjidRegistrationRequestStatus.REJECTED,
+        status: MasjidRegistrationStatus.REJECTED,
         reviewedById: actor.id,
         reviewedAt: new Date(),
         rejectionReason: this.nullableString(dto.reason),
       },
-      select: masjidRequestDetailSelect,
+      select: masjidRequestSelect,
     });
     this.logger.warn({
       message: 'Masjid request rejected',
@@ -604,86 +320,45 @@ export class MasjidRequestsService {
     return rejectedRequest;
   }
 
+  /** Empty filters are ignored (Prisma skips undefined conditions). */
   private buildWhere(
     query: GetMasjidRequestsQueryDto,
-  ): Record<string, unknown> {
-    const where: Record<string, unknown> = {};
+  ): Prisma.MasjidRegistrationRequestWhereInput {
+    const filter = (value: string | undefined) =>
+      value ? insensitiveContains(value) : undefined;
+    const search = query.search;
 
-    if (query.id) {
-      where.id = query.id;
-    }
-
-    if (query.status) {
-      where.status = query.status;
-    }
-
-    if (query.masjidName) {
-      where.masjidName = {
-        contains: query.masjidName,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.locality) {
-      where.locality = {
-        contains: query.locality,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.district) {
-      where.district = {
-        contains: query.district,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.country) {
-      where.country = {
-        contains: query.country,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.state) {
-      where.state = {
-        contains: query.state,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.requesterPhone) {
-      where.requesterPhone = {
-        contains: query.requesterPhone,
-        mode: 'insensitive',
-      };
-    }
-
-    if (query.search) {
-      where.OR = [
-        'masjidName',
-        'address',
-        'locality',
-        'district',
-        'state',
-        'country',
-        'contactNo',
-        'requesterPhone',
-      ].map((field) => ({
-        [field]: { contains: query.search, mode: 'insensitive' },
-      }));
-    }
-
-    return where;
+    return {
+      id: query.id || undefined,
+      status: query.status || undefined,
+      masjidName: filter(query.masjidName),
+      locality: filter(query.locality),
+      district: filter(query.district),
+      country: filter(query.country),
+      state: filter(query.state),
+      requesterPhone: filter(query.requesterPhone),
+      OR: search
+        ? [
+            { masjidName: insensitiveContains(search) },
+            { address: insensitiveContains(search) },
+            { locality: insensitiveContains(search) },
+            { district: insensitiveContains(search) },
+            { state: insensitiveContains(search) },
+            { country: insensitiveContains(search) },
+            { contactNo: insensitiveContains(search) },
+            { requesterPhone: insensitiveContains(search) },
+          ]
+        : undefined,
+    };
   }
 
   private async findByIdOrThrow(
     id: string,
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<MasjidRequestRecord> {
     const request = await db.masjidRegistrationRequest.findUnique({
       where: { id },
-      select: masjidRequestDetailSelect,
+      select: masjidRequestSelect,
     });
 
     if (!request) {
@@ -698,7 +373,7 @@ export class MasjidRequestsService {
   }
 
   private assertCanApprove(request: MasjidRequestRecord): void {
-    if (request.status === MasjidRegistrationRequestStatus.APPROVED) {
+    if (request.status === MasjidRegistrationStatus.APPROVED) {
       throw new ApiException(
         'Masjid request is already approved',
         HttpStatus.CONFLICT,
@@ -706,7 +381,7 @@ export class MasjidRequestsService {
       );
     }
 
-    if (request.status === MasjidRegistrationRequestStatus.REJECTED) {
+    if (request.status === MasjidRegistrationStatus.REJECTED) {
       throw new ApiException(
         'Rejected masjid request cannot be approved',
         HttpStatus.CONFLICT,
@@ -717,8 +392,8 @@ export class MasjidRequestsService {
 
   private async createOrFindImamUser(
     request: MasjidRequestRecord,
-    db: MasjidRequestsPrismaDelegate,
-  ): Promise<RequestUser | null> {
+    db: Db,
+  ): Promise<RequestUser> {
     const fullName = this.nullableString(request.imamName);
     const email = this.nullableEmail(request.imamEmail);
     const phone = this.nullableString(request.imamPhone);
@@ -732,13 +407,8 @@ export class MasjidRequestsService {
     }
 
     const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
-
     if (existingUser) {
       return existingUser;
-    }
-
-    if (!fullName) {
-      return null;
     }
 
     return this.createTemporaryUser(
@@ -757,7 +427,7 @@ export class MasjidRequestsService {
   private async createOrLinkCommitteeMembers(
     request: MasjidRequestRecord,
     masjidId: string,
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<void> {
     const committeeMembers = this.parseCommitteeMembers(
       request.committeeMembers,
@@ -802,14 +472,14 @@ export class MasjidRequestsService {
       }
 
       await this.linkUserToMasjid(user.id, masjidId, db);
-      await this.assignRoleToUser(user.id, COMMITTEE_MEMBER_ROLE, db);
+      await this.assignRoleToUser(user.id, RoleName.COMMITTEE_MEMBER, db);
     }
   }
 
   private async findUserByPhoneOrEmail(
     phone: string | null,
     email: string | null,
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<RequestUser | null> {
     if (phone) {
       const user = await db.user.findFirst({
@@ -839,15 +509,15 @@ export class MasjidRequestsService {
       phone: string | null;
       fatherName?: string | null;
       age?: number | null;
-      gender?: string | null;
+      gender?: Gender | null;
     },
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<RequestUser> {
     // Dev mode: AUTH_DEV_PASSWORD. Otherwise a random secret; the user sets a
     // real password through the OTP reset flow (milestone M6).
     const passwordHash = await bcrypt.hash(
       initialPasswordFor(this.config).password,
-      BCRYPT_SALT_ROUNDS,
+      BCRYPT_ROUNDS,
     );
 
     return db.user.create({
@@ -861,7 +531,7 @@ export class MasjidRequestsService {
         isFamilyHead: false,
         familyMemberCount: null,
         passwordHash,
-        status: 'ACTIVE',
+        status: UserStatus.ACTIVE,
       },
       select: requestUserSelect,
     });
@@ -870,7 +540,7 @@ export class MasjidRequestsService {
   private async linkUserToMasjid(
     userId: string,
     masjidId: string,
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<RequestUser> {
     return db.user.update({
       where: { id: userId },
@@ -882,7 +552,7 @@ export class MasjidRequestsService {
   private async assignRoleToUser(
     userId: string,
     roleName: RoleName,
-    db: MasjidRequestsPrismaDelegate,
+    db: Db,
   ): Promise<void> {
     const role = await db.role.findFirst({
       where: { name: roleName },
@@ -959,6 +629,10 @@ export class MasjidRequestsService {
     }
   }
 
+  /**
+   * Reads name and phone back from the stored JSON. Father name, age and
+   * gender are not read, so committee members created on approval get none.
+   */
   private parseCommitteeMembers(value: unknown): CommitteeMember[] {
     if (!Array.isArray(value)) {
       return [];

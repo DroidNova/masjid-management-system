@@ -1,13 +1,9 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
-import { ApiException } from '../../../common/exceptions/api.exception';
+import { Injectable } from '@nestjs/common';
+import { money, toAmount } from '../../../common/money';
+import { requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
-
-type DecimalLike =
-  | number
-  | string
-  | { toNumber?: () => number; toString: () => string };
 
 type FinanceSummaryQuery = {
   fromDate?: string;
@@ -18,48 +14,29 @@ type FinanceSummaryQuery = {
 
 type DateRange = { gte?: Date; lte?: Date };
 
-type FinanceWhereInput = {
-  masjidId: string;
-  status: 'ACTIVE';
-  collectedAt?: DateRange;
-  spentAt?: DateRange;
-};
-
-type AggregateResult = { _sum: { amount: DecimalLike | null } };
-
-type FinanceAggregateDelegate = {
-  aggregate(args: {
-    where: FinanceWhereInput;
-    _sum: { amount: true };
-  }): Promise<AggregateResult>;
-};
-
-type FinancePrismaDelegate = {
-  collection: FinanceAggregateDelegate;
-  expense: FinanceAggregateDelegate;
-};
-
 @Injectable()
 export class FinanceService {
   constructor(private readonly prisma: PrismaService) {}
-
-  private get db(): FinancePrismaDelegate {
-    return this.prisma as unknown as FinancePrismaDelegate;
-  }
 
   async getMyMasjidSummary(
     query: FinanceSummaryQuery,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const period = this.resolvePeriod(query);
-    const totalCollectionWhere = { masjidId, status: 'ACTIVE' as const };
-    const totalExpenseWhere = { masjidId, status: 'ACTIVE' as const };
-    const periodCollectionWhere = {
+    const totalCollectionWhere: Prisma.CollectionWhereInput = {
+      masjidId,
+      status: 'ACTIVE',
+    };
+    const totalExpenseWhere: Prisma.ExpenseWhereInput = {
+      masjidId,
+      status: 'ACTIVE',
+    };
+    const periodCollectionWhere: Prisma.CollectionWhereInput = {
       ...totalCollectionWhere,
       ...(period ? { collectedAt: period } : {}),
     };
-    const periodExpenseWhere = {
+    const periodExpenseWhere: Prisma.ExpenseWhereInput = {
       ...totalExpenseWhere,
       ...(period ? { spentAt: period } : {}),
     };
@@ -77,12 +54,12 @@ export class FinanceService {
     ]);
 
     return {
-      totalCollection,
-      totalExpense,
-      currentBalance: totalCollection - totalExpense,
-      thisMonthCollection,
-      thisMonthExpense,
-      thisMonthBalance: thisMonthCollection - thisMonthExpense,
+      totalCollection: toAmount(totalCollection),
+      totalExpense: toAmount(totalExpense),
+      currentBalance: toAmount(totalCollection.minus(totalExpense)),
+      thisMonthCollection: toAmount(thisMonthCollection),
+      thisMonthExpense: toAmount(thisMonthExpense),
+      thisMonthBalance: toAmount(thisMonthCollection.minus(thisMonthExpense)),
       period: period
         ? {
             fromDate: period.gte?.toISOString() ?? null,
@@ -90,18 +67,6 @@ export class FinanceService {
           }
         : null,
     };
-  }
-
-  private getCurrentUserMasjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    return actor.masjidId;
   }
 
   private resolvePeriod(query: FinanceSummaryQuery): DateRange | null {
@@ -130,27 +95,19 @@ export class FinanceService {
     return { gte: fromDate, lte: toDate };
   }
 
-  private async sumCollection(where: FinanceWhereInput): Promise<number> {
-    const result = await this.db.collection.aggregate({
+  private async sumCollection(where: Prisma.CollectionWhereInput) {
+    const result = await this.prisma.collection.aggregate({
       where,
       _sum: { amount: true },
     });
-    return this.toNumber(result._sum.amount);
+    return money(result._sum.amount);
   }
 
-  private async sumExpense(where: FinanceWhereInput): Promise<number> {
-    const result = await this.db.expense.aggregate({
+  private async sumExpense(where: Prisma.ExpenseWhereInput) {
+    const result = await this.prisma.expense.aggregate({
       where,
       _sum: { amount: true },
     });
-    return this.toNumber(result._sum.amount);
-  }
-
-  private toNumber(value: DecimalLike | null): number {
-    if (value === null) return 0;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') return Number(value);
-    if (typeof value.toNumber === 'function') return value.toNumber();
-    return Number(value.toString());
+    return money(result._sum.amount);
   }
 }

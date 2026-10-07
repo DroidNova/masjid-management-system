@@ -16,7 +16,7 @@ export class PaginationQueryDto {
   limit?: number = 20;
 
   @IsOptional()
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
   @IsIn(['asc', 'desc'])

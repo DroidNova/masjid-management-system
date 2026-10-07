@@ -32,7 +32,9 @@ export function getOrCreateRequestId(req: RequestWithHeaders): string {
 }
 
 function normalizeHeaderValue(value: unknown): string {
-  const firstValue = Array.isArray(value) ? value[0] : value;
+  const firstValue: unknown = Array.isArray(value)
+    ? (value as unknown[])[0]
+    : value;
 
   if (typeof firstValue !== 'string') {
     return '';

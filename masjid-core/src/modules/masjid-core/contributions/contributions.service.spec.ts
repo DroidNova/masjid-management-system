@@ -133,7 +133,7 @@ describe('ContributionsService', () => {
     await expect(service.getSummary(actor)).rejects.toMatchObject({
       response: expect.objectContaining({
         errorCode: 'USER_MASJID_NOT_ASSIGNED',
-      }),
+      }) as unknown,
     });
     expect(prisma.imamSalaryAssignment.findMany).not.toHaveBeenCalled();
   });

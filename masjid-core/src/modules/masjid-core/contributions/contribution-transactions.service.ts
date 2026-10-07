@@ -2,6 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { successResponse } from '../../../common/helpers/api-response.helper';
+import { toAmount } from '../../../common/money';
+import { requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -13,8 +16,6 @@ import {
   CreateContributionDto,
 } from './dto/create-contribution.dto';
 
-type DynamicDb = Record<string, any>;
-
 const contributionSelect = {
   id: true,
   projectId: true,
@@ -25,7 +26,7 @@ const contributionSelect = {
   paidAt: true,
   collectedByName: true,
   note: true,
-} as const;
+} satisfies Prisma.ProjectContributionSelect;
 
 const collectionContributionSelect = {
   id: true,
@@ -37,22 +38,25 @@ const collectionContributionSelect = {
   paidAt: true,
   collectedByName: true,
   note: true,
-} as const;
+} satisfies Prisma.CollectionContributionSelect;
+
+const contributionOrderBy = [
+  { paidAt: 'desc' },
+  { createdAt: 'desc' },
+] satisfies Prisma.ProjectContributionOrderByWithRelationInput[] &
+  Prisma.CollectionContributionOrderByWithRelationInput[];
 
 @Injectable()
 export class ContributionTransactionsService {
   constructor(private readonly prisma: PrismaService) {}
-  private get db(): DynamicDb {
-    return this.prisma as unknown as DynamicDb;
-  }
 
   async createProjectContribution(
     projectId: string,
     dto: CreateContributionDto,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.masjidId(actor);
-    return this.db.$transaction(async (tx: DynamicDb) => {
+    const masjidId = requireMasjidId(actor);
+    return this.prisma.$transaction(async (tx) => {
       const project = await tx.project.findFirst({
         where: { id: projectId, masjidId },
         select: { id: true },
@@ -84,21 +88,36 @@ export class ContributionTransactionsService {
     query: ContributionListQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.masjidId(actor);
-    const project = await this.db.project.findFirst({
+    const masjidId = requireMasjidId(actor);
+    const project = await this.prisma.project.findFirst({
       where: { id: projectId, masjidId },
       select: { id: true },
     });
     if (!project)
       this.notFound('Project not found', ERROR_CODES.PROJECT_NOT_FOUND);
-    const where = { projectId, masjidId, ...this.filters(query) };
+    const where: Prisma.ProjectContributionWhereInput = {
+      projectId,
+      masjidId,
+      ...this.filters(query),
+    };
+    const { page, limit, skip } = this.pageArgs(query);
+    const [items, total] = await Promise.all([
+      this.prisma.projectContribution.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: contributionOrderBy,
+        select: contributionSelect,
+      }),
+      this.prisma.projectContribution.count({ where }),
+    ]);
     return successResponse(
       'Project contributions fetched successfully',
-      await this.page(
-        this.db.projectContribution,
-        where,
-        query,
-        contributionSelect,
+      this.pageResult(
+        items.map((item) => this.serialize(item)),
+        total,
+        page,
+        limit,
       ),
     );
   }
@@ -107,8 +126,8 @@ export class ContributionTransactionsService {
     dto: CreateCollectionContributionDto,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.masjidId(actor);
-    return this.db.$transaction(async (tx: DynamicDb) => {
+    const masjidId = requireMasjidId(actor);
+    return this.prisma.$transaction(async (tx) => {
       await this.validateMember(tx, dto.memberId, masjidId);
       const contribution = await tx.collectionContribution.create({
         data: {
@@ -140,18 +159,29 @@ export class ContributionTransactionsService {
     query: CollectionContributionListQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const where = {
-      masjidId: this.masjidId(actor),
+    const where: Prisma.CollectionContributionWhereInput = {
+      masjidId: requireMasjidId(actor),
       ...(query.collectionType ? { collectionType: query.collectionType } : {}),
       ...this.filters(query),
     };
+    const { page, limit, skip } = this.pageArgs(query);
+    const [items, total] = await Promise.all([
+      this.prisma.collectionContribution.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: contributionOrderBy,
+        select: collectionContributionSelect,
+      }),
+      this.prisma.collectionContribution.count({ where }),
+    ]);
     return successResponse(
       'Collection contributions fetched successfully',
-      await this.page(
-        this.db.collectionContribution,
-        where,
-        query,
-        collectionContributionSelect,
+      this.pageResult(
+        items.map((item) => this.serialize(item)),
+        total,
+        page,
+        limit,
       ),
     );
   }
@@ -171,7 +201,7 @@ export class ContributionTransactionsService {
   }
 
   private async validateMember(
-    tx: DynamicDb,
+    tx: Prisma.TransactionClient,
     memberId: string | undefined,
     masjidId: string,
   ) {
@@ -189,6 +219,7 @@ export class ContributionTransactionsService {
     }
   }
 
+  /** Filters shared by the project and collection contribution lists. */
   private filters(query: ContributionListQueryDto) {
     const search = query.search?.trim();
     return {
@@ -196,7 +227,12 @@ export class ContributionTransactionsService {
       ...(search
         ? {
             OR: [
-              { contributorName: { contains: search, mode: 'insensitive' } },
+              {
+                contributorName: {
+                  contains: search,
+                  mode: 'insensitive' as const,
+                },
+              },
               { contributorPhone: { contains: search } },
             ],
           }
@@ -212,27 +248,21 @@ export class ContributionTransactionsService {
     };
   }
 
-  private async page(
-    delegate: DynamicDb,
-    where: DynamicDb,
-    query: { page?: number; limit?: number },
-    select: DynamicDb,
-  ) {
+  private pageArgs(query: { page?: number; limit?: number }) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const [items, total] = await Promise.all([
-      delegate.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
-        select,
-      }),
-      delegate.count({ where }),
-    ]);
+    return { page, limit, skip: (page - 1) * limit };
+  }
+
+  private pageResult<T>(
+    items: T[],
+    total: number,
+    page: number,
+    limit: number,
+  ) {
     const totalPages = Math.ceil(total / limit);
     return {
-      items: items.map((item: DynamicDb) => this.serialize(item)),
+      items,
       total,
       page,
       limit,
@@ -241,36 +271,20 @@ export class ContributionTransactionsService {
     };
   }
 
-  private masjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId)
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    return actor.masjidId;
+  private serialize<T extends { amount: Prisma.Decimal }>(item: T) {
+    return { ...item, amount: toAmount(item.amount) };
   }
+
   private notFound(
     message: string,
     code: typeof ERROR_CODES.PROJECT_NOT_FOUND,
   ): never {
     throw new ApiException(message, HttpStatus.NOT_FOUND, code);
   }
+
   private endOfDay(value: string): Date {
     const date = new Date(value);
     date.setUTCHours(23, 59, 59, 999);
     return date;
-  }
-  private serialize<T>(value: T): T {
-    return JSON.parse(
-      JSON.stringify(value, (_key, item: unknown) =>
-        item &&
-        typeof item === 'object' &&
-        'toNumber' in item &&
-        typeof (item as { toNumber?: unknown }).toNumber === 'function'
-          ? (item as { toNumber: () => number }).toNumber()
-          : item,
-      ),
-    ) as T;
   }
 }

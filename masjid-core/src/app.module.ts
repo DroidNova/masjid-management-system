@@ -81,7 +81,7 @@ function usePrettyLogs(config: AppConfig): boolean {
             ...getLogUser(req),
           }),
           customSuccessObject: (req, res, value) => ({
-            ...value,
+            ...(value as Record<string, unknown>),
             requestId: req.id,
             method: req.method,
             url: req.url,
@@ -90,7 +90,7 @@ function usePrettyLogs(config: AppConfig): boolean {
             ...getLogUser(req),
           }),
           customErrorObject: (req, res, error, value) => ({
-            ...value,
+            ...(value as Record<string, unknown>),
             requestId: req.id,
             method: req.method,
             url: req.url,

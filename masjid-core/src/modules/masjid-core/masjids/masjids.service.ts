@@ -7,9 +7,11 @@ import {
 } from '../../../common/utils/phone.util';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { requireMasjidId } from '../../../common/tenant';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
 import { hasPermission, PERMISSIONS } from '../../../access/permissions';
+import { MasjidStatus, UserStatus } from '../../../generated/prisma/enums';
 import { initialPasswordFor } from '../../platform-core/auth/initial-password';
 import { BCRYPT_ROUNDS } from '../../platform-core/auth/auth.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
@@ -19,295 +21,23 @@ import {
 } from './dto/create-masjid-user.dto';
 import { UpdateWelcomeMessageDto } from './dto/update-welcome-message.dto';
 import {
-  MasjidUserStatusDto,
   UpdateMasjidUserDto,
   UpdateMasjidUserStatusDto,
 } from './dto/update-masjid-user.dto';
-
-type BasicUser = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  fatherName?: string | null;
-  age?: number | null;
-  gender?: string | null;
-  isFamilyHead?: boolean;
-  familyMemberCount?: number | null;
-};
-
-type CreatedMasjidUserResponse = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  fatherName: string | null;
-  age: number | null;
-  gender: string | null;
-  isFamilyHead: boolean;
-  familyMemberCount: number | null;
-  status: string;
-  masjidId: string;
-  roles: string[];
-  temporaryPassword?: string;
-  message?: string;
-};
-
-type CurrentUserWithRoles = {
-  id: string;
-  masjidId: string | null;
-  userRoles: Array<{ role: { name: string } }>;
-};
-
-type CreatedUserWithRoles = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  fatherName: string | null;
-  age: number | null;
-  gender: string | null;
-  isFamilyHead: boolean;
-  familyMemberCount: number | null;
-  status: string;
-  masjidId: string | null;
-  userRoles: Array<{ role: { name: string } }>;
-};
-
-type UserRoleRecord = {
-  role: {
-    name: string;
-  };
-};
-
-type MasjidMemberRecord = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  fatherName: string | null;
-  age: number | null;
-  gender: string | null;
-  isFamilyHead: boolean;
-  familyMemberCount: number | null;
-  status: string;
-  masjidId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  userRoles: UserRoleRecord[];
-};
-
-type MasjidMemberResponse = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  fatherName: string | null;
-  age: number | null;
-  gender: string | null;
-  isFamilyHead: boolean;
-  familyMemberCount: number | null;
-  status: string;
-  masjidId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  roles: string[];
-};
-
-type NamazTimeRecord = {
-  id: string;
-  fajr: string | null;
-  zuhr: string | null;
-  asr: string | null;
-  maghrib: string | null;
-  isha: string | null;
-  jumma: string | null;
-  note: string | null;
-};
-
-type AnnouncementRecord = {
-  id: string;
-  title: string;
-  message: string;
-  createdAt: Date;
-};
-
-type MasjidProfileRecord = {
-  id: string;
-  name: string;
-  country: string | null;
-  locality: string | null;
-  district: string | null;
-  state: string | null;
-  address: string | null;
-  contactNo: string | null;
-  description: string | null;
-  welcomeMsg: string | null;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  imamUser: BasicUser | null;
-  namazTime: NamazTimeRecord | null;
-  announcements: AnnouncementRecord[];
-};
-
-type MasjidWelcomeRecord = {
-  id: string;
-  name: string;
-  welcomeMsg: string | null;
-  updatedAt: Date;
-};
-
-type MasjidsUserDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: typeof masjidMemberSelect;
-  }): Promise<MasjidMemberRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: Partial<{
-      fullName: string;
-      phone: string;
-      email: string | null;
-      fatherName: string;
-      age: number;
-      gender: string;
-      isFamilyHead: boolean;
-      familyMemberCount: number | null;
-      status: MasjidUserStatusDto;
-    }>;
-    select: typeof masjidMemberSelect;
-  }): Promise<MasjidMemberRecord>;
-  findMany(args: {
-    where: { masjidId: string };
-    orderBy: { fullName: 'asc' };
-    select: typeof masjidMemberSelect;
-  }): Promise<MasjidMemberRecord[]>;
-};
-
-type MasjidsMasjidDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: typeof masjidProfileSelect;
-  }): Promise<MasjidProfileRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: { welcomeMsg: string };
-    select: typeof masjidWelcomeSelect;
-  }): Promise<MasjidWelcomeRecord>;
-};
-
-type MasjidsPrismaDelegate = {
-  user: MasjidsUserDelegate;
-  masjid: MasjidsMasjidDelegate;
-};
-
-const basicUserSelect = {
-  id: true,
-  fullName: true,
-  email: true,
-  phone: true,
-  fatherName: true,
-  age: true,
-  gender: true,
-  isFamilyHead: true,
-  familyMemberCount: true,
-} as const;
-
-const masjidProfileSelect = {
-  id: true,
-  name: true,
-  country: true,
-  locality: true,
-  district: true,
-  state: true,
-  address: true,
-  contactNo: true,
-  description: true,
-  welcomeMsg: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-  imamUser: { select: basicUserSelect },
-  namazTime: {
-    select: {
-      id: true,
-      fajr: true,
-      zuhr: true,
-      asr: true,
-      maghrib: true,
-      isha: true,
-      jumma: true,
-      note: true,
-    },
-  },
-  announcements: {
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: {
-      id: true,
-      title: true,
-      message: true,
-      createdAt: true,
-    },
-  },
-} as const;
-
-const masjidWelcomeSelect = {
-  id: true,
-  name: true,
-  welcomeMsg: true,
-  updatedAt: true,
-} as const;
-
-const masjidUserCreateSelect = {
-  id: true,
-  fullName: true,
-  email: true,
-  phone: true,
-  fatherName: true,
-  age: true,
-  gender: true,
-  isFamilyHead: true,
-  familyMemberCount: true,
-  status: true,
-  masjidId: true,
-  userRoles: {
-    select: {
-      role: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  },
-} as const;
-
-const masjidMemberSelect = {
-  id: true,
-  fullName: true,
-  email: true,
-  phone: true,
-  fatherName: true,
-  age: true,
-  gender: true,
-  isFamilyHead: true,
-  familyMemberCount: true,
-  status: true,
-  masjidId: true,
-  createdAt: true,
-  updatedAt: true,
-  userRoles: {
-    select: {
-      role: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  },
-} as const;
+import {
+  CreatedMasjidUser,
+  CreatedMasjidUserResponse,
+  ExistingUserByPhone,
+  existingUserByPhoneSelect,
+  MasjidMember,
+  MasjidMemberResponse,
+  masjidMemberSelect,
+  MasjidProfile,
+  masjidProfileSelect,
+  masjidUserCreateSelect,
+  MasjidWelcome,
+  masjidWelcomeSelect,
+} from './masjids.selects';
 
 @Injectable()
 export class MasjidsService {
@@ -318,21 +48,9 @@ export class MasjidsService {
     private readonly config: AppConfig,
   ) {}
 
-  private get db(): MasjidsPrismaDelegate {
-    return this.prisma as unknown as MasjidsPrismaDelegate;
-  }
-
-  async getMyMasjid(actor: AuthenticatedUser): Promise<MasjidProfileRecord> {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    const masjid = await this.db.masjid.findUnique({
-      where: { id: actor.masjidId },
+  async getMyMasjid(actor: AuthenticatedUser): Promise<MasjidProfile> {
+    const masjid = await this.prisma.masjid.findUnique({
+      where: { id: requireMasjidId(actor) },
       select: masjidProfileSelect,
     });
 
@@ -350,25 +68,16 @@ export class MasjidsService {
   async updateWelcomeMessage(
     dto: UpdateWelcomeMessageDto,
     actor: AuthenticatedUser,
-  ): Promise<MasjidWelcomeRecord> {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
+  ): Promise<MasjidWelcome> {
+    const masjidId = requireMasjidId(actor);
 
     try {
-      const masjid = await this.db.masjid.update({
-        where: { id: actor.masjidId },
+      const masjid = await this.prisma.masjid.update({
+        where: { id: masjidId },
         data: { welcomeMsg: dto.welcomeMsg },
         select: masjidWelcomeSelect,
       });
-      this.logger.log({
-        message: 'Masjid welcome message updated',
-        masjidId: actor.masjidId,
-      });
+      this.logger.log({ message: 'Masjid welcome message updated', masjidId });
       return masjid;
     } catch {
       throw new ApiException(
@@ -383,9 +92,7 @@ export class MasjidsService {
     actor: AuthenticatedUser,
     dto: CreateMasjidUserDto,
   ): Promise<CreatedMasjidUserResponse> {
-    const currentUser = this.toCurrentUserWithRoles(actor);
-
-    const callerRoles = this.resolveCallerRoles(actor, currentUser);
+    const callerRoles = actor.roles;
     this.assertCanCreateRole(callerRoles, dto.role);
 
     if (!this.isPlatformAdmin(callerRoles) && dto.masjidId) {
@@ -396,7 +103,7 @@ export class MasjidsService {
       );
     }
 
-    const masjidId = this.resolveTargetMasjidId(callerRoles, currentUser, dto);
+    const masjidId = this.resolveTargetMasjidId(callerRoles, actor, dto);
     const masjid = await this.prisma.masjid.findUnique({
       where: { id: masjidId },
       select: { id: true, status: true },
@@ -410,7 +117,7 @@ export class MasjidsService {
       );
     }
 
-    if (masjid.status !== 'APPROVED') {
+    if (masjid.status !== MasjidStatus.APPROVED) {
       throw new ApiException(
         'Masjid is not approved',
         HttpStatus.FORBIDDEN,
@@ -426,11 +133,7 @@ export class MasjidsService {
     // One person = one phone number = one masjid at a time.
     const existingByPhone = await this.prisma.user.findFirst({
       where: { phone: { in: getPhoneSearchVariants(phone) } },
-      select: {
-        id: true,
-        masjidId: true,
-        userRoles: { select: { role: { select: { name: true } } } },
-      },
+      select: existingUserByPhoneSelect,
     });
 
     if (existingByPhone) {
@@ -496,32 +199,19 @@ export class MasjidsService {
           fatherName: dto.fatherName.trim(),
           age: dto.age,
           gender: dto.gender,
-          isFamilyHead:
-            dto.role === CreateMasjidUserRoleDto.MEMBER
-              ? dto.isFamilyHead!
-              : (dto.isFamilyHead ?? false),
+          isFamilyHead: this.isFamilyHeadFor(dto),
           familyMemberCount: dto.familyMemberCount ?? null,
           masjidId,
-          status: 'ACTIVE',
+          status: UserStatus.ACTIVE,
           isPhoneVerified: false,
           isEmailVerified: false,
           passwordHash,
         },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          status: true,
-          masjidId: true,
-        },
+        select: { id: true },
       });
 
       await tx.userRole.create({
-        data: {
-          userId: user.id,
-          roleId: role.id,
-        },
+        data: { userId: user.id, roleId: role.id },
       });
 
       if (dto.role === CreateMasjidUserRoleDto.IMAM) {
@@ -539,16 +229,9 @@ export class MasjidsService {
       });
     });
 
-    if (!createdUser) {
-      throw new ApiException(
-        'Masjid user not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_USER_NOT_FOUND,
-      );
-    }
-
     const response = this.toCreatedMasjidUserResponse(
-      createdUser as CreatedUserWithRoles,
+      this.requireMasjidUser(createdUser),
+      temporaryPassword,
     );
 
     this.logger.log({
@@ -557,11 +240,6 @@ export class MasjidsService {
       masjidId,
       role: dto.role,
     });
-
-    if (temporaryPassword) {
-      response.temporaryPassword = temporaryPassword;
-      response.message = `Initial password is ${temporaryPassword}. Ask the user to change it after first login.`;
-    }
 
     return response;
   }
@@ -572,16 +250,6 @@ export class MasjidsService {
     dto: UpdateMasjidUserDto,
   ): Promise<MasjidMemberResponse> {
     const target = await this.ensureCanManageTargetUser(actor, userId);
-    const data: Partial<{
-      fullName: string;
-      phone: string;
-      email: string | null;
-      fatherName: string;
-      age: number;
-      gender: string;
-      isFamilyHead: boolean;
-      familyMemberCount: number | null;
-    }> = {};
 
     if (
       target.userRoles.some(
@@ -597,51 +265,53 @@ export class MasjidsService {
       );
     }
 
-    data.fullName = dto.fullName.trim();
-    {
-      const phone = normalizePhone(dto.phone);
-      const duplicate = await this.prisma.user.findFirst({
-        where: {
-          phone: { in: getPhoneSearchVariants(phone) },
-          NOT: { id: target.id },
-        },
+    const phone = normalizePhone(dto.phone);
+    const duplicatePhone = await this.prisma.user.findFirst({
+      where: {
+        phone: { in: getPhoneSearchVariants(phone) },
+        NOT: { id: target.id },
+      },
+      select: { id: true },
+    });
+    if (duplicatePhone) {
+      throw new ApiException(
+        'Phone number already exists',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.PHONE_ALREADY_EXISTS,
+      );
+    }
+
+    // Omitted email: left unchanged. Empty email: cleared.
+    const email =
+      dto.email === undefined
+        ? undefined
+        : dto.email?.trim().toLowerCase() || null;
+    if (email) {
+      const duplicateEmail = await this.prisma.user.findFirst({
+        where: { email, NOT: { id: target.id } },
         select: { id: true },
       });
-      if (duplicate) {
+      if (duplicateEmail) {
         throw new ApiException(
-          'Phone number already exists',
+          'Email already exists',
           HttpStatus.CONFLICT,
-          ERROR_CODES.PHONE_ALREADY_EXISTS,
+          ERROR_CODES.EMAIL_ALREADY_EXISTS,
         );
       }
-      data.phone = phone;
     }
-    if (dto.email !== undefined) {
-      const email = dto.email?.trim().toLowerCase() || null;
-      if (email) {
-        const duplicate = await this.prisma.user.findFirst({
-          where: { email, NOT: { id: target.id } },
-          select: { id: true },
-        });
-        if (duplicate) {
-          throw new ApiException(
-            'Email already exists',
-            HttpStatus.CONFLICT,
-            ERROR_CODES.EMAIL_ALREADY_EXISTS,
-          );
-        }
-      }
-      data.email = email;
-    }
-    data.fatherName = dto.fatherName.trim();
-    data.age = dto.age;
-    data.gender = dto.gender;
-    data.isFamilyHead = dto.isFamilyHead ?? false;
-    data.familyMemberCount = dto.familyMemberCount ?? null;
 
-    const updated = await this.db.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
-      data,
+      data: {
+        fullName: dto.fullName.trim(),
+        phone,
+        email,
+        fatherName: dto.fatherName.trim(),
+        age: dto.age,
+        gender: dto.gender,
+        isFamilyHead: dto.isFamilyHead ?? false,
+        familyMemberCount: dto.familyMemberCount ?? null,
+      },
       select: masjidMemberSelect,
     });
     this.logger.log({
@@ -658,7 +328,7 @@ export class MasjidsService {
     dto: UpdateMasjidUserStatusDto,
   ): Promise<MasjidMemberResponse> {
     await this.ensureCanManageTargetUser(actor, userId);
-    const updated = await this.db.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { status: dto.status },
       select: masjidMemberSelect,
@@ -674,16 +344,8 @@ export class MasjidsService {
   async findMyMasjidUsers(
     actor: AuthenticatedUser,
   ): Promise<MasjidMemberResponse[]> {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    const users = await this.db.user.findMany({
-      where: { masjidId: actor.masjidId },
+    const users = await this.prisma.user.findMany({
+      where: { masjidId: requireMasjidId(actor) },
       orderBy: { fullName: 'asc' },
       select: masjidMemberSelect,
     });
@@ -762,10 +424,7 @@ export class MasjidsService {
   }
 
   private assertCanLinkExistingUser(
-    existing: {
-      masjidId: string | null;
-      userRoles: Array<{ role: { name: string } }>;
-    },
+    existing: ExistingUserByPhone,
     masjidId: string,
   ): void {
     if (existing.masjidId === masjidId) {
@@ -808,11 +467,8 @@ export class MasjidsService {
         where: { id: userId },
         data: {
           masjidId,
-          status: 'ACTIVE',
-          isFamilyHead:
-            dto.role === CreateMasjidUserRoleDto.MEMBER
-              ? dto.isFamilyHead!
-              : (dto.isFamilyHead ?? false),
+          status: UserStatus.ACTIVE,
+          isFamilyHead: this.isFamilyHeadFor(dto),
           familyMemberCount: dto.familyMemberCount ?? null,
           // Imams and committee members need a password they know.
           ...(params.passwordHash ? { passwordHash: params.passwordHash } : {}),
@@ -834,7 +490,8 @@ export class MasjidsService {
     });
 
     const response = this.toCreatedMasjidUserResponse(
-      linked as CreatedUserWithRoles,
+      this.requireMasjidUser(linked),
+      params.temporaryPassword,
     );
     this.logger.log({
       message: 'Existing user added to masjid',
@@ -842,22 +499,15 @@ export class MasjidsService {
       masjidId,
       role: dto.role,
     });
-    if (params.temporaryPassword) {
-      response.temporaryPassword = params.temporaryPassword;
-      response.message = `Initial password is ${params.temporaryPassword}. Ask the user to change it after first login.`;
-    }
     return response;
   }
 
   private async ensureCanManageTargetUser(
     actor: AuthenticatedUser,
     userId: string,
-  ): Promise<MasjidMemberRecord> {
-    const callerRoles = this.resolveCallerRoles(
-      actor,
-      this.toCurrentUserWithRoles(actor),
-    );
-    const target = await this.db.user.findUnique({
+  ): Promise<MasjidMember> {
+    const callerRoles = actor.roles;
+    const target = await this.prisma.user.findUnique({
       where: { id: userId },
       select: masjidMemberSelect,
     });
@@ -870,9 +520,10 @@ export class MasjidsService {
       );
     }
 
-    const targetRoles = target.userRoles.map((userRole) => userRole.role.name);
     if (this.isPlatformAdmin(callerRoles)) return target;
 
+    // Not requireMasjidId/assertSameMasjid: a caller without a masjid gets
+    // this same FORBIDDEN response, not USER_MASJID_NOT_ASSIGNED.
     if (!actor.masjidId || target.masjidId !== actor.masjidId) {
       throw new ApiException(
         'You are not allowed to manage this user',
@@ -881,6 +532,7 @@ export class MasjidsService {
       );
     }
 
+    const targetRoles = target.userRoles.map((userRole) => userRole.role.name);
     const isOnlyMember =
       targetRoles.includes('MEMBER') &&
       targetRoles.every((role) => role === 'MEMBER');
@@ -898,27 +550,6 @@ export class MasjidsService {
     }
 
     return target;
-  }
-
-  private resolveCallerRoles(
-    actor: AuthenticatedUser,
-    currentUser: CurrentUserWithRoles,
-  ): string[] {
-    if (actor.roles?.length) {
-      return actor.roles;
-    }
-
-    return currentUser.userRoles.map((userRole) => userRole.role.name);
-  }
-
-  private toCurrentUserWithRoles(
-    actor: AuthenticatedUser,
-  ): CurrentUserWithRoles {
-    return {
-      id: actor.id,
-      masjidId: actor.masjidId,
-      userRoles: actor.roles.map((role) => ({ role: { name: role } })),
-    };
   }
 
   private assertCanCreateRole(
@@ -962,24 +593,17 @@ export class MasjidsService {
     );
   }
 
+  /** A super admin without a masjid of their own picks one in the body. */
   private resolveTargetMasjidId(
     callerRoles: string[],
-    currentUser: CurrentUserWithRoles,
+    actor: AuthenticatedUser,
     dto: CreateMasjidUserDto,
   ): string {
     const masjidId = this.isPlatformAdmin(callerRoles)
-      ? (currentUser.masjidId ?? dto.masjidId)
-      : currentUser.masjidId;
+      ? (actor.masjidId ?? dto.masjidId)
+      : actor.masjidId;
 
-    if (!masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    return masjidId;
+    return requireMasjidId({ masjidId: masjidId ?? null });
   }
 
   private assertProfileFields(
@@ -1002,10 +626,29 @@ export class MasjidsService {
     );
   }
 
+  /** Members must say whether they head a family (checked by assertProfileFields). */
+  private isFamilyHeadFor(dto: CreateMasjidUserDto): boolean {
+    return dto.role === CreateMasjidUserRoleDto.MEMBER
+      ? dto.isFamilyHead!
+      : (dto.isFamilyHead ?? false);
+  }
+
+  private requireMasjidUser(user: CreatedMasjidUser | null): CreatedMasjidUser {
+    if (!user) {
+      throw new ApiException(
+        'Masjid user not found',
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.MASJID_USER_NOT_FOUND,
+      );
+    }
+    return user;
+  }
+
   private toCreatedMasjidUserResponse(
-    user: CreatedUserWithRoles,
+    user: CreatedMasjidUser,
+    temporaryPassword: string | null,
   ): CreatedMasjidUserResponse {
-    return {
+    const response: CreatedMasjidUserResponse = {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
@@ -1019,11 +662,14 @@ export class MasjidsService {
       masjidId: user.masjidId ?? '',
       roles: user.userRoles.map((userRole) => userRole.role.name),
     };
+    if (temporaryPassword) {
+      response.temporaryPassword = temporaryPassword;
+      response.message = `Initial password is ${temporaryPassword}. Ask the user to change it after first login.`;
+    }
+    return response;
   }
 
-  private toMasjidMemberResponse(
-    user: MasjidMemberRecord,
-  ): MasjidMemberResponse {
+  private toMasjidMemberResponse(user: MasjidMember): MasjidMemberResponse {
     return {
       id: user.id,
       fullName: user.fullName,

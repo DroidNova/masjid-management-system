@@ -166,7 +166,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private extractMessage(body: object, fallback: string): string {
     const message = (body as { message?: unknown }).message;
-    if (Array.isArray(message)) return message[0] ?? fallback;
+    if (Array.isArray(message)) {
+      const first: unknown = message[0];
+      return typeof first === 'string' ? first : fallback;
+    }
     if (typeof message === 'string') return message;
     return fallback || 'Request failed';
   }

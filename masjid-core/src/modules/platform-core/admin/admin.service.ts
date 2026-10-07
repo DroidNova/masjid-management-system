@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from '../../../generated/prisma/client';
+import { RoleName } from '../../../generated/prisma/enums';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import { RolesService } from '../roles/roles.service';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
@@ -34,7 +36,7 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const trimmedSearch = query.search?.trim();
-    const where = {} as any;
+    const where: Prisma.UserWhereInput = {};
 
     if (trimmedSearch) {
       where.OR = [
@@ -56,7 +58,7 @@ export class AdminService {
     if (query.masjidId) where.masjidId = query.masjidId;
     if (query.role) {
       where.userRoles = {
-        some: { role: { name: query.role.trim().toUpperCase() } },
+        some: { role: { name: query.role.trim().toUpperCase() as RoleName } },
       };
     }
 
@@ -248,7 +250,7 @@ export class AdminService {
     const page = Number(query.page ?? 1) || 1;
     const limit = Math.min(Number(query.limit ?? 20) || 20, 100);
     const search = query.search?.trim();
-    const where = {} as any;
+    const where: Prisma.MasjidWhereInput = {};
 
     if (query.status) where.status = query.status;
     if (query.state)

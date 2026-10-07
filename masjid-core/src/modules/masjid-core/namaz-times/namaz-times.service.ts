@@ -1,59 +1,12 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { UpsertNamazTimeDto } from './dto/upsert-namaz-time.dto';
 import { hasPermission, PERMISSIONS } from '../../../access/permissions';
-
-type NamazTimeRecord = {
-  id?: string;
-  masjidId: string;
-  fajr: string | null;
-  zuhr: string | null;
-  asr: string | null;
-  maghrib: string | null;
-  isha: string | null;
-  jumma: string | null;
-  note: string | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-};
-
-type NamazTimeWriteData = {
-  fajr?: string | null;
-  zuhr?: string | null;
-  asr?: string | null;
-  maghrib?: string | null;
-  isha?: string | null;
-  jumma?: string | null;
-  note?: string | null;
-};
-
-type NamazTimesMasjidDelegate = {
-  findUnique(args: {
-    where: { id: string };
-    select: { id: true };
-  }): Promise<{ id: string } | null>;
-};
-
-type NamazTimeDelegate = {
-  findUnique(args: {
-    where: { masjidId: string };
-    select: typeof namazTimeSelect;
-  }): Promise<NamazTimeRecord | null>;
-  upsert(args: {
-    where: { masjidId: string };
-    create: { masjidId: string } & NamazTimeWriteData;
-    update: NamazTimeWriteData;
-    select: typeof namazTimeSelect;
-  }): Promise<NamazTimeRecord>;
-};
-
-type NamazTimesPrismaDelegate = {
-  masjid: NamazTimesMasjidDelegate;
-  namazTime: NamazTimeDelegate;
-};
 
 const namazTimeSelect = {
   id: true,
@@ -67,7 +20,25 @@ const namazTimeSelect = {
   note: true,
   createdAt: true,
   updatedAt: true,
-} as const;
+} as const satisfies Prisma.NamazTimeSelect;
+
+type NamazTimeRecord = Prisma.NamazTimeGetPayload<{
+  select: typeof namazTimeSelect;
+}>;
+
+/** Returned when a masjid has not saved its times yet. */
+type EmptyNamazTime = Omit<NamazTimeRecord, 'id' | 'createdAt' | 'updatedAt'>;
+
+type NamazTimeField =
+  | 'fajr'
+  | 'zuhr'
+  | 'asr'
+  | 'maghrib'
+  | 'isha'
+  | 'jumma'
+  | 'note';
+
+type NamazTimeWriteData = Partial<Record<NamazTimeField, string | null>>;
 
 @Injectable()
 export class NamazTimesService {
@@ -75,17 +46,13 @@ export class NamazTimesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private get db(): NamazTimesPrismaDelegate {
-    return this.prisma as unknown as NamazTimesPrismaDelegate;
-  }
-
   async findByMasjidId(
     masjidId: string,
     actor: AuthenticatedUser,
-  ): Promise<NamazTimeRecord> {
+  ): Promise<NamazTimeRecord | EmptyNamazTime> {
     await this.ensureCanAccessMasjid(masjidId, actor);
 
-    const namazTime = await this.db.namazTime.findUnique({
+    const namazTime = await this.prisma.namazTime.findUnique({
       where: { masjidId },
       select: namazTimeSelect,
     });
@@ -112,7 +79,7 @@ export class NamazTimesService {
     await this.ensureCanAccessMasjid(masjidId, actor);
     const data = this.toNamazTimeWriteData(dto);
 
-    const namazTime = await this.db.namazTime.upsert({
+    const namazTime = await this.prisma.namazTime.upsert({
       where: { masjidId },
       create: { masjidId, ...data },
       update: data,
@@ -126,7 +93,7 @@ export class NamazTimesService {
     masjidId: string,
     actor: AuthenticatedUser,
   ): Promise<void> {
-    const masjid = await this.db.masjid.findUnique({
+    const masjid = await this.prisma.masjid.findUnique({
       where: { id: masjidId },
       select: { id: true },
     });
@@ -144,21 +111,12 @@ export class NamazTimesService {
       return;
     }
 
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    if (actor.masjidId !== masjidId) {
-      throw new ApiException(
-        'You are not allowed to access this masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.MASJID_ACCESS_FORBIDDEN,
-      );
-    }
+    assertSameMasjid(
+      masjidId,
+      requireMasjidId(actor),
+      'You are not allowed to access this masjid',
+      ERROR_CODES.MASJID_ACCESS_FORBIDDEN,
+    );
   }
 
   private toNamazTimeWriteData(dto: UpsertNamazTimeDto): NamazTimeWriteData {
@@ -177,7 +135,7 @@ export class NamazTimesService {
 
   private assignIfDefined(
     data: NamazTimeWriteData,
-    key: keyof NamazTimeWriteData,
+    key: NamazTimeField,
     value?: string,
   ): void {
     if (value !== undefined) {

@@ -48,7 +48,7 @@ describe('ContributionTransactionsService', () => {
           masjidId: 'masjid-1',
           projectId: 'project-1',
           memberId: 'member-1',
-        }),
+        }) as unknown,
       }),
     );
     expect(tx.project.update).toHaveBeenCalledWith({
@@ -78,7 +78,7 @@ describe('ContributionTransactionsService', () => {
         masjidId: 'masjid-1',
         type: 'DONATION_BOX',
         amount: 100,
-      }),
+      }) as unknown,
     });
   });
 });

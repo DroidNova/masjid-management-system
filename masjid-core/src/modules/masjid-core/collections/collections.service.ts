@@ -1,94 +1,15 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
+import { toAmount } from '../../../common/money';
+import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { Prisma } from '../../../generated/prisma/client';
+import { FinanceEntryStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
-import {
-  CollectionTypeDto,
-  CreateCollectionDto,
-  FinanceEntryStatusDto,
-} from './dto/create-collection.dto';
+import { CreateCollectionDto } from './dto/create-collection.dto';
 import { GetCollectionsQueryDto } from './dto/get-collections-query.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
-
-type DecimalLike =
-  | number
-  | string
-  | { toNumber?: () => number; toString: () => string };
-
-type CollectionRecord = {
-  id: string;
-  masjidId: string;
-  type: string;
-  amount: DecimalLike;
-  title: string | null;
-  description: string | null;
-  collectedAt: Date;
-  status: string;
-  createdById: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type CollectionResponse = Omit<CollectionRecord, 'amount'> & { amount: number };
-
-type CollectionWhereInput = {
-  masjidId: string;
-  type?: CollectionTypeDto;
-  status?: FinanceEntryStatusDto;
-  collectedAt?: { gte?: Date; lte?: Date };
-  OR?: Array<{
-    title?: { contains: string; mode: 'insensitive' };
-    description?: { contains: string; mode: 'insensitive' };
-  }>;
-};
-
-type CollectionCreateData = {
-  masjidId: string;
-  createdById: string;
-  type: CollectionTypeDto;
-  amount: number;
-  title?: string;
-  description?: string;
-  collectedAt?: Date;
-};
-
-type CollectionUpdateData = Partial<{
-  type: CollectionTypeDto;
-  amount: number;
-  title: string | null;
-  description: string | null;
-  collectedAt: Date;
-  status: FinanceEntryStatusDto;
-}>;
-
-type CollectionsDelegate = {
-  findMany(args: {
-    where: CollectionWhereInput;
-    skip: number;
-    take: number;
-    orderBy: { collectedAt: 'desc' };
-    select: typeof collectionSelect;
-  }): Promise<CollectionRecord[]>;
-  count(args: { where: CollectionWhereInput }): Promise<number>;
-  create(args: {
-    data: CollectionCreateData;
-    select: typeof collectionSelect;
-  }): Promise<CollectionRecord>;
-  findUnique(args: {
-    where: { id: string };
-    select: typeof collectionSelect;
-  }): Promise<CollectionRecord | null>;
-  update(args: {
-    where: { id: string };
-    data: CollectionUpdateData;
-    select: typeof collectionSelect;
-  }): Promise<CollectionRecord>;
-};
-
-type CollectionsPrismaDelegate = {
-  collection: CollectionsDelegate;
-};
 
 const collectionSelect = {
   id: true,
@@ -102,7 +23,13 @@ const collectionSelect = {
   createdById: true,
   createdAt: true,
   updatedAt: true,
-} as const;
+} as const satisfies Prisma.CollectionSelect;
+
+type CollectionRecord = Prisma.CollectionGetPayload<{
+  select: typeof collectionSelect;
+}>;
+
+type CollectionResponse = Omit<CollectionRecord, 'amount'> & { amount: number };
 
 @Injectable()
 export class CollectionsService {
@@ -110,28 +37,24 @@ export class CollectionsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private get db(): CollectionsPrismaDelegate {
-    return this.prisma as unknown as CollectionsPrismaDelegate;
-  }
-
   async findMyMasjidCollections(
     query: GetCollectionsQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where = this.buildWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
-      this.db.collection.findMany({
+      this.prisma.collection.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { collectedAt: 'desc' },
         select: collectionSelect,
       }),
-      this.db.collection.count({ where }),
+      this.prisma.collection.count({ where }),
     ]);
 
     return {
@@ -144,8 +67,8 @@ export class CollectionsService {
     dto: CreateCollectionDto,
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
-    const collection = await this.db.collection.create({
+    const masjidId = requireMasjidId(actor);
+    const collection = await this.prisma.collection.create({
       data: {
         masjidId,
         createdById: actor.id,
@@ -172,7 +95,7 @@ export class CollectionsService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     const collection = await this.ensureCollectionBelongsToMasjid(id, masjidId);
     return this.toResponse(collection);
   }
@@ -182,7 +105,7 @@ export class CollectionsService {
     dto: UpdateCollectionDto,
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureCollectionBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
@@ -194,7 +117,7 @@ export class CollectionsService {
       );
     }
 
-    const collection = await this.db.collection.update({
+    const collection = await this.prisma.collection.update({
       where: { id },
       data,
       select: collectionSelect,
@@ -211,11 +134,11 @@ export class CollectionsService {
     id: string,
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
-    const masjidId = this.getCurrentUserMasjidId(actor);
+    const masjidId = requireMasjidId(actor);
     await this.ensureCollectionBelongsToMasjid(id, masjidId);
-    const collection = await this.db.collection.update({
+    const collection = await this.prisma.collection.update({
       where: { id },
-      data: { status: FinanceEntryStatusDto.CANCELLED },
+      data: { status: FinanceEntryStatus.CANCELLED },
       select: collectionSelect,
     });
     this.logger.warn({
@@ -226,23 +149,11 @@ export class CollectionsService {
     return this.toResponse(collection);
   }
 
-  private getCurrentUserMasjidId(actor: AuthenticatedUser): string {
-    if (!actor.masjidId) {
-      throw new ApiException(
-        'Current user is not assigned to a masjid',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.USER_MASJID_NOT_ASSIGNED,
-      );
-    }
-
-    return actor.masjidId;
-  }
-
   private async ensureCollectionBelongsToMasjid(
     id: string,
     masjidId: string,
   ): Promise<CollectionRecord> {
-    const collection = await this.db.collection.findUnique({
+    const collection = await this.prisma.collection.findUnique({
       where: { id },
       select: collectionSelect,
     });
@@ -255,13 +166,12 @@ export class CollectionsService {
       );
     }
 
-    if (collection.masjidId !== masjidId) {
-      throw new ApiException(
-        'You are not allowed to access this finance entry',
-        HttpStatus.FORBIDDEN,
-        ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
-      );
-    }
+    assertSameMasjid(
+      collection.masjidId,
+      masjidId,
+      'You are not allowed to access this finance entry',
+      ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
+    );
 
     return collection;
   }
@@ -269,14 +179,15 @@ export class CollectionsService {
   private buildWhere(
     masjidId: string,
     query: GetCollectionsQueryDto,
-  ): CollectionWhereInput {
-    const where: CollectionWhereInput = { masjidId };
+  ): Prisma.CollectionWhereInput {
+    const where: Prisma.CollectionWhereInput = { masjidId };
     if (query.type !== undefined) where.type = query.type;
     if (query.status !== undefined) where.status = query.status;
     if (query.fromDate || query.toDate) {
-      where.collectedAt = {};
-      if (query.fromDate) where.collectedAt.gte = new Date(query.fromDate);
-      if (query.toDate) where.collectedAt.lte = new Date(query.toDate);
+      const collectedAt: Prisma.DateTimeFilter<'Collection'> = {};
+      if (query.fromDate) collectedAt.gte = new Date(query.fromDate);
+      if (query.toDate) collectedAt.lte = new Date(query.toDate);
+      where.collectedAt = collectedAt;
     }
     if (query.search) {
       where.OR = [
@@ -287,8 +198,10 @@ export class CollectionsService {
     return where;
   }
 
-  private buildUpdateData(dto: UpdateCollectionDto): CollectionUpdateData {
-    const data: CollectionUpdateData = {};
+  private buildUpdateData(
+    dto: UpdateCollectionDto,
+  ): Prisma.CollectionUpdateInput {
+    const data: Prisma.CollectionUpdateInput = {};
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.amount !== undefined) data.amount = dto.amount;
     if (dto.title !== undefined) data.title = dto.title;
@@ -300,13 +213,6 @@ export class CollectionsService {
   }
 
   private toResponse(collection: CollectionRecord): CollectionResponse {
-    return { ...collection, amount: this.toNumber(collection.amount) };
-  }
-
-  private toNumber(value: DecimalLike): number {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') return Number(value);
-    if (typeof value.toNumber === 'function') return value.toNumber();
-    return Number(value.toString());
+    return { ...collection, amount: toAmount(collection.amount) };
   }
 }

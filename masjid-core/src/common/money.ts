@@ -9,7 +9,7 @@ import { Prisma } from '../generated/prisma/client';
  */
 
 export type Money = Prisma.Decimal;
-export type MoneyInput = Prisma.Decimal.Value | null | undefined;
+export type MoneyInput = Prisma.Decimal | number | string | null | undefined;
 
 export const ZERO: Money = new Prisma.Decimal(0);
 
