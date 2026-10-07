@@ -6,7 +6,7 @@ x-logging: &default-logging
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: masjid-postgres
     restart: unless-stopped
     env_file:
@@ -15,10 +15,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    # Bound to 127.0.0.1: reachable from this PC only, never from the network.
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Postgres 18+ images keep data under /var/lib/postgresql/<major>/.
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -43,8 +45,12 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      # Public traffic arrives through the frontend's nginx; read the client IP
+      # from X-Forwarded-For so rate limits are per visitor, not per proxy.
+      TRUST_PROXY: "true"
+    # Local only; the public way in is the tunnel, through the frontend's nginx.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +62,8 @@ services:
       start_period: 30s
     logging: *default-logging
 
+  # Flutter Web in nginx. nginx also proxies /api/ to the backend, so the site
+  # and the API share one origin (and one public domain).
   frontend:
     build:
       context: ./masjid-core-frontend
@@ -65,17 +73,34 @@ services:
     container_name: masjid-frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
     logging: *default-logging
 
+  # Public HTTPS address (static ngrok domain): the website at /, the API at
+  # /api/ for the APK. NGROK_AUTHTOKEN lives in .env.tunnel (not in git).
+  tunnel:
+    # Optional: runs only with the "tunnel" profile (COMPOSE_PROFILES=tunnel in .env).
+    profiles: ["tunnel"]
+    image: ngrok/ngrok:latest
+    container_name: masjid-tunnel
+    restart: unless-stopped
+    env_file:
+      - path: ./.env.tunnel
+        required: false
+    command: ["http", "--url=${NGROK_DOMAIN:-set-NGROK_DOMAIN-in-.env}", "frontend:80"]
+    depends_on:
+      frontend:
+        condition: service_healthy
+    logging: *default-logging
+
 volumes:
-  postgres_data:
+  pgdata:

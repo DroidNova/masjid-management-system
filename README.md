@@ -10,7 +10,7 @@ The roadmap and architecture decisions live in [docs/IMPROVEMENT_PLAN.md](docs/I
 |---|---|
 | `masjid-core/` | NestJS 11 + Prisma 7 backend (PostgreSQL) |
 | `masjid-core-frontend/` | Flutter app for web and Android |
-| `docker-compose.yml` | Postgres + backend + web frontend for local development |
+| `docker-compose.yml` | Postgres + backend + web frontend (+ optional ngrok tunnel); see [docs/DOCKER.md](docs/DOCKER.md) |
 | `docker-compose.dev.yml` | Overlay that runs the backend with hot reload |
 | `scripts/` | Setup, start, logs, and stop helpers for Linux, macOS, and Windows |
 | `.github/workflows/ci.yml` | Lint, format, build, and test for both apps |
@@ -29,6 +29,8 @@ cd masjid-core && npm run dev:reset-passwords
 Imams and committee members can change their own password with `POST /api/v1/auth/password/change` (Swagger: <http://localhost:3000/api>). The app screen for it comes with the Flutter rework.
 
 ## Quick start with Docker
+
+Full guide for new developers (step by step, daily commands, database backups, the public tunnel, troubleshooting): [docs/DOCKER.md](docs/DOCKER.md).
 
 Prerequisites: Git, Docker Desktop with the Compose plugin.
 

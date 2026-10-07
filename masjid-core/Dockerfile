@@ -11,6 +11,9 @@ COPY prisma.config.ts ./
 COPY tsconfig*.json nest-cli.json ./
 COPY src ./src
 COPY scripts ./scripts
+# prisma.config.ts requires DATABASE_URL; generate never connects, so a
+# build-stage placeholder works. The runtime stage gets the real one.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run prisma:generate
 RUN npm run build
 
