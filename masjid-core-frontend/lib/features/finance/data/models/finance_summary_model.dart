@@ -1,37 +1,52 @@
-import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class FinanceSummaryModel {
-  const FinanceSummaryModel({
-    required this.totalCollection,
-    required this.totalExpense,
-    required this.currentBalance,
-    required this.thisMonthCollection,
-    required this.thisMonthExpense,
-  });
+part 'finance_summary_model.freezed.dart';
+part 'finance_summary_model.g.dart';
 
-  factory FinanceSummaryModel.fromJson(Map<String, dynamic> json) {
-    return FinanceSummaryModel(
-      totalCollection: parseDouble(json['totalCollection']),
-      totalExpense: parseDouble(json['totalExpense']),
-      currentBalance: parseDouble(json['currentBalance']),
-      thisMonthCollection: parseDouble(json['thisMonthCollection']),
-      thisMonthExpense: parseDouble(json['thisMonthExpense']),
-    );
-  }
+/// `GET /finance/my-masjid/summary`.
+///
+/// `totalCollection` is all money received: general collections + project
+/// contributions + imam salary payments. [breakdown] shows each part, for all
+/// time (`total`) and for the requested period (`period`, default this month).
+@freezed
+abstract class FinanceSummaryModel with _$FinanceSummaryModel {
+  const factory FinanceSummaryModel({
+    @Default(0) double totalCollection,
+    @Default(0) double totalExpense,
+    @Default(0) double currentBalance,
+    @Default(0) double thisMonthCollection,
+    @Default(0) double thisMonthExpense,
+    @Default(0) double thisMonthBalance,
+    @Default(FinanceBreakdown()) FinanceBreakdown breakdown,
+  }) = _FinanceSummaryModel;
 
-  factory FinanceSummaryModel.empty() {
-    return const FinanceSummaryModel(
-      totalCollection: 0,
-      totalExpense: 0,
-      currentBalance: 0,
-      thisMonthCollection: 0,
-      thisMonthExpense: 0,
-    );
-  }
+  factory FinanceSummaryModel.fromJson(Map<String, dynamic> json) =>
+      _$FinanceSummaryModelFromJson(json);
+}
 
-  final double totalCollection;
-  final double totalExpense;
-  final double currentBalance;
-  final double thisMonthCollection;
-  final double thisMonthExpense;
+@freezed
+abstract class FinanceBreakdown with _$FinanceBreakdown {
+  const factory FinanceBreakdown({
+    @Default(FinanceTotals()) FinanceTotals total,
+    @Default(FinanceTotals()) FinanceTotals period,
+  }) = _FinanceBreakdown;
+
+  factory FinanceBreakdown.fromJson(Map<String, dynamic> json) =>
+      _$FinanceBreakdownFromJson(json);
+}
+
+/// One set of totals (masjid-core finance-calculator `totalsToResponse`).
+@freezed
+abstract class FinanceTotals with _$FinanceTotals {
+  const factory FinanceTotals({
+    @Default(0) double generalCollections,
+    @Default(0) double projectContributions,
+    @Default(0) double imamSalaryCollected,
+    @Default(0) double income,
+    @Default(0) double expenses,
+    @Default(0) double balance,
+  }) = _FinanceTotals;
+
+  factory FinanceTotals.fromJson(Map<String, dynamic> json) =>
+      _$FinanceTotalsFromJson(json);
 }

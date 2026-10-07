@@ -1,41 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/core/storage/token_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/community/application/add_community_user_controller.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:masjid_core_frontend/features/community/data/models/create_community_user_request.dart';
 import 'package:masjid_core_frontend/features/community/presentation/widgets/add_user_role_dropdown.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/gender_dropdown.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 import 'package:masjid_core_frontend/shared/widgets/not_allowed_view.dart';
 
-class AddCommunityUserScreen extends StatefulWidget {
-  const AddCommunityUserScreen({
-    super.key,
-    CommunityRepository? communityRepository,
-    SessionStorage? sessionStorage,
-    TokenStorage? tokenStorage,
-  }) : _communityRepository = communityRepository,
-       _sessionStorage = sessionStorage,
-       _tokenStorage = tokenStorage;
-
-  final CommunityRepository? _communityRepository;
-  final SessionStorage? _sessionStorage;
-  final TokenStorage? _tokenStorage;
+class AddCommunityUserScreen extends ConsumerStatefulWidget {
+  const AddCommunityUserScreen({super.key});
 
   @override
-  State<AddCommunityUserScreen> createState() => _AddCommunityUserScreenState();
+  ConsumerState<AddCommunityUserScreen> createState() =>
+      _AddCommunityUserScreenState();
 }
 
-class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
+class _AddCommunityUserScreenState
+    extends ConsumerState<AddCommunityUserScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -45,40 +35,18 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   final _familyMemberCountController = TextEditingController();
   final _masjidIdController = TextEditingController();
 
-  late final CommunityRepository _communityRepository =
-      widget._communityRepository ?? CommunityRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
-  late final TokenStorage _tokenStorage =
-      widget._tokenStorage ?? TokenStorage();
-
-  AppUser? _currentUser;
-  List<String> _allowedRoles = const <String>[];
   String? _selectedRole;
   String? _selectedGender;
   bool _isFamilyHead = false;
-  bool _isLoadingUser = true;
   CountryCode _selectedCountry = getDefaultCountryCode();
-  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentUser();
-  }
-
-  Future<void> _loadCurrentUser() async {
-    final user = await _sessionStorage.getUser();
-    if (!mounted) return;
-    final allowedRoles = user == null
-        ? const <String>[]
-        : PermissionHelper.allowedCommunityRolesToCreate(user.permissions);
-    setState(() {
-      _currentUser = user;
-      _allowedRoles = allowedRoles;
-      _selectedRole = allowedRoles.isEmpty ? null : allowedRoles.first;
-      _isLoadingUser = false;
-    });
+    final allowedRoles = PermissionHelper.allowedCommunityRolesToCreate(
+      ref.read(currentPermissionsProvider),
+    );
+    _selectedRole = allowedRoles.isEmpty ? null : allowedRoles.first;
   }
 
   @override
@@ -96,48 +64,50 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
-    try {
-      final createdUser = await _communityRepository.createMasjidUser(
-        CreateCommunityUserRequest(
-          fullName: _fullNameController.text,
-          phone: normalizePhone(
-            countryCode: _selectedCountry,
-            nationalNumber: _phoneController.text,
+    final request = buildCreateCommunityUserRequest(
+      fullName: _fullNameController.text,
+      phone: normalizePhone(
+        countryCode: _selectedCountry,
+        nationalNumber: _phoneController.text,
+      ),
+      email: _emailController.text,
+      role: _selectedRole!,
+      fatherName: _fatherNameController.text,
+      age: _ageController.text,
+      gender: _selectedGender!,
+      isFamilyHead: _isFamilyHead,
+      familyMemberCount: _familyMemberCountController.text,
+      masjidId: _masjidIdController.text,
+    );
+    final createdUser = await ref
+        .read(addCommunityUserControllerProvider.notifier)
+        .submit(request);
+    if (!mounted) return;
+
+    if (createdUser == null) {
+      final error = ref.read(addCommunityUserControllerProvider).error;
+      // Shown in a banner above the save button instead.
+      if (_isAlreadyLinkedError(error)) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error == null ? 'Unable to add user.' : userMessage(error),
           ),
-          email: _emailController.text,
-          role: _selectedRole!,
-          fatherName: _fatherNameController.text,
-          age: int.parse(_ageController.text.trim()),
-          gender: _selectedGender!,
-          isFamilyHead: _selectedRole == PermissionHelper.member
-              ? _isFamilyHead
-              : null,
-          familyMemberCount: _familyMemberCountController.text.trim().isEmpty
-              ? null
-              : int.parse(_familyMemberCountController.text.trim()),
-          masjidId: _masjidIdController.text,
         ),
       );
-
-      if (!mounted) return;
-      await _showSuccess(createdUser);
-      if (mounted) context.pop(true);
-    } catch (error) {
-      if (!mounted) return;
-      await _handleError(error);
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      return;
     }
+
+    await _showSuccess(createdUser);
+    if (mounted) context.pop(true);
   }
 
-  Future<void> _showSuccess(CommunityUserModel createdUser) async {
-    final message = _successMessage(createdUser);
-    await showDialog<void>(
+  Future<void> _showSuccess(CommunityUserModel createdUser) {
+    return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('User Added'),
-        content: Text(message),
+        content: Text(addUserSuccessMessage(createdUser, _selectedRole)),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -148,44 +118,12 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
     );
   }
 
-  String _successMessage(CommunityUserModel user) {
-    if (user.message != null && user.message!.isNotEmpty) return user.message!;
-    if (user.temporaryPassword != null && user.temporaryPassword!.isNotEmpty) {
-      return 'User added successfully. Temporary password is ${user.temporaryPassword}.';
-    }
-    if (_selectedRole == PermissionHelper.member) {
-      return 'Member added successfully. This user can login using phone OTP.';
-    }
-    return 'User added successfully.';
-  }
-
-  Future<void> _handleError(Object error) async {
-    final message = getReadableErrorMessage(
-      error,
-      fallbackMessage: 'Unable to add user.',
-    );
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-
-    final lower = error.toString().toLowerCase();
-    if (lower.contains('unauthorized') || lower.contains('401')) {
-      await _tokenStorage.clearTokens();
-      await _sessionStorage.clearUser();
-      if (mounted) context.go('/auth');
-    }
-  }
-
-  bool get _shouldShowMasjidIdField {
-    final user = _currentUser;
-    if (user == null) return false;
-    return PermissionHelper.has(user, AppPermissions.platformRolesAssign) &&
-        (user.masjidId == null || user.masjidId!.trim().isEmpty);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingUser) return const LoadingView();
+    final permissions = ref.watch(currentPermissionsProvider);
+    final allowedRoles = PermissionHelper.allowedCommunityRolesToCreate(
+      permissions,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add User')),
@@ -195,7 +133,9 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             padding: const EdgeInsets.all(16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 700),
-              child: _allowedRoles.isEmpty ? const NotAllowedView() : _form(),
+              child: allowedRoles.isEmpty
+                  ? const NotAllowedView()
+                  : _form(allowedRoles),
             ),
           ),
         ),
@@ -203,7 +143,14 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
     );
   }
 
-  Widget _form() {
+  Widget _form(List<String> allowedRoles) {
+    final user = ref.watch(currentUserProvider);
+    final saveState = ref.watch(addCommunityUserControllerProvider);
+    final error = saveState.error;
+    final showMasjidIdField =
+        PermissionHelper.has(user, AppPermissions.platformRolesAssign) &&
+        (user?.masjidId == null || user!.masjidId!.trim().isEmpty);
+
     return Form(
       key: _formKey,
       child: Column(
@@ -220,9 +167,10 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
           const SizedBox(height: 24),
           TextFormField(
             controller: _fullNameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Full Name *',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: fieldError(error, 'fullName'),
             ),
             textInputAction: TextInputAction.next,
             validator: (value) {
@@ -241,12 +189,15 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             isRequired: true,
             textInputAction: TextInputAction.next,
           ),
+          if (fieldError(error, 'phone') case final phoneError?)
+            _FieldErrorText(phoneError),
           const SizedBox(height: 16),
           TextFormField(
             controller: _emailController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Email optional',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: fieldError(error, 'email'),
             ),
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
@@ -259,12 +210,12 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             },
           ),
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _fatherNameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Father Name *',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: fieldError(error, 'fatherName'),
             ),
             textInputAction: TextInputAction.next,
             validator: (value) => (value == null || value.trim().isEmpty)
@@ -274,9 +225,10 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _ageController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Age *',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: fieldError(error, 'age'),
             ),
             keyboardType: TextInputType.number,
             inputFormatters: <TextInputFormatter>[
@@ -290,28 +242,17 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
             },
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedGender,
-            decoration: const InputDecoration(
-              labelText: 'Gender *',
-              border: OutlineInputBorder(),
-            ),
-            items: const <DropdownMenuItem<String>>[
-              DropdownMenuItem(value: 'MALE', child: Text('Male')),
-              DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
-              DropdownMenuItem(value: 'OTHER', child: Text('Other')),
-            ],
+          GenderDropdown(
+            value: _selectedGender,
+            requiredMessage: 'Please select gender.',
             onChanged: (value) => setState(() => _selectedGender = value),
-            validator: (value) =>
-                value == null ? 'Please select gender.' : null,
           ),
           const SizedBox(height: 16),
           AddUserRoleDropdown(
-            allowedRoles: _allowedRoles,
+            allowedRoles: allowedRoles,
             value: _selectedRole,
             onChanged: (role) => setState(() => _selectedRole = role),
           ),
-
           if (_selectedRole == PermissionHelper.member) ...<Widget>[
             const SizedBox(height: 16),
             SwitchListTile(
@@ -324,9 +265,10 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _familyMemberCountController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Family Member Count',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  errorText: fieldError(error, 'familyMemberCount'),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[
@@ -344,29 +286,90 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
               ),
             ],
           ],
-          if (_shouldShowMasjidIdField) ...<Widget>[
+          if (showMasjidIdField) ...<Widget>[
             const SizedBox(height: 16),
             TextFormField(
               controller: _masjidIdController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Masjid ID',
                 helperText:
                     'Required only for super admin when not assigned to a masjid.',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                errorText: fieldError(error, 'masjidId'),
               ),
               textInputAction: TextInputAction.done,
             ),
+          ],
+          if (_isAlreadyLinkedError(error)) ...<Widget>[
+            const SizedBox(height: 16),
+            _LinkedElsewhereBanner(message: userMessage(error!)),
           ],
           const SizedBox(height: 24),
           SizedBox(
             height: 52,
             child: AppButton(
               label: 'Save User',
-              isLoading: _isSaving,
+              isLoading: saveState.isLoading,
               onPressed: _submit,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The phone already belongs to a masjid: the person must leave it first.
+bool _isAlreadyLinkedError(Object? error) =>
+    error is ApiException &&
+    (error.code == ApiErrorCodes.userInAnotherMasjid ||
+        error.code == ApiErrorCodes.masjidUserAlreadyLinked);
+
+class _LinkedElsewhereBanner extends StatelessWidget {
+  const _LinkedElsewhereBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      color: colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onErrorContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldErrorText extends StatelessWidget {
+  const _FieldErrorText(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 6),
+      child: Text(
+        message,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.error,
+        ),
       ),
     );
   }

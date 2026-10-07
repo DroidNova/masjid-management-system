@@ -1,131 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_dashboard_summary.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_dashboard_summary.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_tab_controller.dart';
 import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class SuperAdminDashboardScreen extends StatefulWidget {
-  const SuperAdminDashboardScreen({super.key, this.repository});
-
-  final SuperAdminRepository? repository;
+class SuperAdminDashboardScreen extends ConsumerWidget {
+  const SuperAdminDashboardScreen({super.key});
 
   @override
-  State<SuperAdminDashboardScreen> createState() =>
-      _SuperAdminDashboardScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref
+        .watch(adminDashboardProvider)
+        .when(
+          skipLoadingOnRefresh: true,
+          skipLoadingOnReload: true,
+          loading: () => const LoadingView(),
+          error: (error, _) => ErrorView(
+            title: 'Unable to load',
+            message: userMessage(error),
+            onRetry: () => ref.invalidate(adminDashboardProvider),
+          ),
+          data: (summary) => RefreshIndicator(
+            onRefresh: () =>
+                ref.read(adminDashboardProvider.notifier).refresh(),
+            child: _DashboardContent(summary: summary),
+          ),
+        );
+  }
 }
 
-class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
-  late final SuperAdminRepository _repository =
-      widget.repository ?? SuperAdminRepository();
-  late final ValueNotifier<int> _refreshNotifier;
-  AdminDashboardSummary _summary = const AdminDashboardSummary();
-  Future<void>? _activeLoad;
-  bool _isLoading = true;
-  String? _errorMessage;
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({required this.summary});
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
-      AppDataScope.adminDashboard,
-    );
-    _refreshNotifier.addListener(_onRefreshRequested);
-    _loadData();
-  }
-
-  @override
-  void dispose() {
-    _refreshNotifier.removeListener(_onRefreshRequested);
-    super.dispose();
-  }
-
-  void _onRefreshRequested() {
-    _loadData(force: true);
-  }
-
-  Future<void> _loadData({bool force = false}) {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null && !force) return activeLoad;
-    _activeLoad = _performLoad().whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoad() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final summary = await _repository.getDashboardSummary();
-      if (!mounted) return;
-      setState(() => _summary = summary);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = error.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  final AdminDashboardSummary summary;
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const LoadingView();
-    if (_errorMessage != null) {
-      return ErrorView(
-        title: 'Unable to load',
-        message: _errorMessage!,
-        onRetry: () => _loadData(force: true),
-      );
-    }
-
-    final dashboard = _summary;
-    return RefreshIndicator(
-      onRefresh: () => _loadData(force: true),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              _card('Total Users', dashboard.totalUsers),
-              _card('Active Users', dashboard.activeUsers),
-              _card(
-                'Inactive Users',
-                dashboard.inactiveUsers + dashboard.suspendedUsers,
-              ),
-              _card('Total Masjids', dashboard.totalMasjids),
-              _card('Pending Requests', dashboard.pendingRequests),
-              _card('Approved Requests', dashboard.approvedRequests),
-              _card('Rejected Requests', dashboard.rejectedRequests),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              FilledButton(
-                onPressed: () => selectSuperAdminTab(context, 1),
-                child: const Text('Masjid Requests'),
-              ),
-              FilledButton(
-                onPressed: () => selectSuperAdminTab(context, 2),
-                child: const Text('Masjids'),
-              ),
-              FilledButton(
-                onPressed: () => selectSuperAdminTab(context, 3),
-                child: const Text('Users'),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: <Widget>[
+            _card('Total Users', summary.totalUsers),
+            _card('Active Users', summary.activeUsers),
+            _card(
+              'Inactive Users',
+              summary.inactiveUsers + summary.suspendedUsers,
+            ),
+            _card('Total Masjids', summary.totalMasjids),
+            _card('Pending Requests', summary.pendingRequests),
+            _card('Approved Requests', summary.approvedRequests),
+            _card('Rejected Requests', summary.rejectedRequests),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: <Widget>[
+            FilledButton(
+              onPressed: () => selectSuperAdminTab(context, 1),
+              child: const Text('Masjid Requests'),
+            ),
+            FilledButton(
+              onPressed: () => selectSuperAdminTab(context, 2),
+              child: const Text('Masjids'),
+            ),
+            FilledButton(
+              onPressed: () => selectSuperAdminTab(context, 3),
+              child: const Text('Users'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

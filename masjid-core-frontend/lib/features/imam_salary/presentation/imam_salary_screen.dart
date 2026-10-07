@@ -1,571 +1,464 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:masjid_core_frontend/features/imam_salary/data/imam_salary_repository.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/imam_salary_ledger_models.dart';
-import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/presentation/widgets/salary_dialogs.dart';
+import 'package:masjid_core_frontend/features/imam_salary/presentation/widgets/salary_widgets.dart';
+import 'package:masjid_core_frontend/shared/widgets/not_allowed_view.dart';
 
-class ImamSalaryScreen extends StatefulWidget {
+/// Imam salary ledger. Committee: full ledger with actions. Imam: month
+/// summary, read only. Member: own last 6 months.
+class ImamSalaryScreen extends ConsumerWidget {
   const ImamSalaryScreen({super.key});
+
   @override
-  State<ImamSalaryScreen> createState() => _State();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final view = salaryViewFor(ref.watch(currentPermissionsProvider));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          view == SalaryView.member ? 'My Imam Salary History' : 'Imam Salary',
+        ),
+      ),
+      body: switch (view) {
+        SalaryView.committee => const _CommitteeLedger(),
+        SalaryView.imam => const _ReadOnlyLedger(),
+        SalaryView.member => const _MemberHistory(),
+        SalaryView.none => const NotAllowedView(
+          message: 'You do not have permission to view the imam salary.',
+        ),
+      },
+    );
+  }
 }
 
-class _State extends State<ImamSalaryScreen>
-    with SingleTickerProviderStateMixin {
-  final _repo = ImamSalaryRepository();
-  final _session = SessionStorage();
-  final _scroll = ScrollController();
-  final _assignmentScroll = ScrollController();
-  final _paymentScroll = ScrollController();
-  late final TabController _tabs;
-  AppUser? _user;
-  int _month = DateTime.now().month, _year = DateTime.now().year;
-  bool _loading = true, _loadingMore = false;
-  String? _error;
-  ImamSalaryMonthModel? _salary;
-  List<ImamSalaryAssignmentModel> _assignments = [];
-  List<ImamSalaryPaymentModel> _payments = [];
-  List<MyImamSalaryHistoryModel> _history = [];
-  int _assignmentPage = 1, _paymentPage = 1;
-  bool _moreAssignments = false, _morePayments = false;
-  String? _status, _mode;
-  String _search = '';
-  List<String> get _permissions => _user?.permissions ?? const <String>[];
-  // Committee: full ledger. Imam: read-only ledger. Others: own payments.
-  bool get _manage => PermissionHelper.canManageImamSalary(_permissions);
-  bool get _readOnly =>
-      PermissionHelper.canViewImamSalary(_permissions) && !_manage;
-  bool get _member =>
-      !PermissionHelper.canViewImamSalary(_permissions) &&
-      PermissionHelper.canViewOwnContributions(_permissions);
+// ---------------------------------------------------------------------------
+// Month section: start button / summary + increase, or load error.
+// ---------------------------------------------------------------------------
+
+class _MonthSection extends ConsumerWidget {
+  const _MonthSection({required this.canManage});
+
+  final bool canManage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final month = ref.watch(salaryMonthProvider);
+    return month.when(
+      skipLoadingOnRefresh: true,
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => SalaryLoadError(
+        message: userMessage(error),
+        onRetry: () => ref.invalidate(salaryMonthProvider),
+      ),
+      data: (salary) {
+        if (salary == null) {
+          if (!canManage) return const Text('No salary month found.');
+          return FilledButton(
+            onPressed: () => showDialog<bool>(
+              context: context,
+              builder: (_) => const StartSalaryMonthDialog(),
+            ),
+            child: const Text('Start Salary Month'),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SalaryMonthSummaryCard(month: salary),
+            if (canManage)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    builder: (_) => IncreaseSalaryDialog(month: salary),
+                  ),
+                  child: const Text('Increase Salary'),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Imam: read-only month summary.
+// ---------------------------------------------------------------------------
+
+class _ReadOnlyLedger extends ConsumerWidget {
+  const _ReadOnlyLedger();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () => ref.read(salaryMonthProvider.notifier).refresh(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: const <Widget>[
+          SalaryPeriodPicker(),
+          SizedBox(height: 12),
+          _MonthSection(canManage: false),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Committee: month header, search, and Assignments / Transactions tabs.
+// ---------------------------------------------------------------------------
+
+class _CommitteeLedger extends ConsumerWidget {
+  const _CommitteeLedger();
+
+  Future<void> _refresh(WidgetRef ref) async {
+    ref
+      ..invalidate(salaryAssignmentsProvider)
+      ..invalidate(salaryPaymentsProvider);
+    await ref.read(salaryMonthProvider.notifier).refresh();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DefaultTabController(
+      length: 2,
+      child: RefreshIndicator(
+        onRefresh: () => _refresh(ref),
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: <Widget>[
+                    const SalaryPeriodPicker(),
+                    const SizedBox(height: 12),
+                    const _MonthSection(canManage: true),
+                    TextField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        labelText: 'Search member name or phone',
+                      ),
+                      onSubmitted: (value) => ref
+                          .read(salaryLedgerFilterProvider.notifier)
+                          .update(
+                            (f) => (
+                              search: value.trim(),
+                              status: f.status,
+                              paymentMode: f.paymentMode,
+                            ),
+                          ),
+                    ),
+                    const TabBar(
+                      tabs: <Widget>[
+                        Tab(text: 'Assignments'),
+                        Tab(text: 'Transactions'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverFillRemaining(
+              child: TabBarView(
+                children: <Widget>[_AssignmentsTab(), _PaymentsTab()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Calls [onNearEnd] when the list scrolls within 300px of its end.
+mixin _LoadMoreOnScroll<W extends ConsumerStatefulWidget> on ConsumerState<W> {
+  final ScrollController scrollController = ScrollController();
+
+  void onNearEnd();
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
-    _scroll.addListener(_nearEnd);
-    _assignmentScroll.addListener(_assignmentNearEnd);
-    _paymentScroll.addListener(_paymentNearEnd);
-    _load();
+    scrollController.addListener(() {
+      if (scrollController.hasClients &&
+          scrollController.position.extentAfter < 300) {
+        onNearEnd();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _tabs.dispose();
-    _scroll.dispose();
-    _assignmentScroll.dispose();
-    _paymentScroll.dispose();
+    scrollController.dispose();
     super.dispose();
   }
+}
 
-  void _nearEnd() {}
-  void _assignmentNearEnd() {
-    if (_assignmentScroll.position.extentAfter < 300 &&
-        !_loadingMore &&
-        _moreAssignments) {
-      _loadAssignments(next: true);
-    }
-  }
+class _AssignmentsTab extends ConsumerStatefulWidget {
+  const _AssignmentsTab();
 
-  void _paymentNearEnd() {
-    if (_paymentScroll.position.extentAfter < 300 &&
-        !_loadingMore &&
-        _morePayments) {
-      _loadPayments(next: true);
-    }
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      _user = await _session.getUser();
-      if (_member) {
-        _history = await _repo.getMyHistory();
-      } else {
-        final months = await _repo.getMonths(month: _month, year: _year);
-        _salary = months.items.isEmpty ? null : months.items.first;
-        if (_salary != null && !_readOnly) {
-          await Future.wait([_loadAssignments(), _loadPayments()]);
-        } else {
-          _assignments = [];
-          _payments = [];
-        }
-      }
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-    }
-    if (mounted) setState(() => _loading = false);
-  }
-
-  Future<void> _loadAssignments({bool next = false}) async {
-    if (_salary == null) return;
-    setState(() => _loadingMore = next);
-    final page = next ? _assignmentPage + 1 : 1;
-    final data = await _repo.getAssignments(
-      _salary!.id,
-      status: _status,
-      search: _search,
-      page: page,
-    );
-    setState(() {
-      _assignments = next ? [..._assignments, ...data.items] : data.items;
-      _assignmentPage = page;
-      _moreAssignments = data.hasNextPage;
-      _loadingMore = false;
-    });
-  }
-
-  Future<void> _loadPayments({bool next = false}) async {
-    setState(() => _loadingMore = next);
-    final page = next ? _paymentPage + 1 : 1;
-    final data = await _repo.getPayments(
-      month: _month,
-      year: _year,
-      paymentMode: _mode,
-      search: _search,
-      page: page,
-    );
-    setState(() {
-      _payments = next ? [..._payments, ...data.items] : data.items;
-      _paymentPage = page;
-      _morePayments = data.hasNextPage;
-      _loadingMore = false;
-    });
-  }
-
-  String _money(double n) => '₹${n.toStringAsFixed(2)}';
-  String _monthName(int m) => const [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ][m - 1];
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(_member ? 'My Imam Salary History' : 'Imam Salary'),
-    ),
-    body: _loading
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null
-        ? Center(child: Text(_error!))
-        : _member
-        ? _memberBody()
-        : _managementBody(),
-  );
-  Widget _memberBody() => RefreshIndicator(
-    onRefresh: _load,
-    child: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text(
-          'Your last 6 months',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        if (_history.isEmpty)
-          const Text('No salary contribution history found.')
-        else
-          ..._history.map(
-            (h) => Card(
-              child: ListTile(
-                title: Text('${_monthName(h.month)} ${h.year}'),
-                subtitle: Text(
-                  'Expected ${_money(h.expectedAmount)}  •  Paid ${_money(h.paidAmount)}\nDue ${_money(h.dueAmount)}  •  ${h.payments.length} payment(s)',
-                ),
-                trailing: _chip(h.status),
-                isThreeLine: true,
-              ),
+  ConsumerState<_AssignmentsTab> createState() => _AssignmentsTabState();
+}
+
+class _AssignmentsTabState extends ConsumerState<_AssignmentsTab>
+    with _LoadMoreOnScroll<_AssignmentsTab> {
+  @override
+  void onNearEnd() => ref.read(salaryAssignmentsProvider.notifier).loadMore();
+
+  @override
+  Widget build(BuildContext context) {
+    final status = ref.watch(
+      salaryLedgerFilterProvider.select((filter) => filter.status),
+    );
+    final assignments = ref.watch(salaryAssignmentsProvider);
+
+    return Column(
+      children: <Widget>[
+        DropdownButton<String?>(
+          value: status,
+          items: const <DropdownMenuItem<String?>>[
+            DropdownMenuItem<String?>(child: Text('All')),
+            DropdownMenuItem<String?>(
+              value: SalaryStatus.paid,
+              child: Text('Paid'),
             ),
-          ),
-      ],
-    ),
-  );
-  Widget _managementBody() => _readOnly
-      ? RefreshIndicator(
-          onRefresh: _load,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (_salary == null)
-                const Text('No salary month found.')
-              else
-                _summary(),
-            ],
-          ),
-        )
-      : RefreshIndicator(
-          onRefresh: _load,
-          child: CustomScrollView(
-            controller: _scroll,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              initialValue: _month,
-                              items: List.generate(
-                                12,
-                                (i) => DropdownMenuItem(
-                                  value: i + 1,
-                                  child: Text(_monthName(i + 1)),
-                                ),
-                              ),
-                              onChanged: (v) {
-                                _month = v!;
-                                _load();
-                              },
-                              decoration: const InputDecoration(
-                                labelText: 'Month',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              initialValue: _year,
-                              items: List.generate(
-                                3,
-                                (i) => DropdownMenuItem(
-                                  value: DateTime.now().year - i,
-                                  child: Text('${DateTime.now().year - i}'),
-                                ),
-                              ),
-                              onChanged: (v) {
-                                _year = v!;
-                                _load();
-                              },
-                              decoration: const InputDecoration(
-                                labelText: 'Year',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (_salary == null && _manage)
-                        FilledButton(
-                          onPressed: _startMonth,
-                          child: const Text('Start Salary Month'),
-                        )
-                      else if (_salary != null) ...[
-                        _summary(),
-                        if (_manage)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: _increase,
-                              child: const Text('Increase Salary'),
-                            ),
-                          ),
-                      ],
-                      TextField(
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          labelText: 'Search member name or phone',
-                        ),
-                        onSubmitted: (v) {
-                          _search = v.trim();
-                          _loadAssignments();
-                          _loadPayments();
-                        },
-                      ),
-                      TabBar(
-                        controller: _tabs,
-                        tabs: const [
-                          Tab(text: 'Assignments'),
-                          Tab(text: 'Transactions'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverFillRemaining(
-                child: TabBarView(
-                  controller: _tabs,
-                  children: [_assignmentList(), _paymentList()],
-                ),
-              ),
-            ],
-          ),
-        );
-  Widget _summary() {
-    final s = _salary!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Text(
-              '${_monthName(s.month)} ${s.year}',
-              style: Theme.of(context).textTheme.titleLarge,
+            DropdownMenuItem<String?>(
+              value: SalaryStatus.partial,
+              child: Text('Partial'),
             ),
-            Wrap(
-              spacing: 18,
-              runSpacing: 8,
-              children: [
-                Text('Expected ${_money(s.totalExpected)}'),
-                Text('Collected ${_money(s.totalCollected)}'),
-                Text('Due ${_money(s.totalDue)}'),
-                Text('Paid ${s.paidCount}'),
-                Text('Partial ${s.partialCount}'),
-                Text('Unpaid ${s.unpaidCount}'),
-              ],
+            DropdownMenuItem<String?>(
+              value: SalaryStatus.unpaid,
+              child: Text('Unpaid'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _assignmentList() => Column(
-    children: [
-      DropdownButton<String?>(
-        value: _status,
-        items: const [
-          DropdownMenuItem(child: Text('All')),
-          DropdownMenuItem(value: 'PAID', child: Text('Paid')),
-          DropdownMenuItem(value: 'PARTIAL', child: Text('Partial')),
-          DropdownMenuItem(value: 'UNPAID', child: Text('Unpaid')),
-        ],
-        onChanged: (v) {
-          _status = v;
-          _loadAssignments();
-        },
-      ),
-      Expanded(
-        child: ListView.builder(
-          controller: _assignmentScroll,
-          itemCount: _assignments.length + (_loadingMore ? 1 : 0),
-          itemBuilder: (c, i) {
-            if (i == _assignments.length) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final a = _assignments[i];
-            return Card(
-              child: ListTile(
-                title: Text(a.memberName),
-                subtitle: Text(
-                  '${a.memberPhone}\nExpected ${_money(a.expectedAmount)} • Paid ${_money(a.paidAmount)} • Due ${_money(a.dueAmount)}',
-                ),
-                isThreeLine: true,
-                trailing: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _chip(a.status),
-                    if (_manage && a.dueAmount > 0)
-                      TextButton(
-                        onPressed: () => _addPayment(a),
-                        child: const Text('Add Payment'),
-                      ),
-                  ],
+          onChanged: (value) => ref
+              .read(salaryLedgerFilterProvider.notifier)
+              .update(
+                (f) => (
+                  search: f.search,
+                  status: value,
+                  paymentMode: f.paymentMode,
                 ),
               ),
-            );
-          },
         ),
-      ),
-    ],
-  );
-  Widget _paymentList() => Column(
-    children: [
-      DropdownButton<String?>(
-        value: _mode,
-        items: const [
-          DropdownMenuItem(child: Text('All modes')),
-          DropdownMenuItem(value: 'CASH', child: Text('Cash')),
-          DropdownMenuItem(value: 'ONLINE', child: Text('Online')),
-        ],
-        onChanged: (v) {
-          _mode = v;
-          _loadPayments();
-        },
-      ),
-      Expanded(
-        child: ListView.builder(
-          controller: _paymentScroll,
-          itemCount: _payments.length + (_loadingMore ? 1 : 0),
-          itemBuilder: (c, i) {
-            if (i == _payments.length) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final p = _payments[i];
-            return Card(
-              child: ListTile(
-                title: Text('${p.memberName} • ${_money(p.amount)}'),
-                subtitle: Text(
-                  '${p.paymentMode} • ${formatReadableDate(parseApiDate(p.paidAt))}\nCollected by ${p.collectedByName}${p.note == null ? '' : '\n${p.note}'}',
-                ),
-                isThreeLine: true,
-              ),
-            );
-          },
-        ),
-      ),
-    ],
-  );
-  Widget _chip(String status) =>
-      Chip(label: Text(status), visualDensity: VisualDensity.compact);
-  Future<String?> _input(
-    String title,
-    String label, {
-    String? secondLabel,
-  }) async {
-    final first = TextEditingController(), second = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: first,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: label),
+        Expanded(
+          child: assignments.when(
+            skipLoadingOnRefresh: true,
+            skipLoadingOnReload: true,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => SalaryLoadError(
+              message: userMessage(error),
+              onRetry: () => ref.invalidate(salaryAssignmentsProvider),
             ),
-            if (secondLabel != null)
-              TextField(
-                controller: second,
-                decoration: InputDecoration(labelText: secondLabel),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(c, '${first.text}|${second.text}'),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _startMonth() async {
-    final value = await _input(
-      'Start Salary Month',
-      'Amount per family head',
-      secondLabel: 'Note (optional)',
-    );
-    if (value == null) return;
-    final v = value.split('|');
-    final amount = double.tryParse(v[0]);
-    if (amount == null || amount <= 0) return;
-    await _repo.createMonth(
-      CreateImamSalaryMonthRequest(_month, _year, amount, v[1]),
-    );
-    await _load();
-  }
-
-  Future<void> _increase() async {
-    final value = await _input(
-      'Increase Salary',
-      'New amount per family head',
-      secondLabel: 'Reason (optional)',
-    );
-    if (value == null) return;
-    final v = value.split('|');
-    final amount = double.tryParse(v[0]);
-    if (amount == null || amount < _salary!.amountPerHead) return;
-    await _repo.updateAmount(
-      _salary!.id,
-      UpdateImamSalaryAmountRequest(amount, v[1]),
-    );
-    await _load();
-  }
-
-  Future<void> _addPayment(ImamSalaryAssignmentModel a) async {
-    final amount = TextEditingController(), note = TextEditingController();
-    String mode = 'CASH';
-    DateTime paidAt = DateTime.now();
-    final save = await showDialog<bool>(
-      context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (c, setDialog) => AlertDialog(
-          title: Text('Payment from ${a.memberName}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Due ${_money(a.dueAmount)}'),
-              TextField(
-                controller: amount,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Amount'),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: mode,
-                items: const [
-                  DropdownMenuItem(value: 'CASH', child: Text('Cash')),
-                  DropdownMenuItem(value: 'ONLINE', child: Text('Online')),
-                ],
-                onChanged: (v) => mode = v!,
-                decoration: const InputDecoration(labelText: 'Payment mode'),
-              ),
-              ListTile(
-                title: Text(formatReadableDate(paidAt)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final d = await showDatePicker(
-                    context: c,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                    initialDate: paidAt,
+            data: (state) => ListView.builder(
+              controller: scrollController,
+              itemCount: state.items.length + 1,
+              itemBuilder: (context, i) {
+                if (i < state.items.length) {
+                  final assignment = state.items[i];
+                  return SalaryAssignmentTile(
+                    assignment: assignment,
+                    onAddPayment: assignment.dueAmount > 0
+                        ? () => showDialog<bool>(
+                            context: context,
+                            builder: (_) =>
+                                AddSalaryPaymentDialog(assignment: assignment),
+                          )
+                        : null,
                   );
-                  if (d != null) setDialog(() => paidAt = d);
-                },
+                }
+                return _ListFooter(
+                  isEmpty: state.items.isEmpty,
+                  emptyText: 'No family heads found.',
+                  loadingMore: state.loadingMore,
+                  loadMoreError: state.loadMoreError,
+                  onRetry: onNearEnd,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentsTab extends ConsumerStatefulWidget {
+  const _PaymentsTab();
+
+  @override
+  ConsumerState<_PaymentsTab> createState() => _PaymentsTabState();
+}
+
+class _PaymentsTabState extends ConsumerState<_PaymentsTab>
+    with _LoadMoreOnScroll<_PaymentsTab> {
+  @override
+  void onNearEnd() => ref.read(salaryPaymentsProvider.notifier).loadMore();
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = ref.watch(
+      salaryLedgerFilterProvider.select((filter) => filter.paymentMode),
+    );
+    final payments = ref.watch(salaryPaymentsProvider);
+
+    return Column(
+      children: <Widget>[
+        DropdownButton<String?>(
+          value: mode,
+          items: const <DropdownMenuItem<String?>>[
+            DropdownMenuItem<String?>(child: Text('All modes')),
+            DropdownMenuItem<String?>(value: 'CASH', child: Text('Cash')),
+            DropdownMenuItem<String?>(value: 'ONLINE', child: Text('Online')),
+          ],
+          onChanged: (value) => ref
+              .read(salaryLedgerFilterProvider.notifier)
+              .update(
+                (f) => (search: f.search, status: f.status, paymentMode: value),
               ),
-              TextField(
-                controller: note,
-                decoration: const InputDecoration(labelText: 'Note (optional)'),
+        ),
+        Expanded(
+          child: payments.when(
+            skipLoadingOnRefresh: true,
+            skipLoadingOnReload: true,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => SalaryLoadError(
+              message: userMessage(error),
+              onRetry: () => ref.invalidate(salaryPaymentsProvider),
+            ),
+            data: (state) => ListView.builder(
+              controller: scrollController,
+              itemCount: state.items.length + 1,
+              itemBuilder: (context, i) {
+                if (i < state.items.length) {
+                  return SalaryPaymentTile(payment: state.items[i]);
+                }
+                return _ListFooter(
+                  isEmpty: state.items.isEmpty,
+                  emptyText: 'No payments recorded.',
+                  loadingMore: state.loadingMore,
+                  loadMoreError: state.loadMoreError,
+                  onRetry: onNearEnd,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ListFooter extends StatelessWidget {
+  const _ListFooter({
+    required this.isEmpty,
+    required this.emptyText,
+    required this.loadingMore,
+    required this.loadMoreError,
+    required this.onRetry,
+  });
+
+  final bool isEmpty;
+  final String emptyText;
+  final bool loadingMore;
+  final Object? loadMoreError;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loadingMore) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (loadMoreError != null) {
+      return SalaryLoadError(
+        message: userMessage(loadMoreError!),
+        onRetry: onRetry,
+      );
+    }
+    if (isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(child: Text(emptyText)),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Member: own last 6 months.
+// ---------------------------------------------------------------------------
+
+class _MemberHistory extends ConsumerWidget {
+  const _MemberHistory();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(mySalaryHistoryProvider);
+    return RefreshIndicator(
+      onRefresh: () => ref.read(mySalaryHistoryProvider.notifier).refresh(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          const Text(
+            'Your last 6 months',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...history.when(
+            skipLoadingOnRefresh: true,
+            loading: () => const <Widget>[
+              Center(child: CircularProgressIndicator()),
+            ],
+            error: (error, _) => <Widget>[
+              SalaryLoadError(
+                message: userMessage(error),
+                onRetry: () => ref.invalidate(mySalaryHistoryProvider),
               ),
             ],
+            data: (months) => months.isEmpty
+                ? const <Widget>[Text('No salary contribution history found.')]
+                : months.map((month) => _HistoryTile(month: month)).toList(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Add Payment'),
-            ),
-          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryTile extends StatelessWidget {
+  const _HistoryTile({required this.month});
+
+  final MySalaryHistoryMonth month;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = month;
+    return Card(
+      child: ListTile(
+        title: Text(AppFormat.monthYear(h.month, h.year)),
+        subtitle: Text(
+          'Expected ${AppFormat.rupees(h.expectedAmount)}  •  '
+          'Paid ${AppFormat.rupees(h.paidAmount)}\n'
+          'Due ${AppFormat.rupees(h.dueAmount)}  •  '
+          '${h.payments.length} payment(s)',
         ),
+        trailing: SalaryStatusChip(status: h.status),
+        isThreeLine: true,
       ),
     );
-    final paid = double.tryParse(amount.text);
-    if (save != true || paid == null || paid <= 0 || paid > a.dueAmount) return;
-    await _repo.addPayment(
-      CreateImamSalaryPaymentRequest(
-        a.id,
-        paid,
-        mode,
-        paidAt.toIso8601String(),
-        note.text,
-      ),
-    );
-    await _load();
   }
 }

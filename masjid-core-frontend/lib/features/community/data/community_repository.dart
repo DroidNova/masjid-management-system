@@ -1,65 +1,42 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/community/data/community_api.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/data/models/create_community_user_request.dart';
 import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
 import 'package:masjid_core_frontend/features/community/data/models/update_community_user_request.dart';
 
+final communityRepositoryProvider = Provider<CommunityRepository>(
+  (ref) => CommunityRepository(CommunityApi(ref.watch(apiClientProvider))),
+);
+
 class CommunityRepository {
-  CommunityRepository({CommunityApi? communityApi})
-    : _communityApi = communityApi ?? CommunityApi();
+  /// Use [communityRepositoryProvider]. Calling it without an api is only for
+  /// screens not migrated yet (contributions); it uses the shared ApiClient.
+  CommunityRepository([CommunityApi? api])
+    : _api = api ?? CommunityApi(ApiClient());
 
-  final CommunityApi _communityApi;
+  final CommunityApi _api;
 
-  Future<MasjidDetailModel> getMyMasjid() {
-    return ApiRequestCoordinator.instance.run<MasjidDetailModel>(
-      key: 'GET:/masjids/my',
-      request: _communityApi.getMyMasjid,
-    );
-  }
+  Future<MasjidDetailModel> getMyMasjid() => _api.getMyMasjid();
 
-  Future<void> leaveMyMasjid() => _communityApi.leaveMyMasjid();
+  Future<void> leaveMyMasjid() => _api.leaveMyMasjid();
 
-  Future<List<CommunityUserModel>> getMyMasjidUsers() {
-    return ApiRequestCoordinator.instance.run<List<CommunityUserModel>>(
-      key: 'GET:/masjids/my/users',
-      request: _communityApi.getMyMasjidUsers,
-    );
-  }
+  Future<List<CommunityUserModel>> getMyMasjidUsers() =>
+      _api.getMyMasjidUsers();
 
   Future<CommunityUserModel> createMasjidUser(
     CreateCommunityUserRequest request,
-  ) async {
-    final user = await _communityApi.createMasjidUser(request);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.community,
-      AppDataScope.dashboard,
-    ]);
-    return user;
-  }
+  ) => _api.createMasjidUser(request);
 
   Future<CommunityUserModel> updateMasjidUser(
     String userId,
     UpdateCommunityUserRequest request,
-  ) async {
-    final user = await _communityApi.updateMasjidUser(userId, request);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.community,
-      AppDataScope.dashboard,
-    ]);
-    return user;
-  }
+  ) => _api.updateMasjidUser(userId, request);
 
   Future<CommunityUserModel> updateMasjidUserStatus(
     String userId,
     String status,
-  ) async {
-    final user = await _communityApi.updateMasjidUserStatus(userId, status);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.community,
-      AppDataScope.dashboard,
-    ]);
-    return user;
-  }
+  ) => _api.updateMasjidUserStatus(userId, status);
 }

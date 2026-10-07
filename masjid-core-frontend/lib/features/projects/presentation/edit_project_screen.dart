@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_detail_controller.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_editor_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/update_project_request.dart';
-import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/add_project_screen.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
-class EditProjectScreen extends StatefulWidget {
+class EditProjectScreen extends ConsumerStatefulWidget {
   const EditProjectScreen({
     super.key,
     required this.projectId,
     this.initialProject,
-    ProjectsRepository? projectsRepository,
-  }) : _projectsRepository = projectsRepository;
+  });
 
   final String projectId;
+
+  /// From the previous screen (route `extra`): fills the form instantly;
+  /// replaced by the loaded project unless the user already started editing.
   final ProjectModel? initialProject;
-  final ProjectsRepository? _projectsRepository;
 
   @override
-  State<EditProjectScreen> createState() => _EditProjectScreenState();
+  ConsumerState<EditProjectScreen> createState() => _EditProjectScreenState();
 }
 
-class _EditProjectScreenState extends State<EditProjectScreen> {
+class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -30,18 +36,37 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   final _spentAmountController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
-  late final ProjectsRepository _projectsRepository =
-      widget._projectsRepository ?? ProjectsRepository();
 
   String _status = 'ONGOING';
-  bool _isLoading = true;
-  bool _isSubmitting = false;
-  String? _errorMessage;
+  bool _isFilled = false;
+  bool _isFilledFromServer = false;
+  bool _userEdited = false;
+  bool _initialized = false;
+
+  /// Bumped on every fill so the status dropdown picks up the new value.
+  int _formVersion = 0;
+
+  /// Last server error, shown under the matching fields.
+  Object? _serverError;
 
   @override
   void initState() {
     super.initState();
-    _loadProject();
+    final preview = widget.initialProject;
+    if (preview != null && preview.id == widget.projectId) _fill(preview);
+
+    ref.listenManual<AsyncValue<ProjectModel>>(
+      projectDetailProvider(widget.projectId),
+      (previous, next) {
+        final project = next.valueOrNull;
+        if (project == null || _isFilledFromServer || _userEdited) return;
+        _fill(project);
+        _isFilledFromServer = true;
+        if (_initialized && mounted) setState(() {});
+      },
+      fireImmediately: true,
+    );
+    _initialized = true;
   }
 
   @override
@@ -56,70 +81,70 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
     super.dispose();
   }
 
-  Future<void> _loadProject() async {
-    try {
-      final project =
-          widget.initialProject ??
-          await _projectsRepository.getProjectById(widget.projectId);
-      if (!mounted) return;
-      _fill(project);
-      setState(() => _isLoading = false);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = _cleanError(error);
-        _isLoading = false;
-      });
-    }
-  }
-
   void _fill(ProjectModel project) {
     _titleController.text = project.title;
     _descriptionController.text = project.description ?? '';
-    _targetAmountController.text = project.targetAmount.toString();
-    _collectedAmountController.text = project.collectedAmount.toString();
-    _spentAmountController.text = project.spentAmount.toString();
-    _startDateController.text = project.startDate ?? '';
-    _endDateController.text = project.endDate ?? '';
+    _targetAmountController.text = _amountText(project.targetAmount);
+    _collectedAmountController.text = _amountText(project.collectedAmount);
+    _spentAmountController.text = _amountText(project.spentAmount);
+    _startDateController.text = formatApiDate(project.startDate) ?? '';
+    _endDateController.text = formatApiDate(project.endDate) ?? '';
     _status = project.status;
+    _isFilled = true;
+    _formVersion++;
   }
 
+  /// 2500 rather than 2500.0; paise kept when present.
+  String _amountText(double amount) => amount == amount.roundToDouble()
+      ? amount.toStringAsFixed(0)
+      : amount.toString();
+
   Future<void> _submit() async {
+    _serverError = null;
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSubmitting = true);
-    try {
-      await _projectsRepository.updateProject(
-        widget.projectId,
-        UpdateProjectRequest(
-          title: _titleController.text,
-          description: _descriptionController.text,
-          targetAmount: _amount(_targetAmountController),
-          collectedAmount: _amount(_collectedAmountController),
-          spentAmount: _amount(_spentAmountController),
-          status: _status,
-          startDate: _startDateController.text,
-          endDate: _endDateController.text,
-        ),
-      );
-      if (!mounted) return;
+
+    final ok = await ref
+        .read(projectEditorControllerProvider.notifier)
+        .updateProject(
+          widget.projectId,
+          UpdateProjectRequest(
+            title: _optional(_titleController.text),
+            description: _optional(_descriptionController.text),
+            targetAmount: _amount(_targetAmountController),
+            collectedAmount: _amount(_collectedAmountController),
+            spentAmount: _amount(_spentAmountController),
+            status: _status,
+            startDate: _optional(_startDateController.text),
+            endDate: _optional(_endDateController.text),
+          ),
+        );
+    if (!mounted) return;
+
+    if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Project updated successfully.')),
       );
       context.pop(true);
-    } catch (error) {
-      if (mounted) _showError(_cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      return;
     }
+
+    final error = ref.read(projectEditorControllerProvider).error;
+    if (error == null) return;
+    setState(() => _serverError = error);
+    _formKey.currentState!.validate();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(userMessage(error))));
   }
 
-  double _amount(TextEditingController controller) {
-    return double.tryParse(controller.text.trim()) ?? 0;
-  }
+  String? _optional(String text) => text.trim().isEmpty ? null : text.trim();
 
-  String? _required(String? value) {
+  double _amount(TextEditingController controller) =>
+      double.tryParse(controller.text.trim()) ?? 0;
+
+  String? _titleValidator(String? value) {
     if (value == null || value.trim().isEmpty) return 'Title is required.';
-    return null;
+    return fieldError(_serverError, 'title');
   }
 
   String? _amountValidator(String? value) {
@@ -131,51 +156,65 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
     return null;
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit Project')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+    final projectState = ref.watch(projectDetailProvider(widget.projectId));
+    final isSubmitting = ref.watch(projectEditorControllerProvider).isLoading;
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit Project')),
-        body: Center(child: Text(_errorMessage!)),
+    final Widget body;
+    if (projectState.hasError && !_isFilledFromServer) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                userMessage(projectState.error!),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              AppButton(
+                label: 'Retry',
+                onPressed: () =>
+                    ref.invalidate(projectDetailProvider(widget.projectId)),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (!_isFilled) {
+      body = const Center(child: CircularProgressIndicator());
+    } else {
+      body = KeyedSubtree(
+        key: ValueKey<int>(_formVersion),
+        child: ProjectFormBody(
+          formKey: _formKey,
+          titleController: _titleController,
+          descriptionController: _descriptionController,
+          targetAmountController: _targetAmountController,
+          collectedAmountController: _collectedAmountController,
+          spentAmountController: _spentAmountController,
+          startDateController: _startDateController,
+          endDateController: _endDateController,
+          status: _status,
+          onStatusChanged: (value) => setState(() {
+            _status = value;
+            _userEdited = true;
+          }),
+          onChanged: () => _userEdited = true,
+          titleValidator: _titleValidator,
+          amountValidator: _amountValidator,
+          buttonLabel: 'Update Project',
+          isSubmitting: isSubmitting,
+          onSubmit: _submit,
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Project')),
-      body: ProjectFormBody(
-        formKey: _formKey,
-        titleController: _titleController,
-        descriptionController: _descriptionController,
-        targetAmountController: _targetAmountController,
-        collectedAmountController: _collectedAmountController,
-        spentAmountController: _spentAmountController,
-        startDateController: _startDateController,
-        endDateController: _endDateController,
-        status: _status,
-        onStatusChanged: (value) => setState(() => _status = value),
-        titleValidator: _required,
-        amountValidator: _amountValidator,
-        buttonLabel: 'Update Project',
-        isSubmitting: _isSubmitting,
-        onSubmit: _submit,
-      ),
+      body: body,
     );
   }
 }

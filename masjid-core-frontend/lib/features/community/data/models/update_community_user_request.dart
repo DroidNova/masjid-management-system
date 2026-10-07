@@ -1,38 +1,26 @@
-class UpdateCommunityUserRequest {
-  const UpdateCommunityUserRequest({
-    required this.fullName,
-    required this.phone,
-    this.email,
-    required this.fatherName,
-    required this.age,
-    required this.gender,
-    this.isFamilyHead,
-    this.familyMemberCount,
-  });
+// Freezed forwards @JsonSerializable on the factory to the generated class.
+// ignore_for_file: invalid_annotation_target
 
-  final String fullName;
-  final String phone;
-  final String? email;
-  final String fatherName;
-  final int age;
-  final String gender;
-  final bool? isFamilyHead;
-  final int? familyMemberCount;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{
-      'fullName': fullName.trim(),
-      'phone': phone.trim(),
-      'fatherName': fatherName.trim(),
-      'age': age,
-      'gender': gender.trim(),
-      if (isFamilyHead != null) 'isFamilyHead': isFamilyHead,
-      if (familyMemberCount != null) 'familyMemberCount': familyMemberCount,
-    };
-    final trimmedEmail = email?.trim();
-    if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
-      json['email'] = trimmedEmail;
-    }
-    return json;
-  }
+part 'update_community_user_request.freezed.dart';
+part 'update_community_user_request.g.dart';
+
+/// Body of `PATCH /masjids/my/users/:userId`. Null fields are left out.
+@freezed
+abstract class UpdateCommunityUserRequest with _$UpdateCommunityUserRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory UpdateCommunityUserRequest({
+    required String fullName,
+    required String phone,
+    required String fatherName,
+    required int age,
+    required String gender,
+    String? email,
+    bool? isFamilyHead,
+    int? familyMemberCount,
+  }) = _UpdateCommunityUserRequest;
+
+  factory UpdateCommunityUserRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateCommunityUserRequestFromJson(json);
 }

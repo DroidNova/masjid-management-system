@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -12,15 +14,13 @@ class OtpScreen extends ConsumerStatefulWidget {
     required this.phone,
     required this.challengeId,
     required this.otpLength,
-    AuthRepository? authRepository,
-  }) : _authRepository = authRepository;
+  });
 
   final String phone;
   final String challengeId;
 
   /// Number of digits the server expects (4 in development: 1111).
   final int otpLength;
-  final AuthRepository? _authRepository;
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -38,9 +38,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     _otpLength,
     (_) => FocusNode(),
   );
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
-  bool _isLoading = false;
+  bool _isSubmitting = false;
 
   bool get _isOtpComplete {
     return _controllers.every((controller) => controller.text.length == 1);
@@ -74,24 +72,49 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isSubmitting = true);
 
     try {
-      final session = await _authRepository.verifyOtp(
-        widget.phone,
-        widget.challengeId,
-        otp,
-      );
+      final session = await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(widget.phone, widget.challengeId, otp);
 
       if (!mounted) return;
 
       // The router moves the signed-in user to their home page.
       ref.read(authControllerProvider.notifier).signIn(session);
     } catch (error) {
-      if (mounted) _showError(_cleanError(error));
+      if (mounted) _handleError(error);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _handleError(Object error) {
+    switch (apiErrorCode(error)) {
+      case ApiErrorCodes.otpExpired || ApiErrorCodes.otpChallengeInvalid:
+        // This code can no longer be used: a new OTP is needed.
+        _showError(
+          authErrorText(error),
+          action: SnackBarAction(
+            label: 'Request new OTP',
+            onPressed: () => context.go('/login-phone'),
+          ),
+        );
+      case ApiErrorCodes.otpInvalid:
+        _clearOtp();
+        _showError(authErrorText(error));
+      default:
+        _showError(authErrorText(error));
+    }
+  }
+
+  void _clearOtp() {
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    _focusNodes.first.requestFocus();
+    setState(() {});
   }
 
   void _onOtpChanged(int index, String value) {
@@ -151,14 +174,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     setState(() {});
   }
 
-  void _showError(String message) {
+  void _showError(String message, {SnackBarAction? action}) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    ).showSnackBar(SnackBar(content: Text(message), action: action));
   }
 
   @override
@@ -184,7 +203,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Enter the 6 digit code sent to your phone',
+                    'Enter the $_otpLength digit code sent to your phone',
                     style: textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -197,7 +216,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   const SizedBox(height: 24),
                   AppButton(
                     label: 'Verify',
-                    isLoading: _isLoading,
+                    isLoading: _isSubmitting,
                     onPressed: _isOtpComplete ? _verify : null,
                   ),
                   const SizedBox(height: 12),

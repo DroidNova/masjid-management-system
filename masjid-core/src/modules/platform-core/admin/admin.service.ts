@@ -119,6 +119,8 @@ export class AdminService {
         isFamilyHead: true,
         familyMemberCount: true,
         status: true,
+        masjidId: true,
+        masjid: { select: { name: true } },
         createdAt: true,
         updatedAt: true,
         userRoles: {
@@ -144,6 +146,8 @@ export class AdminService {
       isFamilyHead: user.isFamilyHead,
       familyMemberCount: user.familyMemberCount,
       status: user.status,
+      masjidId: user.masjidId,
+      masjidName: user.masjid?.name ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       roles: user.userRoles.map(

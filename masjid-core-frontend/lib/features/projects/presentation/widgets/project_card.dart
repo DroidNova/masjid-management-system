@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
@@ -39,9 +39,9 @@ class ProjectCard extends StatelessWidget {
                 Text(project.description!),
               ],
               const SizedBox(height: 12),
-              Text('Target: ${formatRupees(project.targetAmount)}'),
-              Text('Collected: ${formatRupees(project.collectedAmount)}'),
-              Text('Spent: ${formatRupees(project.spentAmount)}'),
+              Text('Target: ${AppFormat.rupees(project.targetAmount)}'),
+              Text('Collected: ${AppFormat.rupees(project.collectedAmount)}'),
+              Text('Spent: ${AppFormat.rupees(project.spentAmount)}'),
               const SizedBox(height: 12),
               ProjectProgressBar(
                 progressPercentage: project.progressPercentage,

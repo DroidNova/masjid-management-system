@@ -38,8 +38,11 @@ void _bump(
   StateController<int> Function(DataScope) controllerFor,
   Iterable<DataScope> scopes,
 ) {
-  for (final scope in scopes.toSet()) {
-    controllerFor(scope).state++;
+  // Read every notifier before changing any: bumping a scope the caller
+  // watches rebuilds the caller and makes its `ref` unusable afterwards.
+  final controllers = scopes.toSet().map(controllerFor).toList();
+  for (final controller in controllers) {
+    controller.state++;
   }
 }
 

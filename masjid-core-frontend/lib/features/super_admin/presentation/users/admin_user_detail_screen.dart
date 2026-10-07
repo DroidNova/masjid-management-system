@@ -1,129 +1,116 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
+import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/assign_roles_dialog.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/update_user_status_dialog.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_action_feedback.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
+import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class AdminUserDetailScreen extends StatefulWidget {
-  const AdminUserDetailScreen({
-    super.key,
-    required this.id,
-    this.initial,
-    this.repository,
-  });
+/// User details, loaded by [id]. [initial] (from the list) is only shown
+/// while the real data loads.
+class AdminUserDetailScreen extends ConsumerWidget {
+  const AdminUserDetailScreen({super.key, required this.id, this.initial});
 
   final String id;
   final AdminUserModel? initial;
-  final SuperAdminRepository? repository;
 
   @override
-  State<AdminUserDetailScreen> createState() => _AdminUserDetailScreenState();
-}
-
-class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
-  late final SuperAdminRepository _repository =
-      widget.repository ?? SuperAdminRepository();
-  AdminUserModel? _user;
-  String? _errorMessage;
-  bool _isLoading = true;
-  Future<void>? _activeLoad;
-
-  @override
-  void initState() {
-    super.initState();
-    _user = widget.initial;
-    _loadUser();
-  }
-
-  Future<void> _loadUser() {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null) return activeLoad;
-    _activeLoad = _performLoadUser().whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoadUser() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = _user == null;
-      _errorMessage = null;
-    });
-    try {
-      final user = await _repository.getUser(widget.id);
-      if (!mounted) return;
-      setState(() => _user = user);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _changeStatus(AdminUserModel user) async {
-    final status = await showUpdateUserStatusDialog(context);
-    if (status == null) return;
-    final updated = await _repository.updateUserStatus(user.id, status);
-    if (!mounted) return;
-    setState(() => _user = updated);
-  }
-
-  Future<void> _assignRoles(AdminUserModel user) async {
-    final roles = await showAssignRolesDialog(context, user.roles);
-    if (roles == null) return;
-    final updated = await _repository.updateUserRoles(user.id, roles);
-    if (!mounted) return;
-    setState(() => _user = updated);
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = _user;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(adminUserProvider(id));
     return Scaffold(
       appBar: AppBar(title: const Text('User Details')),
-      body: _isLoading && user == null
-          ? const LoadingView()
-          : user == null
-          ? Center(child: Text(_errorMessage ?? 'Unable to load user.'))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(_errorMessage!),
-                  ),
-                AdminStatusChip(user.status),
-                InfoRow('Name', user.fullName),
-                InfoRow('Phone', user.phone),
-                InfoRow('Email', user.email),
-                InfoRow('Roles', user.roles.join(', ')),
-                InfoRow('Masjid', user.masjidName ?? user.masjidId),
-                InfoRow('Created', user.createdAt),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  children: <Widget>[
-                    FilledButton(
-                      onPressed: () => _changeStatus(user),
-                      child: const Text('Change Status'),
-                    ),
-                    FilledButton(
-                      onPressed: () => _assignRoles(user),
-                      child: const Text('Assign Roles'),
-                    ),
-                  ],
-                ),
-              ],
+      body: state.when(
+        skipLoadingOnRefresh: true,
+        skipLoadingOnReload: true,
+        loading: () {
+          final preview = initial;
+          return preview == null
+              ? const LoadingView()
+              : _UserDetails(user: preview, enabled: false);
+        },
+        error: (error, _) => ErrorView(
+          title: 'Unable to load user',
+          message: userMessage(error),
+          onRetry: () => ref.invalidate(adminUserProvider(id)),
+        ),
+        data: (user) => _UserDetails(
+          // The detail endpoint has no masjid; keep the list's value.
+          user: user.masjidName == null && initial != null
+              ? user.copyWith(
+                  masjidId: initial!.masjidId,
+                  masjidName: initial!.masjidName,
+                )
+              : user,
+        ),
+      ),
+    );
+  }
+}
+
+class _UserDetails extends ConsumerWidget {
+  const _UserDetails({required this.user, this.enabled = true});
+
+  final AdminUserModel user;
+
+  /// Actions are off while showing the preview.
+  final bool enabled;
+
+  Future<void> _changeStatus(BuildContext context, WidgetRef ref) async {
+    final status = await showUpdateUserStatusDialog(context);
+    if (status == null || !context.mounted) return;
+    await runAdminAction(
+      context,
+      () =>
+          ref.read(superAdminActionsProvider).updateUserStatus(user.id, status),
+    );
+  }
+
+  Future<void> _assignRoles(BuildContext context, WidgetRef ref) async {
+    final roles = await showAssignRolesDialog(context, user.roles);
+    if (roles == null || !context.mounted) return;
+    await runAdminAction(
+      context,
+      () => ref.read(superAdminActionsProvider).assignUserRoles(user.id, roles),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final createdAt = user.createdAt;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        AdminStatusChip(user.status),
+        InfoRow('Name', user.fullName),
+        InfoRow('Phone', user.phone),
+        InfoRow('Email', user.email),
+        InfoRow('Roles', user.roles.join(', ')),
+        InfoRow('Masjid', user.masjidName ?? user.masjidId),
+        InfoRow(
+          'Created',
+          createdAt == null ? null : AppFormat.dateTime(createdAt),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          children: <Widget>[
+            FilledButton(
+              onPressed: enabled ? () => _changeStatus(context, ref) : null,
+              child: const Text('Change Status'),
             ),
+            FilledButton(
+              onPressed: enabled ? () => _assignRoles(context, ref) : null,
+              child: const Text('Assign Roles'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

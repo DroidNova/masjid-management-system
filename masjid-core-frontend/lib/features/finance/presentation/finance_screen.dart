@@ -1,267 +1,311 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
+import 'package:masjid_core_frontend/features/finance/application/finance_entries_controller.dart';
+import 'package:masjid_core_frontend/features/finance/application/finance_entry_controller.dart';
+import 'package:masjid_core_frontend/features/finance/application/finance_summary_controller.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/collection_entry_model.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/expense_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/finance_entry_filter.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_empty_view.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_entry_tile.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_paged_entries.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_summary_card.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class FinanceScreen extends ConsumerStatefulWidget {
-  const FinanceScreen({
-    super.key,
-    FinanceRepository? financeRepository,
-    SessionStorage? sessionStorage,
-  }) : _financeRepository = financeRepository,
-       _sessionStorage = sessionStorage;
-
-  final FinanceRepository? _financeRepository;
-  final SessionStorage? _sessionStorage;
+  const FinanceScreen({super.key});
 
   @override
   ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
 }
 
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
-  late final FinanceRepository _financeRepository =
-      widget._financeRepository ?? FinanceRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
-
-  FinanceSummaryModel _summary = FinanceSummaryModel.empty();
-  List<CollectionEntryModel> _collections = <CollectionEntryModel>[];
-  List<ExpenseEntryModel> _expenses = <ExpenseEntryModel>[];
-  String? _errorMessage;
-  bool _isLoading = true;
-  bool _hasLoaded = false;
-  Future<void>? _activeLoad;
-  late final ValueNotifier<int> _refreshNotifier;
   int _selectedTab = 0;
-  AppUser? _currentUser;
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
-      AppDataScope.finance,
-    );
-    _refreshNotifier.addListener(_onRefreshRequested);
-    _loadCurrentUser();
-    _loadFinanceData();
+  bool get _showingCollections => _selectedTab == 0;
+
+  Future<void> _refresh() async {
+    await Future.wait<void>(<Future<void>>[
+      ref.read(financeSummaryProvider.notifier).refresh(),
+      if (_showingCollections)
+        ref.read(collectionsControllerProvider.notifier).refresh()
+      else
+        ref.read(expensesControllerProvider.notifier).refresh(),
+    ]);
   }
 
-  @override
-  void dispose() {
-    _refreshNotifier.removeListener(_onRefreshRequested);
-    super.dispose();
-  }
-
-  void _onRefreshRequested() {
-    _loadFinanceData(force: true);
-  }
-
-  Future<void> _loadCurrentUser() async {
-    final user = await _sessionStorage.getUser();
-    if (!mounted) return;
-    setState(() => _currentUser = user);
-  }
-
-  Future<void> _loadFinanceData({bool force = false}) {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null) return activeLoad;
-    if (!force && _hasLoaded) return Future<void>.value();
-
-    _activeLoad = _performLoadFinanceData().whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoadFinanceData() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final results = await Future.wait<Object>([
-        _financeRepository.getFinanceSummary(),
-        _financeRepository.getCollections(),
-        _financeRepository.getExpenses(),
-      ]);
-
-      if (!mounted) return;
-
-      setState(() {
-        _summary = results[0] as FinanceSummaryModel;
-        _collections = results[1] as List<CollectionEntryModel>;
-        _expenses = results[2] as List<ExpenseEntryModel>;
-        _hasLoaded = true;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  void _loadMore() {
+    if (_showingCollections) {
+      ref.read(collectionsControllerProvider.notifier).loadMore();
+    } else {
+      ref.read(expensesControllerProvider.notifier).loadMore();
     }
   }
 
-  Future<void> _openAddCollection() async {
-    await context.push('/finance/add-collection');
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.metrics.extentAfter < 300) _loadMore();
+    return false;
   }
 
-  Future<void> _openAddExpense() async {
-    await context.push('/finance/add-expense');
-  }
+  Future<void> _confirmCancel({
+    required bool isExpense,
+    required String id,
+  }) async {
+    final label = isExpense ? 'expense' : 'collection';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Cancel ${isExpense ? 'Expense' : 'Collection'}'),
+        content: Text(
+          'This $label will be marked as cancelled and no longer counted '
+          'in the totals.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Cancel ${isExpense ? 'Expense' : 'Collection'}'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
 
-  Future<void> _logout() async {
-    // The router sends the user to the login page.
-    await ref.read(authControllerProvider.notifier).signOut();
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
-  bool get _isUnauthorizedError {
-    final message = _errorMessage?.toLowerCase() ?? '';
-    return message.contains('unauthorized') ||
-        message.contains('session') ||
-        message.contains('401');
-  }
-
-  bool get _isNoMasjidError {
-    final message = _errorMessage?.toLowerCase() ?? '';
-    return message.contains('not assigned') || message.contains('masjid');
+    final controller = ref.read(financeEntryControllerProvider.notifier);
+    final ok = isExpense
+        ? await controller.cancelExpense(id)
+        : await controller.cancelCollection(id);
+    if (!mounted) return;
+    final error = ref.read(financeEntryControllerProvider).error;
+    // Not ok and no error: another save was already running.
+    if (!ok && error == null) return;
+    final message = ok
+        ? '${isExpense ? 'Expense' : 'Collection'} cancelled.'
+        : userMessage(error!);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const LoadingView();
+    // Keeps the mutation controller alive while a cancel is in flight.
+    ref.watch(financeEntryControllerProvider);
+    final summaryState = ref.watch(financeSummaryProvider);
 
-    if (_errorMessage != null) {
-      if (_isUnauthorizedError) {
+    return summaryState.when(
+      skipLoadingOnReload: true,
+      loading: () => const LoadingView(),
+      error: (error, _) {
+        final noMasjid =
+            error is ApiException &&
+            error.code == ApiErrorCodes.userMasjidNotAssigned;
+        if (noMasjid) {
+          return _FinanceErrorView(
+            message: 'You are not assigned to any masjid yet.',
+            buttonLabel: 'Logout / Back to Login',
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
+          );
+        }
         return _FinanceErrorView(
-          message: 'Session expired. Please login again.',
-          buttonLabel: 'Back to Login',
-          onPressed: _logout,
+          message: 'Unable to load finance data.',
+          detail: userMessage(error),
+          onPressed: () => ref.invalidate(financeSummaryProvider),
         );
-      }
+      },
+      data: _buildContent,
+    );
+  }
 
-      return _FinanceErrorView(
-        message: _isNoMasjidError
-            ? 'You are not assigned to any masjid yet.'
-            : 'Unable to load finance data.',
-        detail: _isNoMasjidError ? null : _errorMessage,
-        onPressed: () => _loadFinanceData(force: true),
-      );
-    }
-
-    final permissions = _currentUser?.permissions ?? const <String>[];
-    final canManageFinance = PermissionHelper.canManageFinance(permissions);
+  Widget _buildContent(FinanceSummaryModel summary) {
+    final permissions = ref.watch(currentPermissionsProvider);
 
     return SafeArea(
       child: RefreshIndicator(
-        onRefresh: () => _loadFinanceData(force: true),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  FinanceSummaryCard(summary: _summary),
-                  const SizedBox(height: 12),
-                  _ImamSalaryNavigationCard(
-                    subtitle: PermissionHelper.canManageImamSalary(permissions)
-                        ? 'Manage salary paid/unpaid records'
-                        : 'View salary paid/unpaid records',
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.volunteer_activism_outlined),
-                      title: const Text('Collection Contributions'),
-                      subtitle: const Text(
-                        'View donations and contributor transactions',
+        onRefresh: _refresh,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    FinanceSummaryCard(summary: summary),
+                    const SizedBox(height: 12),
+                    _ImamSalaryNavigationCard(
+                      subtitle:
+                          PermissionHelper.canManageImamSalary(permissions)
+                          ? 'Manage salary paid/unpaid records'
+                          : 'View salary paid/unpaid records',
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.volunteer_activism_outlined),
+                        title: const Text('Collection Contributions'),
+                        subtitle: const Text(
+                          'View donations and contributor transactions',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            context.push('/finance/collection-contributions'),
                       ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          context.push('/finance/collection-contributions'),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SegmentedButton<int>(
-                    segments: const <ButtonSegment<int>>[
-                      ButtonSegment<int>(value: 0, label: Text('Collections')),
-                      ButtonSegment<int>(value: 1, label: Text('Expenses')),
-                    ],
-                    selected: <int>{_selectedTab},
-                    onSelectionChanged: (selection) {
-                      setState(() => _selectedTab = selection.first);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  if (_selectedTab == 0)
-                    _FinanceEntriesSection(
-                      title: 'Collections',
-                      buttonLabel: 'Add Collection',
-                      onAddPressed: canManageFinance
-                          ? _openAddCollection
-                          : null,
-                      emptyMessage: 'No collections added yet.',
-                      children: _collections
-                          .map(
-                            (entry) => FinanceEntryTile(
-                              type: entry.type,
-                              amount: entry.amount,
-                              title: entry.title,
-                              description: entry.description,
-                              date: entry.collectedAt ?? entry.createdAt,
-                              status: entry.status,
-                              isExpense: false,
-                            ),
-                          )
-                          .toList(),
-                    )
-                  else
-                    _FinanceEntriesSection(
-                      title: 'Expenses',
-                      buttonLabel: 'Add Expense',
-                      onAddPressed: canManageFinance ? _openAddExpense : null,
-                      emptyMessage: 'No expenses added yet.',
-                      children: _expenses
-                          .map(
-                            (entry) => FinanceEntryTile(
-                              type: entry.type,
-                              amount: entry.amount,
-                              title: entry.title,
-                              description: entry.description,
-                              date: entry.spentAt ?? entry.createdAt,
-                              status: entry.status,
-                              isExpense: true,
-                            ),
-                          )
-                          .toList(),
+                    const SizedBox(height: 12),
+                    SegmentedButton<int>(
+                      segments: const <ButtonSegment<int>>[
+                        ButtonSegment<int>(
+                          value: 0,
+                          label: Text('Collections'),
+                        ),
+                        ButtonSegment<int>(value: 1, label: Text('Expenses')),
+                      ],
+                      selected: <int>{_selectedTab},
+                      onSelectionChanged: (selection) {
+                        setState(() => _selectedTab = selection.first);
+                      },
                     ),
-                ],
+                    const SizedBox(height: 12),
+                    if (_showingCollections)
+                      _collectionsSection(permissions)
+                    else
+                      _expensesSection(permissions),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _collectionsSection(List<String> permissions) {
+    final canManage = PermissionHelper.canManageCollections(permissions);
+    final filter = ref.watch(collectionsFilterProvider);
+
+    return _FinanceEntriesSection(
+      title: 'Collections',
+      buttonLabel: 'Add Collection',
+      onAddPressed: canManage
+          ? () => context.push('/finance/add-collection')
+          : null,
+      filter: _TypeFilter(
+        labels: collectionTypeLabels,
+        value: filter.type,
+        onChanged: (type) => ref
+            .read(collectionsFilterProvider.notifier)
+            .update((current) => current.copyWith(type: type)),
+      ),
+      body: FinancePagedEntries<CollectionEntryModel>(
+        state: ref.watch(collectionsControllerProvider),
+        emptyMessage: _emptyMessage(filter, 'No collections added yet.'),
+        onRetry: () => ref.invalidate(collectionsControllerProvider),
+        onLoadMore: _loadMore,
+        itemBuilder: (entry) => FinanceEntryTile(
+          key: ValueKey<String>(entry.id),
+          type: entry.type,
+          amount: entry.amount,
+          title: entry.title,
+          description: entry.description,
+          date: entry.collectedAt ?? entry.createdAt,
+          status: entry.status,
+          isExpense: false,
+          onCancel: canManage && !entry.isCancelled
+              ? () => _confirmCancel(isExpense: false, id: entry.id)
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _expensesSection(List<String> permissions) {
+    final canManage = PermissionHelper.canManageExpenses(permissions);
+    final filter = ref.watch(expensesFilterProvider);
+
+    return _FinanceEntriesSection(
+      title: 'Expenses',
+      buttonLabel: 'Add Expense',
+      onAddPressed: canManage
+          ? () => context.push('/finance/add-expense')
+          : null,
+      filter: _TypeFilter(
+        labels: expenseTypeLabels,
+        value: filter.type,
+        onChanged: (type) => ref
+            .read(expensesFilterProvider.notifier)
+            .update((current) => current.copyWith(type: type)),
+      ),
+      body: FinancePagedEntries<ExpenseEntryModel>(
+        state: ref.watch(expensesControllerProvider),
+        emptyMessage: _emptyMessage(filter, 'No expenses added yet.'),
+        onRetry: () => ref.invalidate(expensesControllerProvider),
+        onLoadMore: _loadMore,
+        itemBuilder: (entry) => FinanceEntryTile(
+          key: ValueKey<String>(entry.id),
+          type: entry.type,
+          amount: entry.amount,
+          title: entry.title,
+          description: entry.description,
+          date: entry.spentAt ?? entry.createdAt,
+          status: entry.status,
+          isExpense: true,
+          onCancel: canManage && !entry.isCancelled
+              ? () => _confirmCancel(isExpense: true, id: entry.id)
+              : null,
+        ),
+      ),
+    );
+  }
+
+  String _emptyMessage(FinanceEntryFilter filter, String noEntries) =>
+      filter == const FinanceEntryFilter()
+      ? noEntries
+      : 'No entries match this filter.';
+}
+
+/// "All types" plus one item per type.
+class _TypeFilter extends StatelessWidget {
+  const _TypeFilter({
+    required this.labels,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Map<String, String> labels;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<String?>(
+      value: value,
+      isExpanded: true,
+      items: <DropdownMenuItem<String?>>[
+        const DropdownMenuItem<String?>(child: Text('All types')),
+        ...labels.entries.map(
+          (entry) => DropdownMenuItem<String?>(
+            value: entry.key,
+            child: Text(entry.value),
+          ),
+        ),
+      ],
+      onChanged: onChanged,
     );
   }
 }
@@ -315,16 +359,16 @@ class _FinanceEntriesSection extends StatelessWidget {
   const _FinanceEntriesSection({
     required this.title,
     required this.buttonLabel,
+    required this.filter,
+    required this.body,
     this.onAddPressed,
-    required this.emptyMessage,
-    required this.children,
   });
 
   final String title;
   final String buttonLabel;
   final VoidCallback? onAddPressed;
-  final String emptyMessage;
-  final List<Widget> children;
+  final Widget filter;
+  final Widget body;
 
   @override
   Widget build(BuildContext context) {
@@ -351,9 +395,10 @@ class _FinanceEntriesSection extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 8),
+            filter,
             const SizedBox(height: 12),
-            if (children.isEmpty) FinanceEmptyView(message: emptyMessage),
-            ...children,
+            body,
           ],
         ),
       ),
@@ -376,6 +421,7 @@ class _FinanceErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailText = detail;
     return SafeArea(
       child: Center(
         child: Padding(
@@ -399,9 +445,9 @@ class _FinanceErrorView extends StatelessWidget {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                if (detail != null) ...<Widget>[
+                if (detailText != null) ...<Widget>[
                   const SizedBox(height: 8),
-                  Text(detail!, textAlign: TextAlign.center),
+                  Text(detailText, textAlign: TextAlign.center),
                 ],
                 const SizedBox(height: 20),
                 AppButton(label: buttonLabel, onPressed: onPressed),

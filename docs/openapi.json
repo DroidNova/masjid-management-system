@@ -1446,6 +1446,62 @@
       }
     },
     "/announcements/{id}": {
+      "get": {
+        "operationId": "AnnouncementsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires permission: announcements.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Current user is not assigned to a masjid",
+                    "errorCode": "USER_MASJID_NOT_ASSIGNED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one announcement of the current masjid",
+        "tags": [
+          "Announcements"
+        ]
+      },
       "patch": {
         "operationId": "AnnouncementsController_update",
         "parameters": [

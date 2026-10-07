@@ -26,8 +26,8 @@ class CommunityUserCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(user.primaryRoleLabel),
-            if (user.phone != null) Text('Phone: ${user.phone}'),
-            if (user.email != null) Text('Email: ${user.email}'),
+            if (_hasText(user.phone)) Text('Phone: ${user.phone}'),
+            if (_hasText(user.email)) Text('Email: ${user.email}'),
             if (user.status != null) Text('Status: ${user.status}'),
             if (user.fatherName != null) Text('Father: ${user.fatherName}'),
             if (user.age != null || user.gender != null)
@@ -61,3 +61,6 @@ class CommunityUserCard extends StatelessWidget {
     );
   }
 }
+
+/// Contact details are null for viewers without members.contact.read.
+bool _hasText(String? value) => value != null && value.trim().isNotEmpty;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
 
 class AdminMasjidRequestCard extends StatelessWidget {
@@ -15,7 +15,7 @@ class AdminMasjidRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext c) => Card(
     child: ListTile(
-      title: Text(item.masjidName ?? 'Masjid request'),
+      title: Text(item.masjidName),
       subtitle: Text(
         '${item.requesterName ?? '-'} • ${item.requesterPhone ?? '-'}\n${[item.address, item.locality, item.district, item.state, item.country].where((e) => e != null && e.isNotEmpty).join(', ')}',
       ),
@@ -30,9 +30,9 @@ class AdminMasjidRequestCard extends StatelessWidget {
                 c.go('/super-admin/requests/${item.id}', extra: item),
             child: const Text('View'),
           ),
-          if (item.status?.toUpperCase() == 'PENDING')
+          if (item.isPending)
             TextButton(onPressed: onApprove, child: const Text('Approve')),
-          if (item.status?.toUpperCase() == 'PENDING')
+          if (item.isPending)
             TextButton(onPressed: onReject, child: const Text('Reject')),
         ],
       ),

@@ -1,62 +1,38 @@
-class CommunityUserModel {
-  const CommunityUserModel({
-    required this.id,
-    required this.fullName,
-    required this.roles,
-    this.email,
-    this.phone,
-    this.status,
-    this.masjidId,
-    this.message,
-    this.temporaryPassword,
-    this.createdAt,
-    this.updatedAt,
-    this.fatherName,
-    this.age,
-    this.gender,
-    this.isFamilyHead = false,
-    this.familyMemberCount,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  factory CommunityUserModel.fromJson(Map<String, dynamic> json) {
-    return CommunityUserModel(
-      id: _string(json['id']),
-      fullName: _string(json['fullName'], fallback: 'Community Member'),
-      email: _optionalString(json['email']),
-      phone: _optionalString(json['phone']),
-      status: _optionalString(json['status']),
-      masjidId: _optionalString(json['masjidId']),
-      message: _optionalString(json['message']),
-      temporaryPassword: _optionalString(json['temporaryPassword']),
-      roles: (json['roles'] as List<dynamic>? ?? const <dynamic>[])
-          .map((role) => role.toString())
-          .toList(),
-      createdAt: _optionalString(json['createdAt']),
-      updatedAt: _optionalString(json['updatedAt']),
-      fatherName: _optionalString(json['fatherName']),
-      age: _optionalInt(json['age']),
-      gender: _optionalString(json['gender']),
-      isFamilyHead: json['isFamilyHead'] == true,
-      familyMemberCount: _optionalInt(json['familyMemberCount']),
-    );
-  }
+part 'community_user_model.freezed.dart';
+part 'community_user_model.g.dart';
 
-  final String id;
-  final String fullName;
-  final String? email;
-  final String? phone;
-  final String? status;
-  final String? masjidId;
-  final String? message;
-  final String? temporaryPassword;
-  final List<String> roles;
-  final String? createdAt;
-  final String? updatedAt;
-  final String? fatherName;
-  final int? age;
-  final String? gender;
-  final bool isFamilyHead;
-  final int? familyMemberCount;
+/// A user of the signed-in user's masjid (`GET /masjids/my/users`), also
+/// returned when a user is created or updated.
+///
+/// `phone` and `email` are null for viewers without `members.contact.read`.
+/// `message` and `temporaryPassword` are only sent on create.
+@freezed
+abstract class CommunityUserModel with _$CommunityUserModel {
+  const factory CommunityUserModel({
+    required String id,
+    required String fullName,
+    @Default(<String>[]) List<String> roles,
+    String? email,
+    String? phone,
+    String? status,
+    String? masjidId,
+    String? message,
+    String? temporaryPassword,
+    String? fatherName,
+    int? age,
+    String? gender,
+    @Default(false) bool isFamilyHead,
+    int? familyMemberCount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _CommunityUserModel;
+
+  const CommunityUserModel._();
+
+  factory CommunityUserModel.fromJson(Map<String, dynamic> json) =>
+      _$CommunityUserModelFromJson(json);
 
   bool get isImam => roles.contains('IMAM');
   bool get isCommitteeMember => roles.contains('COMMITTEE_MEMBER');
@@ -71,21 +47,4 @@ class CommunityUserModel {
     if (roles.contains('SUPER_ADMIN')) return 'Super Admin';
     return 'Member';
   }
-}
-
-String _string(Object? value, {String fallback = ''}) {
-  final parsed = value?.toString();
-  if (parsed == null || parsed.trim().isEmpty) return fallback;
-  return parsed;
-}
-
-String? _optionalString(Object? value) {
-  final parsed = value?.toString();
-  if (parsed == null || parsed.trim().isEmpty) return null;
-  return parsed;
-}
-
-int? _optionalInt(Object? value) {
-  if (value is int) return value;
-  return int.tryParse(value?.toString() ?? '');
 }

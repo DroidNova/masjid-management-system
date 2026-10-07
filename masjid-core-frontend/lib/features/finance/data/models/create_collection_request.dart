@@ -1,25 +1,25 @@
-import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+// freezed: @JsonSerializable on the factory configures the generated class.
+// ignore_for_file: invalid_annotation_target
 
-class CreateCollectionRequest {
-  const CreateCollectionRequest({
-    required this.type,
-    required this.amount,
-    this.title,
-    this.description,
-    this.collectedAt,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String type;
-  final double amount;
-  final String? title;
-  final String? description;
-  final String? collectedAt;
+part 'create_collection_request.freezed.dart';
+part 'create_collection_request.g.dart';
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{'type': type, 'amount': amount};
-    addStringIfNotEmpty(json, 'title', title);
-    addStringIfNotEmpty(json, 'description', description);
-    addStringIfNotEmpty(json, 'collectedAt', collectedAt);
-    return json;
-  }
+/// Body of `POST /collections/my-masjid`. Null fields are left out.
+@freezed
+abstract class CreateCollectionRequest with _$CreateCollectionRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory CreateCollectionRequest({
+    required String type,
+    required double amount,
+    String? title,
+    String? description,
+
+    /// `yyyy-MM-dd`.
+    String? collectedAt,
+  }) = _CreateCollectionRequest;
+
+  factory CreateCollectionRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateCollectionRequestFromJson(json);
 }

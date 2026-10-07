@@ -1,241 +1,136 @@
-import 'package:dio/dio.dart';
 import 'package:masjid_core_frontend/core/network/api_client.dart';
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_dashboard_summary.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_list_filter.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 
-class AdminListResult {
-  const AdminListResult(this.items, this.total);
-
-  final List<Map<String, dynamic>> items;
-  final int total;
-}
-
+/// Super admin endpoints. Errors surface as ApiException (with `code`).
 class SuperAdminApi {
-  SuperAdminApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  SuperAdminApi(this._apiClient);
 
   final ApiClient _apiClient;
 
-  Future<Map<String, dynamic>> getDashboardSummary() {
-    return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
-      key: 'GET:/admin/dashboard/summary',
-      request: () => _getMap('/admin/dashboard/summary'),
+  static const int pageSize = 20;
+
+  Future<AdminDashboardSummary> getDashboardSummary() async {
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/admin/dashboard/summary',
+    );
+    return AdminDashboardSummary.fromJson(data);
+  }
+
+  // ------------------------------------------------------------------ users
+
+  Future<PageResult<AdminUserModel>> getUsers(
+    AdminListFilter filter,
+    int page,
+  ) => _getPage('/admin/users', filter, page, AdminUserModel.fromJson);
+
+  Future<AdminUserModel> getUser(String id) async {
+    final data = await _apiClient.get<Map<String, dynamic>>('/admin/users/$id');
+    return AdminUserModel.fromJson(data);
+  }
+
+  Future<void> updateUserStatus(String id, String status) async {
+    await _apiClient.patch<Object?>(
+      '/admin/users/$id/status',
+      body: <String, dynamic>{'status': status},
     );
   }
 
-  Future<AdminListResult> getUsers({
-    String? search,
-    String? status,
-    String? role,
-    int page = 1,
-    int limit = 20,
-  }) {
-    final query = _cleanQuery(<String, dynamic>{
-      'search': search,
-      'status': status,
-      'role': role,
-      'page': page,
-      'limit': limit,
-    });
-    return ApiRequestCoordinator.instance.run<AdminListResult>(
-      key: _requestKey('/admin/users', query),
-      request: () => _getList('/admin/users', query),
+  /// Replaces the user's roles; returns the updated user.
+  Future<AdminUserModel> assignUserRoles(String id, List<String> roles) async {
+    final data = await _apiClient.post<Map<String, dynamic>>(
+      '/admin/users/$id/roles',
+      body: <String, dynamic>{'roleNames': roles},
     );
+    return AdminUserModel.fromJson(data);
   }
 
-  Future<Map<String, dynamic>> getUser(String id) {
-    return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
-      key: 'GET:/admin/users/$id',
-      request: () => _getMap('/admin/users/$id'),
+  // ---------------------------------------------------------------- masjids
+
+  Future<PageResult<AdminMasjidModel>> getMasjids(
+    AdminListFilter filter,
+    int page,
+  ) => _getPage('/admin/masjids', filter, page, AdminMasjidModel.fromJson);
+
+  Future<AdminMasjidModel> getMasjid(String id) async {
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/admin/masjids/$id',
     );
+    return AdminMasjidModel.fromJson(data);
   }
 
-  Future<Map<String, dynamic>> updateUserStatus(
+  Future<void> updateMasjidStatus(
     String id,
-    Map<String, dynamic> data,
-  ) {
-    return _patchMap('/admin/users/$id/status', data);
-  }
-
-  Future<Map<String, dynamic>> updateUserRoles(
-    String id,
-    Map<String, dynamic> data,
-  ) {
-    return _postMap('/admin/users/$id/roles', data);
-  }
-
-  Future<AdminListResult> getMasjidRequests({
-    String? search,
-    String? status,
-    int page = 1,
-    int limit = 20,
-  }) {
-    final query = _cleanQuery(<String, dynamic>{
-      'search': search,
-      'status': status,
-      'page': page,
-      'limit': limit,
-    });
-    return ApiRequestCoordinator.instance.run<AdminListResult>(
-      key: _requestKey('/masjid-requests', query),
-      request: () => _getList('/masjid-requests', query),
+    String status, {
+    String? reason,
+  }) async {
+    await _apiClient.patch<Object?>(
+      '/admin/masjids/$id/status',
+      body: <String, dynamic>{'status': status, 'reason': ?reason},
     );
   }
 
-  Future<Map<String, dynamic>> getMasjidRequest(String id) async {
-    final list = await _getList('/masjid-requests', <String, dynamic>{
-      'id': id,
-      'limit': 1,
-    });
-    return list.items.isNotEmpty ? list.items.first : <String, dynamic>{};
-  }
+  // -------------------------------------------------------- masjid requests
 
-  Future<Map<String, dynamic>> updateMasjidRequestStatus(
+  Future<PageResult<AdminMasjidRequestModel>> getMasjidRequests(
+    AdminListFilter filter,
+    int page,
+  ) => _getPage(
+    '/masjid-requests',
+    filter,
+    page,
+    AdminMasjidRequestModel.fromJson,
+  );
+
+  /// There is no `GET /masjid-requests/:id`; the list filters by `id`.
+  Future<PageResult<AdminMasjidRequestModel>> findMasjidRequestById(
     String id,
-    Map<String, dynamic> data,
-  ) {
-    return _patchMap('/masjid-requests/$id/status', data);
-  }
-
-  Future<AdminListResult> getMasjids({
-    String? search,
-    String? status,
-    int page = 1,
-    int limit = 20,
-  }) {
-    final query = _cleanQuery(<String, dynamic>{
-      'search': search,
-      'status': status,
-      'page': page,
-      'limit': limit,
-    });
-    return ApiRequestCoordinator.instance.run<AdminListResult>(
-      key: _requestKey('/admin/masjids', query),
-      request: () => _getList('/admin/masjids', query),
-    );
-  }
-
-  Future<Map<String, dynamic>> getMasjid(String id) {
-    return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
-      key: 'GET:/admin/masjids/$id',
-      request: () => _getMap('/admin/masjids/$id'),
-    );
-  }
-
-  Future<Map<String, dynamic>> updateMasjidStatus(
-    String id,
-    Map<String, dynamic> data,
-  ) {
-    return _patchMap('/admin/masjids/$id/status', data);
-  }
-
-  Future<AdminListResult> _getList(
-    String path,
-    Map<String, dynamic> query,
   ) async {
-    try {
-      final response = await _apiClient.dio.get<Object?>(
-        path,
-        queryParameters: query,
-      );
-      final data = _unwrap(response.data);
-      final total = _total(data);
-      final raw = data is Map<String, dynamic> ? data['items'] : data;
-      final items = raw is List
-          ? raw.whereType<Map<String, dynamic>>().toList()
-          : <Map<String, dynamic>>[];
-      return AdminListResult(items, total == 0 ? items.length : total);
-    } on DioException catch (error) {
-      throw Exception(_message(error));
-    }
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/masjid-requests',
+      query: <String, dynamic>{'id': id, 'limit': 1},
+    );
+    return PageResult<AdminMasjidRequestModel>.fromJson(
+      data,
+      AdminMasjidRequestModel.fromJson,
+    );
   }
 
-  Future<Map<String, dynamic>> _getMap(String path) async {
-    try {
-      final response = await _apiClient.dio.get<Object?>(path);
-      final data = _unwrap(response.data);
-      return data is Map<String, dynamic> ? data : <String, dynamic>{};
-    } on DioException catch (error) {
-      throw Exception(_message(error));
-    }
+  /// `status` is `APPROVED` or `REJECTED`. Approving fails with
+  /// USER_IN_ANOTHER_MASJID (409) when the imam or a committee member
+  /// already belongs to another masjid.
+  Future<void> updateMasjidRequestStatus(
+    String id,
+    String status, {
+    String? reason,
+  }) async {
+    await _apiClient.patch<Object?>(
+      '/masjid-requests/$id/status',
+      body: <String, dynamic>{'status': status, 'reason': ?reason},
+    );
   }
 
-  Future<Map<String, dynamic>> _patchMap(String path, Object data) async {
-    try {
-      final response = await _apiClient.dio.patch<Object?>(path, data: data);
-      final unwrapped = _unwrap(response.data);
-      return unwrapped is Map<String, dynamic>
-          ? unwrapped
-          : <String, dynamic>{};
-    } on DioException catch (error) {
-      throw Exception(_message(error));
-    }
-  }
-
-  Future<Map<String, dynamic>> _postMap(String path, Object data) async {
-    try {
-      final response = await _apiClient.dio.post<Object?>(path, data: data);
-      final unwrapped = _unwrap(response.data);
-      return unwrapped is Map<String, dynamic>
-          ? unwrapped
-          : <String, dynamic>{};
-    } on DioException catch (error) {
-      throw Exception(_message(error));
-    }
-  }
-
-  Map<String, dynamic> _cleanQuery(Map<String, dynamic> query) {
-    return Map<String, dynamic>.from(query)
-      ..removeWhere((key, value) => value == null || value == '');
-  }
-
-  String _requestKey(String path, Map<String, dynamic> query) {
-    if (query.isEmpty) return 'GET:$path';
-    final parts = query.entries
-        .map(
-          (entry) =>
-              '${entry.key}=${Uri.encodeQueryComponent('${entry.value}')}',
-        )
-        .join('&');
-    return 'GET:$path?$parts';
-  }
-
-  Object? _unwrap(Object? response) {
-    return response is Map<String, dynamic> && response.containsKey('data')
-        ? response['data']
-        : response;
-  }
-
-  int _total(Object? data) {
-    if (data is Map<String, dynamic>) {
-      final total = data['total'] ?? data['count'];
-      if (total is int) return total;
-      final parsedTotal = int.tryParse(total?.toString() ?? '');
-      if (parsedTotal != null) return parsedTotal;
-      final meta = data['meta'];
-      if (meta is Map<String, dynamic>) {
-        final metaTotal = meta['total'];
-        if (metaTotal is int) return metaTotal;
-        return int.tryParse(metaTotal?.toString() ?? '') ?? 0;
-      }
-      return 0;
-    }
-    return 0;
-  }
-
-  String _message(DioException error) {
-    final data = error.response?.data;
-    if (data is Map<String, dynamic>) {
-      final message = data['message'];
-      if (message is String) return message;
-    }
-    if (error.response?.statusCode == 403) {
-      return 'You are not allowed to perform this action.';
-    }
-    if (error.response?.statusCode == 401) {
-      return 'Session expired. Please login again.';
-    }
-    if (error.response?.statusCode == 404) {
-      return 'This API is not available yet.';
-    }
-    return error.message ?? 'Something went wrong.';
+  Future<PageResult<T>> _getPage<T>(
+    String path,
+    AdminListFilter filter,
+    int page,
+    T Function(Map<String, dynamic> json) parseItem,
+  ) async {
+    final search = filter.search.trim();
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      path,
+      query: <String, dynamic>{
+        'page': page,
+        'limit': pageSize,
+        if (search.isNotEmpty) 'search': search,
+        'status': ?filter.status,
+        'role': ?filter.role,
+      },
+    );
+    return PageResult<T>.fromJson(data, parseItem);
   }
 }

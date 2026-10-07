@@ -66,6 +66,16 @@ export class AnnouncementsService {
     };
   }
 
+  /** One announcement of the signed-in user's masjid (for edit screens). */
+  async findOne(id: string, actor: AuthenticatedUser) {
+    const masjidId = requireMasjidId(actor);
+    await this.ensureAnnouncementBelongsToMasjid(id, masjidId);
+    return this.prisma.announcement.findUniqueOrThrow({
+      where: { id },
+      select: announcementSelect,
+    });
+  }
+
   async create(
     dto: CreateAnnouncementDto,
     actor: AuthenticatedUser,

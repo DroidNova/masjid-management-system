@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
-import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/features/finance/application/finance_entry_controller.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/create_expense_request.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
 import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
@@ -9,27 +10,23 @@ import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
-class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key, FinanceRepository? financeRepository})
-    : _financeRepository = financeRepository;
-
-  final FinanceRepository? _financeRepository;
+class AddExpenseScreen extends ConsumerStatefulWidget {
+  const AddExpenseScreen({super.key});
 
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+  ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
 }
 
-class _AddExpenseScreenState extends State<AddExpenseScreen> {
+class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   DateTime? _entryDate = DateTime.now();
-  late final FinanceRepository _financeRepository =
-      widget._financeRepository ?? FinanceRepository();
-
   String _selectedType = expenseTypeLabels.keys.first;
-  bool _isSubmitting = false;
+
+  /// Last server error, shown under the matching fields.
+  Object? _serverError;
 
   @override
   void dispose() {
@@ -40,49 +37,52 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _submit() async {
+    _serverError = null;
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSubmitting = true);
+    final ok = await ref
+        .read(financeEntryControllerProvider.notifier)
+        .addExpense(
+          CreateExpenseRequest(
+            type: _selectedType,
+            amount: double.parse(_amountController.text.trim()),
+            title: _optional(_titleController.text),
+            description: _optional(_descriptionController.text),
+            spentAt: formatApiDate(_entryDate),
+          ),
+        );
+    if (!mounted) return;
 
-    try {
-      await _financeRepository.createExpense(
-        CreateExpenseRequest(
-          type: _selectedType,
-          amount: double.parse(_amountController.text.trim()),
-          title: _titleController.text,
-          description: _descriptionController.text,
-          spentAt: formatApiDate(_entryDate),
-        ),
-      );
-
-      if (!mounted) return;
-
+    if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Expense added successfully.')),
       );
       context.pop(true);
-    } catch (error) {
-      if (mounted) _showError(getReadableErrorMessage(error));
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      return;
     }
+
+    final error = ref.read(financeEntryControllerProvider).error;
+    if (error == null) return;
+    setState(() => _serverError = error);
+    _formKey.currentState!.validate();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(userMessage(error))));
   }
+
+  String? _optional(String text) => text.trim().isEmpty ? null : text.trim();
 
   String? _amountValidator(String? value) {
     final amount = double.tryParse(value?.trim() ?? '');
     if (amount == null) return 'Amount is required.';
     if (amount <= 0) return 'Amount must be greater than 0.';
-    return null;
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    return fieldError(_serverError, 'amount');
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = ref.watch(financeEntryControllerProvider).isLoading;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Add Expense')),
       body: SafeArea(
@@ -128,6 +128,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       controller: _titleController,
                       label: 'Title',
                       textInputAction: TextInputAction.next,
+                      validator: (_) => fieldError(_serverError, 'title'),
                     ),
                     const SizedBox(height: 16),
                     AppTextField(
@@ -135,6 +136,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       label: 'Description',
                       maxLines: 3,
                       textInputAction: TextInputAction.newline,
+                      validator: (_) => fieldError(_serverError, 'description'),
                     ),
                     const SizedBox(height: 16),
                     AppDateField(
@@ -149,7 +151,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     const SizedBox(height: 24),
                     AppButton(
                       label: 'Save Expense',
-                      isLoading: _isSubmitting,
+                      isLoading: isSubmitting,
                       onPressed: _submit,
                     ),
                   ],

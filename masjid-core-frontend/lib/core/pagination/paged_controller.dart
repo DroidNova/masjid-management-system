@@ -59,14 +59,14 @@ class PagedState<T> {
 ///     return super.build();
 ///   }
 ///   @override
-///   Future<Page<CollectionEntry>> fetchPage(int page) =>
+///   Future<PageResult<CollectionEntry>> fetchPage(int page) =>
 ///       ref.read(financeRepositoryProvider)
 ///          .collections(ref.read(collectionsFilterProvider), page: page);
 /// }
 /// ```
 abstract class PagedController<T>
     extends AutoDisposeAsyncNotifier<PagedState<T>> {
-  Future<Page<T>> fetchPage(int page);
+  Future<PageResult<T>> fetchPage(int page);
 
   @override
   Future<PagedState<T>> build() async {

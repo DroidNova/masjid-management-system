@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
 
 class AdminMasjidCard extends StatelessWidget {
@@ -10,9 +10,9 @@ class AdminMasjidCard extends StatelessWidget {
   @override
   Widget build(BuildContext c) => Card(
     child: ListTile(
-      title: Text(item.name ?? 'Masjid'),
+      title: Text(item.name),
       subtitle: Text(
-        '${[item.address, item.locality, item.district, item.state, item.country].where((e) => e != null && e.isNotEmpty).join(', ')}\nContact: ${item.contactNo ?? '-'} • Imam: ${item.imamName ?? '-'} • Users: ${item.usersCount ?? 0}',
+        '${[item.address, item.locality, item.district, item.state, item.country].where((e) => e != null && e.isNotEmpty).join(', ')}\nContact: ${item.contactNo ?? '-'} • Imam: ${item.imamName ?? '-'} • Users: ${item.usersCount}',
       ),
       isThreeLine: true,
       trailing: Wrap(

@@ -87,6 +87,20 @@ export class AnnouncementsController {
     return this.announcementsService.create(dto, request.user);
   }
 
+  @Get(':id')
+  @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_READ)
+  @ApiOperation({ summary: 'Get one announcement of the current masjid' })
+  @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, schema: standardErrorSchema })
+  findOne(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.announcementsService.findOne(id, request.user);
+  }
+
   @Patch(':id')
   @RequirePermissions(PERMISSIONS.ANNOUNCEMENTS_MANAGE)
   @ApiOperation({ summary: 'Update an announcement from the current masjid' })

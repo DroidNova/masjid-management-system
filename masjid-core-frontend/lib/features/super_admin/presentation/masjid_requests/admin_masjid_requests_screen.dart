@@ -1,207 +1,89 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
+import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/admin_masjid_request_card.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/approve_reject_request_dialog.dart';
-import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_action_feedback.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_paged_list.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_search_field.dart';
 
-class AdminMasjidRequestsScreen extends StatefulWidget {
-  const AdminMasjidRequestsScreen({super.key, this.repository});
+class AdminMasjidRequestsScreen extends ConsumerWidget {
+  const AdminMasjidRequestsScreen({super.key});
 
-  final SuperAdminRepository? repository;
+  Future<void> _approve(
+    BuildContext context,
+    WidgetRef ref,
+    AdminMasjidRequestModel item,
+  ) => runAdminAction(
+    context,
+    () => ref.read(superAdminActionsProvider).approveMasjidRequest(item.id),
+  );
 
-  @override
-  State<AdminMasjidRequestsScreen> createState() =>
-      _AdminMasjidRequestsScreenState();
-}
-
-class _AdminMasjidRequestsScreenState extends State<AdminMasjidRequestsScreen> {
-  late final SuperAdminRepository _repository =
-      widget.repository ?? SuperAdminRepository();
-  final TextEditingController _searchController = TextEditingController();
-
-  List<AdminMasjidRequestModel> _items = <AdminMasjidRequestModel>[];
-  String? _selectedStatus;
-  String _search = '';
-  int _page = 1;
-  int _requestRevision = 0;
-  Timer? _searchDebounce;
-  Future<void>? _activeLoad;
-  bool _isLoading = true;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadData({bool force = false}) {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null && !force) return activeLoad;
-
-    final revision = ++_requestRevision;
-    _activeLoad = _performLoad(revision).whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoad(int revision) async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final page = await _repository.getMasjidRequests(
-        search: _search,
-        status: _selectedStatus,
-        page: _page,
-      );
-      if (!mounted || revision != _requestRevision) return;
-      setState(() => _items = page.items);
-    } catch (error) {
-      if (!mounted || revision != _requestRevision) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted && revision == _requestRevision) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _onStatusChanged(String? status) {
-    if (_selectedStatus == status) return;
-    setState(() {
-      _selectedStatus = status;
-      _page = 1;
-    });
-    _loadData(force: true);
-  }
-
-  void _onSearchChanged(String value) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      final trimmed = value.trim();
-      if (_search == trimmed) return;
-      setState(() {
-        _search = trimmed;
-        _page = 1;
-      });
-      _loadData(force: true);
-    });
-  }
-
-  Future<void> _approve(AdminMasjidRequestModel item) async {
-    final updated = await _repository.updateMasjidRequestStatus(
-      item.id,
-      'APPROVED',
-    );
-    if (!mounted) return;
-    _replaceItem(updated);
-  }
-
-  Future<void> _reject(AdminMasjidRequestModel item) async {
+  Future<void> _reject(
+    BuildContext context,
+    WidgetRef ref,
+    AdminMasjidRequestModel item,
+  ) async {
     final reason = await showRejectReasonDialog(context);
-    if (reason == null) return;
-    final updated = await _repository.updateMasjidRequestStatus(
-      item.id,
-      'REJECTED',
-      reason: reason,
+    if (reason == null || !context.mounted) return;
+    await runAdminAction(
+      context,
+      () => ref
+          .read(superAdminActionsProvider)
+          .rejectMasjidRequest(item.id, reason: reason.isEmpty ? null : reason),
     );
-    if (!mounted) return;
-    _replaceItem(updated);
-  }
-
-  void _replaceItem(AdminMasjidRequestModel updated) {
-    setState(() {
-      _items = _items
-          .map((item) => item.id == updated.id ? updated : item)
-          .toList();
-    });
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(adminRequestsFilterProvider);
+    final filterController = ref.read(adminRequestsFilterProvider.notifier);
+
+    Widget statusChip(String label, String? status) => FilterChip(
+      label: Text(label),
+      selected: filter.status == status,
+      onSelected: (_) =>
+          filterController.state = filter.copyWith(status: status),
+    );
+
     return Column(
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(
-              labelText: 'Search requests',
-              hintText: 'Search by masjid, locality, district, state, or phone',
-            ),
-            onChanged: _onSearchChanged,
+        AdminSearchField(
+          label: 'Search requests',
+          hint: 'Search by masjid, locality, district, state, or phone',
+          initialValue: filter.search,
+          onSearch: (search) => filterController.update(
+            (current) => current.copyWith(search: search),
           ),
         ),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
-            _statusChip('All', null),
-            _statusChip('Pending', 'PENDING'),
-            _statusChip('Approved', 'APPROVED'),
-            _statusChip('Rejected', 'REJECTED'),
+            statusChip('All', null),
+            statusChip('Pending', 'PENDING'),
+            statusChip('Approved', 'APPROVED'),
+            statusChip('Rejected', 'REJECTED'),
           ],
         ),
-        Expanded(child: _buildBody()),
-      ],
-    );
-  }
-
-  Widget _statusChip(String label, String? status) {
-    return FilterChip(
-      label: Text(label),
-      selected: _selectedStatus == status,
-      onSelected: (_) => _onStatusChanged(status),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) return const LoadingView();
-    if (_errorMessage != null) {
-      return ErrorView(
-        title: 'Unable to load',
-        message: _errorMessage!,
-        onRetry: () => _loadData(force: true),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => _loadData(force: true),
-      child: ListView(
-        children: <Widget>[
-          for (final item in _items)
-            AdminMasjidRequestCard(
+        Expanded(
+          child: AdminPagedList<AdminMasjidRequestModel>(
+            state: ref.watch(adminRequestsProvider),
+            emptyText: 'No requests found',
+            onRefresh: () => ref.read(adminRequestsProvider.notifier).refresh(),
+            onLoadMore: () =>
+                ref.read(adminRequestsProvider.notifier).loadMore(),
+            onRetry: () => ref.invalidate(adminRequestsProvider),
+            itemBuilder: (context, item) => AdminMasjidRequestCard(
               item: item,
-              onApprove: () => _approve(item),
-              onReject: () => _reject(item),
+              onApprove: () => _approve(context, ref, item),
+              onReject: () => _reject(context, ref, item),
             ),
-          if (_items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: Text('No requests found')),
-            ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

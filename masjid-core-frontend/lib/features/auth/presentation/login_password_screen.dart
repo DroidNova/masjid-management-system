@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
+import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
-class LoginPasswordScreen extends StatefulWidget {
-  const LoginPasswordScreen({
-    super.key,
-    required this.phone,
-    AuthRepository? authRepository,
-  }) : _authRepository = authRepository;
+class LoginPasswordScreen extends ConsumerStatefulWidget {
+  const LoginPasswordScreen({super.key, required this.phone});
 
   final String phone;
-  final AuthRepository? _authRepository;
 
   @override
-  State<LoginPasswordScreen> createState() => _LoginPasswordScreenState();
+  ConsumerState<LoginPasswordScreen> createState() =>
+      _LoginPasswordScreenState();
 }
 
-class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
+class _LoginPasswordScreenState extends ConsumerState<LoginPasswordScreen> {
   final TextEditingController _passwordController = TextEditingController();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
-  bool _isLoading = false;
+  bool _isSubmitting = false;
   bool _obscurePassword = true;
 
   @override
@@ -44,13 +41,12 @@ class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isSubmitting = true);
 
     try {
-      final response = await _authRepository.submitPassword(
-        widget.phone,
-        password,
-      );
+      final response = await ref
+          .read(authRepositoryProvider)
+          .submitPassword(widget.phone, password);
 
       if (!mounted) return;
 
@@ -69,9 +65,14 @@ class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
         },
       );
     } catch (error) {
-      if (mounted) _showError(_cleanError(error));
+      if (!mounted) return;
+      if (apiErrorCode(error) == ApiErrorCodes.invalidCredentials) {
+        // Wrong password: clear the field so it can be retyped.
+        _passwordController.clear();
+      }
+      _showError(authErrorText(error));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -79,10 +80,6 @@ class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
   }
 
   @override
@@ -135,7 +132,7 @@ class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
                   const SizedBox(height: 24),
                   AppButton(
                     label: 'Continue',
-                    isLoading: _isLoading,
+                    isLoading: _isSubmitting,
                     onPressed: _continue,
                   ),
                   const SizedBox(height: 12),

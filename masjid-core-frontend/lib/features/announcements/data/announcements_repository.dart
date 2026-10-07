@@ -1,54 +1,44 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/announcements/data/announcements_api.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/create_announcement_request.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/update_announcement_request.dart';
 
+final announcementsRepositoryProvider = Provider<AnnouncementsRepository>(
+  (ref) =>
+      AnnouncementsRepository(AnnouncementsApi(ref.watch(apiClientProvider))),
+);
+
+/// `errorCode` the server uses for a missing announcement.
+
 class AnnouncementsRepository {
-  AnnouncementsRepository({AnnouncementsApi? announcementsApi})
-    : _announcementsApi = announcementsApi ?? AnnouncementsApi();
+  AnnouncementsRepository(this._api);
 
-  final AnnouncementsApi _announcementsApi;
+  final AnnouncementsApi _api;
 
-  Future<List<AnnouncementModel>> getAnnouncements() {
-    return ApiRequestCoordinator.instance.run<List<AnnouncementModel>>(
-      key: 'GET:/announcements',
-      request: _announcementsApi.getAnnouncements,
-    );
-  }
+  /// Page size used when looking one announcement up by id.
+
+  Future<PageResult<AnnouncementModel>> getAnnouncements({
+    int page = 1,
+    int limit = 20,
+  }) => _api.getAnnouncements(page: page, limit: limit);
+
+  /// One announcement of the current masjid (GET /announcements/:id).
+  /// Throws ApiException ANNOUNCEMENT_NOT_FOUND / ANNOUNCEMENT_ACCESS_FORBIDDEN.
+  Future<AnnouncementModel> getAnnouncement(String id) =>
+      _api.getAnnouncement(id);
 
   Future<AnnouncementModel> createAnnouncement(
     CreateAnnouncementRequest request,
-  ) async {
-    final announcement = await _announcementsApi.createAnnouncement(request);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.announcements,
-      AppDataScope.dashboard,
-    ]);
-    return announcement;
-  }
+  ) => _api.createAnnouncement(request);
 
   Future<AnnouncementModel> updateAnnouncement(
     String id,
     UpdateAnnouncementRequest request,
-  ) async {
-    final announcement = await _announcementsApi.updateAnnouncement(
-      id,
-      request,
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.announcements,
-      AppDataScope.dashboard,
-    ]);
-    return announcement;
-  }
+  ) => _api.updateAnnouncement(id, request);
 
-  Future<void> deleteAnnouncement(String id) async {
-    await _announcementsApi.deleteAnnouncement(id);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.announcements,
-      AppDataScope.dashboard,
-    ]);
-  }
+  Future<AnnouncementModel> deactivateAnnouncement(String id) =>
+      _api.deactivateAnnouncement(id);
 }

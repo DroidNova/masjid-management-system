@@ -1,34 +1,23 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/namaz_time_api.dart';
 
+final namazTimeRepositoryProvider = Provider<NamazTimeRepository>(
+  (ref) => NamazTimeRepository(NamazTimeApi(ref.watch(apiClientProvider))),
+);
+
 class NamazTimeRepository {
-  NamazTimeRepository({NamazTimeApi? namazTimeApi})
-    : _namazTimeApi = namazTimeApi ?? NamazTimeApi();
+  NamazTimeRepository(this._api);
 
-  final NamazTimeApi _namazTimeApi;
+  final NamazTimeApi _api;
 
-  Future<NamazTimeModel?> getNamazTime(String masjidId) {
-    return ApiRequestCoordinator.instance.run<NamazTimeModel?>(
-      key: 'GET:/namaz-times/$masjidId',
-      request: () => _namazTimeApi.getNamazTime(masjidId),
-    );
-  }
+  Future<NamazTimeModel> getNamazTime(String masjidId) =>
+      _api.getNamazTime(masjidId);
 
   Future<NamazTimeModel> updateNamazTime({
     required String masjidId,
     required UpdateNamazTimeRequest request,
-  }) async {
-    final namazTime = await _namazTimeApi.updateNamazTime(
-      masjidId: masjidId,
-      request: request,
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.namazTime,
-      AppDataScope.dashboard,
-    ]);
-    return namazTime;
-  }
+  }) => _api.updateNamazTime(masjidId: masjidId, request: request);
 }

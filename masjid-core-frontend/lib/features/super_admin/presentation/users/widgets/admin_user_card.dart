@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
 
 class AdminUserCard extends StatelessWidget {

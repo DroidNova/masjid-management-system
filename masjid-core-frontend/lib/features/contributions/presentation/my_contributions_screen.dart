@@ -1,112 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
-import 'package:masjid_core_frontend/features/contributions/data/contributions_repository.dart';
-import 'package:masjid_core_frontend/features/contributions/models/collection_contribution_model.dart';
-import 'package:masjid_core_frontend/features/contributions/models/my_contribution_summary_model.dart';
-import 'package:masjid_core_frontend/features/contributions/models/my_imam_salary_contribution_model.dart';
-import 'package:masjid_core_frontend/features/contributions/models/project_contribution_model.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/features/contributions/application/my_contributions_controllers.dart';
+import 'package:masjid_core_frontend/features/contributions/data/models/my_contribution_summary.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_summary_card.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/imam_salary_month_card.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:masjid_core_frontend/shared/utils/paginated_list_controller.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/paged_list_parts.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_card.dart';
 
-class MyContributionsScreen extends StatefulWidget {
-  const MyContributionsScreen({super.key, ContributionsRepository? repository})
-    : _repository = repository;
-
-  final ContributionsRepository? _repository;
+/// The signed-in member's own contributions: summary, imam salary months,
+/// project contributions and general collections.
+class MyContributionsScreen extends ConsumerStatefulWidget {
+  const MyContributionsScreen({super.key});
 
   @override
-  State<MyContributionsScreen> createState() => _MyContributionsScreenState();
+  ConsumerState<MyContributionsScreen> createState() =>
+      _MyContributionsScreenState();
 }
 
-class _MyContributionsScreenState extends State<MyContributionsScreen> {
-  late final ContributionsRepository _repository =
-      widget._repository ?? ContributionsRepository();
-  late final PaginatedListController<MyImamSalaryContributionModel> _history;
-  late final PaginatedListController<ProjectContributionModel> _projects;
-  late final PaginatedListController<CollectionContributionModel> _collections;
+class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
   final ScrollController _scrollController = ScrollController();
-  MyContributionSummaryModel? _summary;
-  bool _loadingSummary = true;
-  String? _summaryError;
 
   @override
   void initState() {
     super.initState();
-    _history = PaginatedListController<MyImamSalaryContributionModel>(
-      errorMapper: getReadableErrorMessage,
-      loader: (page, limit) =>
-          _repository.getMyImamSalaryContributions(page: page, limit: limit),
-    )..addListener(_onHistoryChanged);
-    _projects = PaginatedListController<ProjectContributionModel>(
-      errorMapper: getReadableErrorMessage,
-      loader: (page, limit) =>
-          _repository.getMyProjectContributions(page: page, limit: limit),
-    )..addListener(_onHistoryChanged);
-    _collections = PaginatedListController<CollectionContributionModel>(
-      errorMapper: getReadableErrorMessage,
-      loader: (page, limit) =>
-          _repository.getMyCollectionContributions(page: page, limit: limit),
-    )..addListener(_onHistoryChanged);
-    _scrollController.addListener(_loadMoreNearBottom);
-    _refresh();
+    listenNearEnd(_scrollController, () {
+      ref.read(myImamSalaryMonthsProvider.notifier).loadMore();
+      ref.read(myProjectContributionsProvider.notifier).loadMore();
+      ref.read(myCollectionContributionsProvider.notifier).loadMore();
+    });
   }
 
   @override
   void dispose() {
-    for (final controller in [_history, _projects, _collections]) {
-      controller.removeListener(_onHistoryChanged);
-      controller.dispose();
-    }
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onHistoryChanged() {
-    if (mounted) setState(() {});
-  }
-
-  void _loadMoreNearBottom() {
-    if (_scrollController.position.extentAfter < 300) {
-      _history.loadNext();
-      _projects.loadNext();
-      _collections.loadNext();
-    }
-  }
-
   Future<void> _refresh() async {
-    if (mounted) {
-      setState(() {
-        _loadingSummary = true;
-        _summaryError = null;
-      });
-    }
+    ref
+      ..invalidate(myContributionSummaryProvider)
+      ..invalidate(myImamSalaryMonthsProvider)
+      ..invalidate(myProjectContributionsProvider)
+      ..invalidate(myCollectionContributionsProvider);
     try {
-      final results = await Future.wait<dynamic>([
-        _repository.getMySummary(),
-        _history.refresh(),
-        _projects.refresh(),
-        _collections.refresh(),
-      ]);
-      if (!mounted) return;
-      setState(() => _summary = results.first as MyContributionSummaryModel);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _summaryError = getReadableErrorMessage(error));
-    } finally {
-      if (mounted) setState(() => _loadingSummary = false);
+      await ref.read(myContributionSummaryProvider.future);
+    } catch (_) {
+      // Shown by the error card; the refresh indicator just stops.
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final summary = ref.watch(myContributionSummaryProvider);
+    final months = ref.watch(myImamSalaryMonthsProvider);
+    final projects = ref.watch(myProjectContributionsProvider);
+    final collections = ref.watch(myCollectionContributionsProvider);
+    final titleStyle = Theme.of(context).textTheme.titleLarge;
+
     return Scaffold(
       appBar: AppBar(title: const Text('My Contributions')),
-      body: _loadingSummary && _summary == null
+      body: summary.isLoading && !summary.hasValue && !summary.hasError
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _refresh,
@@ -115,12 +72,15 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: <Widget>[
-                  if (_summaryError != null)
-                    _ErrorCard(message: _summaryError!, onRetry: _refresh)
-                  else if (_summary != null) ...<Widget>[
-                    _UserCard(user: _summary!.user),
+                  if (summary.hasError && !summary.hasValue)
+                    ErrorCard(
+                      message: userMessage(summary.error!),
+                      onRetry: _refresh,
+                    )
+                  else if (summary.valueOrNull case final data?) ...<Widget>[
+                    _UserCard(user: data.user),
                     const SizedBox(height: 12),
-                    ContributionSummaryCard(summary: _summary!.imamSalary),
+                    ContributionSummaryCard(summary: data.imamSalary),
                     const SizedBox(height: 12),
                     AppCard(
                       child: Wrap(
@@ -128,13 +88,13 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                         runSpacing: 8,
                         children: <Widget>[
                           Text(
-                            'Projects ${formatRupees(_summary!.projectContributionTotal)}',
+                            'Projects ${AppFormat.rupees(data.projectContributionTotal)}',
                           ),
                           Text(
-                            'Collections ${formatRupees(_summary!.collectionContributionTotal)}',
+                            'Collections ${AppFormat.rupees(data.collectionContributionTotal)}',
                           ),
                           Text(
-                            'All paid contributions ${formatRupees(_summary!.totalContributionAmount)}',
+                            'All paid contributions ${AppFormat.rupees(data.totalContributionAmount)}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -142,90 +102,77 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                     ),
                   ],
                   const SizedBox(height: 20),
-                  Text(
-                    'Last 6 Months Imam Salary',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  Text('Last 6 Months Imam Salary', style: titleStyle),
                   const SizedBox(height: 10),
-                  if (_history.items.isEmpty && !_history.isLoading)
-                    const AppCard(
+                  ...pagedSection(
+                    value: months,
+                    empty: const AppCard(
                       child: Text(
                         'No salary dues are assigned to your account yet.',
                         textAlign: TextAlign.center,
                       ),
-                    )
-                  else
-                    ..._history.items.map(
-                      (item) => ImamSalaryMonthCard(
-                        item: item,
-                        onViewPayments: () => context.push(
-                          '/contributions/imam-salary/${item.month}/${item.year}/payments',
-                        ),
+                    ),
+                    onRetry: () => ref.invalidate(myImamSalaryMonthsProvider),
+                    onLoadMore: () => ref
+                        .read(myImamSalaryMonthsProvider.notifier)
+                        .loadMore(),
+                    itemBuilder: (item) => ImamSalaryMonthCard(
+                      item: item,
+                      onViewPayments: () => context.push(
+                        '/contributions/imam-salary/${item.month}/${item.year}/payments',
                       ),
                     ),
-                  if (_history.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  if (_history.error != null)
-                    _ErrorCard(
-                      message: _history.error!,
-                      onRetry: _history.loadNext,
-                    ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Project Contributions',
-                    style: Theme.of(context).textTheme.titleLarge,
                   ),
+                  const SizedBox(height: 20),
+                  Text('Project Contributions', style: titleStyle),
                   const SizedBox(height: 10),
-                  if (_projects.items.isEmpty && !_projects.isLoading)
-                    const AppCard(
+                  ...pagedSection(
+                    value: projects,
+                    empty: const AppCard(
                       child: Text(
                         'No project contributions yet.',
                         textAlign: TextAlign.center,
                       ),
-                    )
-                  else
-                    ..._projects.items.map(
-                      (item) => ContributionTransactionCard(
-                        title: item.projectTitle ?? item.contributorName,
-                        subtitle: item.note,
-                        amount: item.amount,
-                        paymentMode: item.paymentMode,
-                        paidAt: item.paidAt,
-                        collectedByName: item.collectedByName,
-                      ),
                     ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'General Collections',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    onRetry: () =>
+                        ref.invalidate(myProjectContributionsProvider),
+                    onLoadMore: () => ref
+                        .read(myProjectContributionsProvider.notifier)
+                        .loadMore(),
+                    itemBuilder: (item) => ContributionTransactionCard(
+                      title: item.projectTitle ?? item.contributorName,
+                      subtitle: item.note,
+                      amount: item.amount,
+                      paymentMode: item.paymentMode,
+                      paidAt: item.paidAt,
+                      collectedByName: item.collectedByName,
+                    ),
                   ),
+                  const SizedBox(height: 20),
+                  Text('General Collections', style: titleStyle),
                   const SizedBox(height: 10),
-                  if (_collections.items.isEmpty && !_collections.isLoading)
-                    const AppCard(
+                  ...pagedSection(
+                    value: collections,
+                    empty: const AppCard(
                       child: Text(
                         'No collection contributions yet.',
                         textAlign: TextAlign.center,
                       ),
-                    )
-                  else
-                    ..._collections.items.map(
-                      (item) => ContributionTransactionCard(
-                        title: item.collectionType.replaceAll('_', ' '),
-                        subtitle: item.note,
-                        amount: item.amount,
-                        paymentMode: item.paymentMode,
-                        paidAt: item.paidAt,
-                        collectedByName: item.collectedByName,
-                      ),
                     ),
-                  if (_projects.isLoading || _collections.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
+                    onRetry: () =>
+                        ref.invalidate(myCollectionContributionsProvider),
+                    onLoadMore: () => ref
+                        .read(myCollectionContributionsProvider.notifier)
+                        .loadMore(),
+                    itemBuilder: (item) => ContributionTransactionCard(
+                      title: item.collectionType.replaceAll('_', ' '),
+                      subtitle: item.note,
+                      amount: item.amount,
+                      paymentMode: item.paymentMode,
+                      paidAt: item.paidAt,
+                      collectedByName: item.collectedByName,
                     ),
+                  ),
                 ],
               ),
             ),
@@ -235,7 +182,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
 
 class _UserCard extends StatelessWidget {
   const _UserCard({required this.user});
-  final MyContributionUserModel user;
+
+  final MyContributionUser user;
 
   @override
   Widget build(BuildContext context) {
@@ -259,24 +207,6 @@ class _UserCard extends StatelessWidget {
             ),
           ),
           if (user.isFamilyHead) const Chip(label: Text('Family Head')),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-  final String message;
-  final Future<void> Function() onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        children: <Widget>[
-          Text(message, textAlign: TextAlign.center),
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

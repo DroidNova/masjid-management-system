@@ -1,41 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
-import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/features/masjid_request/application/track_application_controller.dart';
 import 'package:masjid_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
-class TrackMasjidApplicationScreen extends StatefulWidget {
-  const TrackMasjidApplicationScreen({
-    super.key,
-    MasjidRequestRepository? repository,
-  }) : _repository = repository;
-
-  final MasjidRequestRepository? _repository;
+/// Public: look up masjid applications by the requester's phone number.
+class TrackMasjidApplicationScreen extends ConsumerStatefulWidget {
+  const TrackMasjidApplicationScreen({super.key});
 
   @override
-  State<TrackMasjidApplicationScreen> createState() =>
+  ConsumerState<TrackMasjidApplicationScreen> createState() =>
       _TrackMasjidApplicationScreenState();
 }
 
 class _TrackMasjidApplicationScreenState
-    extends State<TrackMasjidApplicationScreen> {
+    extends ConsumerState<TrackMasjidApplicationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
-
-  late final MasjidRequestRepository _repository =
-      widget._repository ?? MasjidRequestRepository();
-
   CountryCode _selectedCountry = getDefaultCountryCode();
-  bool _isLoading = false;
-  bool _hasSearched = false;
-  String? _errorMessage;
-  List<TrackMasjidApplicationResult> _items =
-      const <TrackMasjidApplicationResult>[];
 
   @override
   void dispose() {
@@ -45,35 +33,21 @@ class _TrackMasjidApplicationScreenState
 
   Future<void> _trackApplication() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _hasSearched = true;
-    });
-
-    try {
-      final normalizedPhone = normalizePhone(
-        countryCode: _selectedCountry,
-        nationalNumber: _phoneController.text,
-      );
-      final items = await _repository.trackApplicationByPhone(normalizedPhone);
-      if (!mounted) return;
-      setState(() => _items = items);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _items = const <TrackMasjidApplicationResult>[];
-        _errorMessage = getReadableErrorMessage(error);
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    await ref
+        .read(trackApplicationControllerProvider.notifier)
+        .track(
+          normalizePhone(
+            countryCode: _selectedCountry,
+            nationalNumber: _phoneController.text,
+          ),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final result = ref.watch(trackApplicationControllerProvider);
+    final isLoading = result?.isLoading ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,23 +94,11 @@ class _TrackMasjidApplicationScreenState
                       AppButton(
                         label: 'Track',
                         icon: Icons.search,
-                        isLoading: _isLoading,
+                        isLoading: isLoading,
                         onPressed: _trackApplication,
                       ),
                       const SizedBox(height: 24),
-                      if (_errorMessage != null)
-                        _TrackMessageCard(message: _errorMessage!),
-                      if (_isLoading)
-                        const Center(child: CircularProgressIndicator())
-                      else if (_hasSearched &&
-                          _errorMessage == null &&
-                          _items.isEmpty)
-                        const _TrackMessageCard(
-                          message:
-                              'No application found for this phone number.',
-                        )
-                      else
-                        ..._items.map(_ApplicationCard.new),
+                      if (result != null) ..._results(result),
                     ],
                   ),
                 ),
@@ -146,6 +108,25 @@ class _TrackMasjidApplicationScreenState
         ),
       ),
     );
+  }
+
+  List<Widget> _results(AsyncValue<List<TrackMasjidApplicationResult>> result) {
+    if (result.isLoading) {
+      return const <Widget>[Center(child: CircularProgressIndicator())];
+    }
+    final error = result.error;
+    if (error != null) {
+      return <Widget>[_TrackMessageCard(message: userMessage(error))];
+    }
+    final items = result.value ?? const <TrackMasjidApplicationResult>[];
+    if (items.isEmpty) {
+      return const <Widget>[
+        _TrackMessageCard(
+          message: 'No application found for this phone number.',
+        ),
+      ];
+    }
+    return items.map(_ApplicationCard.new).toList();
   }
 }
 
@@ -196,7 +177,7 @@ class _ApplicationCard extends StatelessWidget {
             Text('Imam: ${item.imamName ?? 'Not available'}'),
             const SizedBox(height: 6),
             Text(
-              'Requested: ${formatReadableDate(item.requestedAt, nullText: 'Not available')}',
+              'Requested: ${item.requestedAt == null ? 'Not available' : AppFormat.date(item.requestedAt!)}',
             ),
             const SizedBox(height: 6),
             const Text('Contact us: support@yourdomain.com'),

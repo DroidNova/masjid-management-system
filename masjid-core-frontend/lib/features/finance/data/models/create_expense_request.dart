@@ -1,25 +1,25 @@
-import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+// freezed: @JsonSerializable on the factory configures the generated class.
+// ignore_for_file: invalid_annotation_target
 
-class CreateExpenseRequest {
-  const CreateExpenseRequest({
-    required this.type,
-    required this.amount,
-    this.title,
-    this.description,
-    this.spentAt,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String type;
-  final double amount;
-  final String? title;
-  final String? description;
-  final String? spentAt;
+part 'create_expense_request.freezed.dart';
+part 'create_expense_request.g.dart';
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{'type': type, 'amount': amount};
-    addStringIfNotEmpty(json, 'title', title);
-    addStringIfNotEmpty(json, 'description', description);
-    addStringIfNotEmpty(json, 'spentAt', spentAt);
-    return json;
-  }
+/// Body of `POST /expenses/my-masjid`. Null fields are left out.
+@freezed
+abstract class CreateExpenseRequest with _$CreateExpenseRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory CreateExpenseRequest({
+    required String type,
+    required double amount,
+    String? title,
+    String? description,
+
+    /// `yyyy-MM-dd`.
+    String? spentAt,
+  }) = _CreateExpenseRequest;
+
+  factory CreateExpenseRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateExpenseRequestFromJson(json);
 }

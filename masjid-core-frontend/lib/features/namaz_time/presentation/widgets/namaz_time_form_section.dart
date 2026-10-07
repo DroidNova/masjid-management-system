@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class NamazTimeFormSection extends StatelessWidget {
   const NamazTimeFormSection({
@@ -11,6 +10,7 @@ class NamazTimeFormSection extends StatelessWidget {
     required this.ishaController,
     required this.jummaController,
     required this.noteController,
+    this.fieldErrorFor,
   });
 
   final TextEditingController fajrController;
@@ -20,6 +20,9 @@ class NamazTimeFormSection extends StatelessWidget {
   final TextEditingController ishaController;
   final TextEditingController jummaController;
   final TextEditingController noteController;
+
+  /// Server validation message for a field name (`fajr`, `note`, ...).
+  final String? Function(String field)? fieldErrorFor;
 
   @override
   Widget build(BuildContext context) {
@@ -32,43 +35,52 @@ class NamazTimeFormSection extends StatelessWidget {
             _NamazTimePickerField(
               controller: fajrController,
               label: 'Fajr',
+              errorText: fieldErrorFor?.call('fajr'),
               fallbackTime: const TimeOfDay(hour: 5, minute: 0),
             ),
             const SizedBox(height: 14),
             _NamazTimePickerField(
               controller: zuhrController,
               label: 'Zuhr',
+              errorText: fieldErrorFor?.call('zuhr'),
               fallbackTime: const TimeOfDay(hour: 13, minute: 30),
             ),
             const SizedBox(height: 14),
             _NamazTimePickerField(
               controller: asrController,
               label: 'Asr',
+              errorText: fieldErrorFor?.call('asr'),
               fallbackTime: const TimeOfDay(hour: 17, minute: 0),
             ),
             const SizedBox(height: 14),
             _NamazTimePickerField(
               controller: maghribController,
               label: 'Maghrib',
+              errorText: fieldErrorFor?.call('maghrib'),
               fallbackTime: const TimeOfDay(hour: 18, minute: 45),
             ),
             const SizedBox(height: 14),
             _NamazTimePickerField(
               controller: ishaController,
               label: 'Isha',
+              errorText: fieldErrorFor?.call('isha'),
               fallbackTime: const TimeOfDay(hour: 20, minute: 15),
             ),
             const SizedBox(height: 14),
             _NamazTimePickerField(
               controller: jummaController,
               label: 'Jumma',
+              errorText: fieldErrorFor?.call('jumma'),
               fallbackTime: const TimeOfDay(hour: 13, minute: 15),
             ),
             const SizedBox(height: 14),
-            AppTextField(
+            TextFormField(
               controller: noteController,
-              label: 'Note',
               maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Note',
+                errorText: fieldErrorFor?.call('note'),
+              ),
             ),
           ],
         ),
@@ -82,11 +94,13 @@ class _NamazTimePickerField extends StatelessWidget {
     required this.controller,
     required this.label,
     required this.fallbackTime,
+    this.errorText,
   });
 
   final TextEditingController controller;
   final String label;
   final TimeOfDay fallbackTime;
+  final String? errorText;
 
   Future<void> _pickTime(BuildContext context) async {
     final selectedTime = await showTimePicker(
@@ -108,6 +122,7 @@ class _NamazTimePickerField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: _formatTime(fallbackTime),
+        errorText: errorText,
         border: const OutlineInputBorder(),
         prefixIcon: const Icon(Icons.access_time),
         suffixIcon: IconButton(

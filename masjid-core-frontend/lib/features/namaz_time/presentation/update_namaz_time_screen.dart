@@ -1,56 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/namaz_time/application/namaz_time_controller.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
-import 'package:masjid_core_frontend/features/namaz_time/data/namaz_time_repository.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/widgets/namaz_time_form_section.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class UpdateNamazTimeScreen extends StatefulWidget {
-  const UpdateNamazTimeScreen({
-    super.key,
-    this.masjidId,
-    this.initialNamazTime,
-    NamazTimeRepository? namazTimeRepository,
-    SessionStorage? sessionStorage,
-  }) : _namazTimeRepository = namazTimeRepository,
-       _sessionStorage = sessionStorage;
+/// Edits a masjid's namaz times. [masjidId] defaults to the signed-in
+/// user's masjid.
+class UpdateNamazTimeScreen extends ConsumerWidget {
+  const UpdateNamazTimeScreen({super.key, this.masjidId});
 
   final String? masjidId;
-  final NamazTimeModel? initialNamazTime;
-  final NamazTimeRepository? _namazTimeRepository;
-  final SessionStorage? _sessionStorage;
+
+  static const String _title = 'Update Namaz Time';
 
   @override
-  State<UpdateNamazTimeScreen> createState() => _UpdateNamazTimeScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fromRoute = masjidId;
+    final resolvedMasjidId = fromRoute != null && fromRoute.isNotEmpty
+        ? fromRoute
+        : ref.watch(currentUserProvider.select((user) => user?.masjidId));
+
+    if (resolvedMasjidId == null || resolvedMasjidId.isEmpty) {
+      return const _NamazTimeErrorView(
+        message: 'Masjid not found for this user.',
+      );
+    }
+
+    final provider = namazTimeControllerProvider(resolvedMasjidId);
+    return ref
+        .watch(provider)
+        .when(
+          // Keep the form (and what the user typed) while it reloads.
+          skipLoadingOnReload: true,
+          loading: () => Scaffold(
+            appBar: AppBar(title: const Text(_title)),
+            body: const LoadingView(),
+          ),
+          error: (error, _) => _NamazTimeErrorView(
+            message: userMessage(error),
+            onRetry: () => ref.invalidate(provider),
+          ),
+          data: (namazTime) =>
+              _NamazTimeForm(masjidId: resolvedMasjidId, initial: namazTime),
+        );
+  }
 }
 
-class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
-  final _fajrController = TextEditingController();
-  final _zuhrController = TextEditingController();
-  final _asrController = TextEditingController();
-  final _maghribController = TextEditingController();
-  final _ishaController = TextEditingController();
-  final _jummaController = TextEditingController();
-  final _noteController = TextEditingController();
+class _NamazTimeForm extends ConsumerStatefulWidget {
+  const _NamazTimeForm({required this.masjidId, required this.initial});
 
-  late final NamazTimeRepository _namazTimeRepository =
-      widget._namazTimeRepository ?? NamazTimeRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
-
-  String? _masjidId;
-  String? _errorMessage;
-  bool _isLoading = true;
-  bool _isSaving = false;
+  final String masjidId;
+  final NamazTimeModel initial;
 
   @override
-  void initState() {
-    super.initState();
-    _loadNamazTime();
-  }
+  ConsumerState<_NamazTimeForm> createState() => _NamazTimeFormState();
+}
+
+class _NamazTimeFormState extends ConsumerState<_NamazTimeForm> {
+  late final _fajrController = TextEditingController(text: widget.initial.fajr);
+  late final _zuhrController = TextEditingController(text: widget.initial.zuhr);
+  late final _asrController = TextEditingController(text: widget.initial.asr);
+  late final _maghribController = TextEditingController(
+    text: widget.initial.maghrib,
+  );
+  late final _ishaController = TextEditingController(text: widget.initial.isha);
+  late final _jummaController = TextEditingController(
+    text: widget.initial.jumma,
+  );
+  late final _noteController = TextEditingController(text: widget.initial.note);
 
   @override
   void dispose() {
@@ -64,134 +87,43 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadNamazTime() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final masjidId = await _resolveMasjidId();
-      if (masjidId == null || masjidId.isEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _errorMessage = 'Masjid not found for this user.';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      _masjidId = masjidId;
-      final namazTime =
-          await _namazTimeRepository.getNamazTime(masjidId) ??
-          widget.initialNamazTime;
-      if (!mounted) return;
-      if (namazTime != null) _fill(namazTime);
-      setState(() => _isLoading = false);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = _cleanError(error);
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<String?> _resolveMasjidId() async {
-    if (widget.masjidId != null && widget.masjidId!.isNotEmpty) {
-      return widget.masjidId;
-    }
-    final user = await _sessionStorage.getUser();
-    return user?.masjidId;
-  }
-
-  void _fill(NamazTimeModel namazTime) {
-    _fajrController.text = namazTime.fajr ?? '';
-    _zuhrController.text = namazTime.zuhr ?? '';
-    _asrController.text = namazTime.asr ?? '';
-    _maghribController.text = namazTime.maghrib ?? '';
-    _ishaController.text = namazTime.isha ?? '';
-    _jummaController.text = namazTime.jumma ?? '';
-    _noteController.text = namazTime.note ?? '';
-  }
-
   Future<void> _save() async {
-    final masjidId = _masjidId;
-    if (masjidId == null || masjidId.isEmpty) {
-      _showError('Masjid not found for this user.');
+    final saved = await ref
+        .read(namazTimeSaveControllerProvider.notifier)
+        .save(
+          masjidId: widget.masjidId,
+          request: UpdateNamazTimeRequest.fromForm(
+            fajr: _fajrController.text,
+            zuhr: _zuhrController.text,
+            asr: _asrController.text,
+            maghrib: _maghribController.text,
+            isha: _ishaController.text,
+            jumma: _jummaController.text,
+            note: _noteController.text,
+          ),
+        );
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!saved) {
+      final error = ref.read(namazTimeSaveControllerProvider).error;
+      if (error != null) {
+        messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
+      }
       return;
     }
-
-    setState(() => _isSaving = true);
-    try {
-      await _namazTimeRepository.updateNamazTime(
-        masjidId: masjidId,
-        request: UpdateNamazTimeRequest(
-          fajr: _fajrController.text,
-          zuhr: _zuhrController.text,
-          asr: _asrController.text,
-          maghrib: _maghribController.text,
-          isha: _ishaController.text,
-          jumma: _jummaController.text,
-          note: _noteController.text,
-        ),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Namaz timings updated successfully.')),
-      );
-      context.pop(true);
-    } catch (error) {
-      if (mounted) _showError(_cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Namaz timings updated successfully.')),
+    );
+    context.pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Update Namaz Time')),
-        body: const LoadingView(),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Update Namaz Time')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(_errorMessage!, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  AppButton(label: 'Retry', onPressed: _loadNamazTime),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    final saveState = ref.watch(namazTimeSaveControllerProvider);
+    final error = saveState.error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Update Namaz Time')),
+      appBar: AppBar(title: const Text(UpdateNamazTimeScreen._title)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -202,7 +134,7 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Text(
-                    'Update Namaz Time',
+                    UpdateNamazTimeScreen._title,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -218,15 +150,49 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
                     ishaController: _ishaController,
                     jummaController: _jummaController,
                     noteController: _noteController,
+                    fieldErrorFor: (field) => fieldError(error, field),
                   ),
                   const SizedBox(height: 20),
                   AppButton(
                     label: 'Save Namaz Time',
-                    isLoading: _isSaving,
+                    isLoading: saveState.isLoading,
                     onPressed: _save,
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NamazTimeErrorView extends StatelessWidget {
+  const _NamazTimeErrorView({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text(UpdateNamazTimeScreen._title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(message, textAlign: TextAlign.center),
+                if (onRetry != null) ...<Widget>[
+                  const SizedBox(height: 16),
+                  AppButton(label: 'Retry', onPressed: onRetry),
+                ],
+              ],
             ),
           ),
         ),

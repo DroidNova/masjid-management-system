@@ -1,15 +1,15 @@
-/// One page of a list, as every paged API endpoint returns it:
+/// One page of a list (named PageResult to avoid clashing with Flutter's Page), as every paged API endpoint returns it:
 /// `{ items: [...], meta: { page, limit, total, totalPages, hasNextPage } }`
 /// (see masjid-core/src/common/pagination.ts).
-class Page<T> {
-  const Page({required this.items, required this.meta});
+class PageResult<T> {
+  const PageResult({required this.items, required this.meta});
 
-  factory Page.fromJson(
+  factory PageResult.fromJson(
     Map<String, dynamic> json,
     T Function(Map<String, dynamic> item) parseItem,
   ) {
     final rawItems = json['items'];
-    return Page<T>(
+    return PageResult<T>(
       items: rawItems is List
           ? rawItems.whereType<Map<String, dynamic>>().map(parseItem).toList()
           : <T>[],

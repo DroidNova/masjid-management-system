@@ -1,39 +1,35 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 
-class AuthSession {
-  const AuthSession({
-    required this.user,
-    required this.accessToken,
-    required this.refreshToken,
-  });
+part 'auth_session.freezed.dart';
+part 'auth_session.g.dart';
 
-  factory AuthSession.fromJson(Map<String, dynamic> json) {
-    final tokenJson = json['tokens'];
-    final tokenSource = tokenJson is Map<String, dynamic> ? tokenJson : json;
-    final userJson = json['user'] is Map<String, dynamic>
-        ? json['user']
-        : tokenSource['user'];
+/// Tokens issued by `/auth/login/verify-otp` and `/auth/refresh`.
+@freezed
+abstract class AuthTokens with _$AuthTokens {
+  const factory AuthTokens({
+    required String accessToken,
+    required String refreshToken,
+    int? accessTokenExpiresIn,
+  }) = _AuthTokens;
 
-    if (userJson is! Map<String, dynamic>) {
-      throw const FormatException('User information is missing from response.');
-    }
+  factory AuthTokens.fromJson(Map<String, dynamic> json) =>
+      _$AuthTokensFromJson(json);
+}
 
-    return AuthSession(
-      user: AppUser.fromJson(userJson),
-      accessToken: _readToken(tokenSource, 'accessToken', 'access_token'),
-      refreshToken: _readToken(tokenSource, 'refreshToken', 'refresh_token'),
-    );
-  }
+/// Result of a successful OTP verification: `{ user, tokens }`.
+@freezed
+abstract class AuthSession with _$AuthSession {
+  const factory AuthSession({
+    required AppUser user,
+    required AuthTokens tokens,
+  }) = _AuthSession;
 
-  static String _readToken(
-    Map<String, dynamic> json,
-    String camelCaseKey,
-    String snakeCaseKey,
-  ) {
-    return (json[camelCaseKey] ?? json[snakeCaseKey])?.toString() ?? '';
-  }
+  const AuthSession._();
 
-  final AppUser user;
-  final String accessToken;
-  final String refreshToken;
+  factory AuthSession.fromJson(Map<String, dynamic> json) =>
+      _$AuthSessionFromJson(json);
+
+  String get accessToken => tokens.accessToken;
+  String get refreshToken => tokens.refreshToken;
 }

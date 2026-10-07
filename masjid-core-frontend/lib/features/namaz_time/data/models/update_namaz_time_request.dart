@@ -1,38 +1,51 @@
-class UpdateNamazTimeRequest {
-  const UpdateNamazTimeRequest({
-    this.fajr,
-    this.zuhr,
-    this.asr,
-    this.maghrib,
-    this.isha,
-    this.jumma,
-    this.note,
-  });
+// freezed: @JsonSerializable on the factory configures the generated class.
+// ignore_for_file: invalid_annotation_target
 
-  final String? fajr;
-  final String? zuhr;
-  final String? asr;
-  final String? maghrib;
-  final String? isha;
-  final String? jumma;
-  final String? note;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{};
-    _addIfNotEmpty(json, 'fajr', fajr);
-    _addIfNotEmpty(json, 'zuhr', zuhr);
-    _addIfNotEmpty(json, 'asr', asr);
-    _addIfNotEmpty(json, 'maghrib', maghrib);
-    _addIfNotEmpty(json, 'isha', isha);
-    _addIfNotEmpty(json, 'jumma', jumma);
-    _addIfNotEmpty(json, 'note', note);
-    return json;
-  }
+part 'update_namaz_time_request.freezed.dart';
+part 'update_namaz_time_request.g.dart';
 
-  void _addIfNotEmpty(Map<String, dynamic> json, String key, String? value) {
-    final trimmedValue = value?.trim();
-    if (trimmedValue != null && trimmedValue.isNotEmpty) {
-      json[key] = trimmedValue;
-    }
-  }
+/// Body of `PUT /namaz-times/:masjidId` (UpsertNamazTimeDto).
+///
+/// Null fields are left out of the JSON, so the server keeps their values.
+@freezed
+abstract class UpdateNamazTimeRequest with _$UpdateNamazTimeRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory UpdateNamazTimeRequest({
+    String? fajr,
+    String? zuhr,
+    String? asr,
+    String? maghrib,
+    String? isha,
+    String? jumma,
+    String? note,
+  }) = _UpdateNamazTimeRequest;
+
+  /// From raw form text: values are trimmed and empty fields are omitted.
+  factory UpdateNamazTimeRequest.fromForm({
+    String? fajr,
+    String? zuhr,
+    String? asr,
+    String? maghrib,
+    String? isha,
+    String? jumma,
+    String? note,
+  }) => UpdateNamazTimeRequest(
+    fajr: _clean(fajr),
+    zuhr: _clean(zuhr),
+    asr: _clean(asr),
+    maghrib: _clean(maghrib),
+    isha: _clean(isha),
+    jumma: _clean(jumma),
+    note: _clean(note),
+  );
+
+  factory UpdateNamazTimeRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateNamazTimeRequestFromJson(json);
+}
+
+String? _clean(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }

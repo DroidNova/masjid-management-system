@@ -1,55 +1,28 @@
-class CreateCommunityUserRequest {
-  CreateCommunityUserRequest({
-    required this.fullName,
-    required this.phone,
-    this.email,
-    required this.role,
-    required this.fatherName,
-    required this.age,
-    required this.gender,
-    this.isFamilyHead,
-    this.familyMemberCount,
-    this.masjidId,
-  }) {
-    if (!_allowedRoles.contains(role.trim())) {
-      throw ArgumentError('This role cannot be created from this screen.');
-    }
-  }
+// Freezed forwards @JsonSerializable on the factory to the generated class.
+// ignore_for_file: invalid_annotation_target
 
-  static const Set<String> _allowedRoles = <String>{
-    'MEMBER',
-    'IMAM',
-    'COMMITTEE_MEMBER',
-  };
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String fullName;
-  final String phone;
-  final String? email;
-  final String role;
-  final String fatherName;
-  final int age;
-  final String gender;
-  final bool? isFamilyHead;
-  final int? familyMemberCount;
-  final String? masjidId;
+part 'create_community_user_request.freezed.dart';
+part 'create_community_user_request.g.dart';
 
-  Map<String, dynamic> toJson() {
-    final trimmedEmail = email?.trim();
-    final trimmedMasjidId = masjidId?.trim();
+/// Body of `POST /masjids/my/users`. Null fields are left out.
+@freezed
+abstract class CreateCommunityUserRequest with _$CreateCommunityUserRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory CreateCommunityUserRequest({
+    required String fullName,
+    required String phone,
+    required String role,
+    required String fatherName,
+    required int age,
+    required String gender,
+    String? email,
+    bool? isFamilyHead,
+    int? familyMemberCount,
+    String? masjidId,
+  }) = _CreateCommunityUserRequest;
 
-    return <String, dynamic>{
-      'fullName': fullName.trim(),
-      'phone': phone.trim(),
-      'role': role.trim(),
-      'fatherName': fatherName.trim(),
-      'age': age,
-      'gender': gender.trim(),
-      if (isFamilyHead != null) 'isFamilyHead': isFamilyHead,
-      if (familyMemberCount != null) 'familyMemberCount': familyMemberCount,
-      if (trimmedEmail != null && trimmedEmail.isNotEmpty)
-        'email': trimmedEmail,
-      if (trimmedMasjidId != null && trimmedMasjidId.isNotEmpty)
-        'masjidId': trimmedMasjidId,
-    };
-  }
+  factory CreateCommunityUserRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateCommunityUserRequestFromJson(json);
 }

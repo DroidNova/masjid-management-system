@@ -1,119 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
+import 'package:masjid_core_frontend/core/pagination/paged_controller.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/announcements/data/announcements_repository.dart';
+import 'package:masjid_core_frontend/features/announcements/application/announcements_controller.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_card.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_empty_view.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class AnnouncementsScreen extends ConsumerStatefulWidget {
-  const AnnouncementsScreen({
-    super.key,
-    AnnouncementsRepository? announcementsRepository,
-    SessionStorage? sessionStorage,
-  }) : _announcementsRepository = announcementsRepository,
-       _sessionStorage = sessionStorage;
-
-  final AnnouncementsRepository? _announcementsRepository;
-  final SessionStorage? _sessionStorage;
+class AnnouncementsScreen extends ConsumerWidget {
+  const AnnouncementsScreen({super.key});
 
   @override
-  ConsumerState<AnnouncementsScreen> createState() =>
-      _AnnouncementsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final announcementsState = ref.watch(announcementsControllerProvider);
+
+    return announcementsState.when(
+      // Keep showing the list while it reloads after a change.
+      skipLoadingOnReload: true,
+      loading: () => const LoadingView(),
+      error: (error, _) {
+        if (error is ApiException && error.isUnauthorized) {
+          return _AnnouncementErrorView(
+            message: 'Session expired. Please login again.',
+            buttonLabel: 'Back to Login',
+            // The router sends the user to the login page.
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
+          );
+        }
+        final noMasjid =
+            error is ApiException &&
+            error.code == ApiErrorCodes.userMasjidNotAssigned;
+        return _AnnouncementErrorView(
+          message: noMasjid
+              ? 'You are not assigned to any masjid yet.'
+              : 'Unable to load announcements.',
+          detail: noMasjid ? null : userMessage(error),
+          onPressed: () => ref.invalidate(announcementsControllerProvider),
+        );
+      },
+      data: (state) => _AnnouncementsList(state: state),
+    );
+  }
 }
 
-class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
-  late final AnnouncementsRepository _announcementsRepository =
-      widget._announcementsRepository ?? AnnouncementsRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
+class _AnnouncementsList extends ConsumerWidget {
+  const _AnnouncementsList({required this.state});
 
-  List<AnnouncementModel> _announcements = <AnnouncementModel>[];
-  String? _errorMessage;
-  bool _isLoading = true;
-  bool _hasLoaded = false;
-  Future<void>? _activeLoad;
-  late final ValueNotifier<int> _refreshNotifier;
-  AppUser? _currentUser;
+  final PagedState<AnnouncementModel> state;
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
-      AppDataScope.announcements,
-    );
-    _refreshNotifier.addListener(_onRefreshRequested);
-    _loadCurrentUser();
-    _loadAnnouncements();
-  }
-
-  @override
-  void dispose() {
-    _refreshNotifier.removeListener(_onRefreshRequested);
-    super.dispose();
-  }
-
-  void _onRefreshRequested() {
-    _loadAnnouncements(force: true);
-  }
-
-  Future<void> _loadCurrentUser() async {
-    final user = await _sessionStorage.getUser();
-    if (!mounted) return;
-    setState(() => _currentUser = user);
-  }
-
-  Future<void> _loadAnnouncements({bool force = false}) {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null) return activeLoad;
-    if (!force && _hasLoaded) return Future<void>.value();
-
-    _activeLoad = _performLoadAnnouncements().whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoadAnnouncements() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final announcements = await _announcementsRepository.getAnnouncements();
-      if (!mounted) return;
-      setState(() {
-        _announcements = announcements;
-        _hasLoaded = true;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _openAddAnnouncement() async {
-    await context.push('/announcements/add');
-  }
-
-  Future<void> _openEditAnnouncement(AnnouncementModel announcement) async {
-    await context.push(
-      '/announcements/${announcement.id}/edit',
-      extra: announcement,
-    );
-  }
-
-  Future<void> _deleteAnnouncement(AnnouncementModel announcement) async {
+  Future<void> _deleteAnnouncement(
+    BuildContext context,
+    WidgetRef ref,
+    AnnouncementModel announcement,
+  ) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -133,118 +79,119 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
         ],
       ),
     );
-    if (shouldDelete != true) return;
+    if (shouldDelete != true || !context.mounted) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      await _announcementsRepository.deleteAnnouncement(announcement.id);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      await ref
+          .read(announcementsControllerProvider.notifier)
+          .deactivate(announcement.id);
+      messenger.showSnackBar(
         const SnackBar(content: Text('Announcement deleted successfully.')),
       );
     } catch (error) {
-      if (mounted) _showError(_cleanError(error));
+      messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
     }
   }
 
-  Future<void> _logout() async {
-    // The router sends the user to the login page.
-    await ref.read(authControllerProvider.notifier).signOut();
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  bool get _isUnauthorizedError {
-    final message = _errorMessage?.toLowerCase() ?? '';
-    return message.contains('unauthorized') || message.contains('401');
-  }
-
-  bool get _isNoMasjidError {
-    final message = _errorMessage?.toLowerCase() ?? '';
-    return message.contains('not assigned') || message.contains('masjid');
+  /// Infinite scroll: fetch the next page near the end of the list.
+  bool _onScroll(ScrollNotification notification, WidgetRef ref) {
+    if (notification.metrics.extentAfter < 300) {
+      ref.read(announcementsControllerProvider.notifier).loadMore();
+    }
+    return false;
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isLoading) return const LoadingView();
-
-    if (_errorMessage != null) {
-      if (_isUnauthorizedError) {
-        return _AnnouncementErrorView(
-          message: 'Session expired. Please login again.',
-          buttonLabel: 'Back to Login',
-          onPressed: _logout,
-        );
-      }
-      return _AnnouncementErrorView(
-        message: _isNoMasjidError
-            ? 'You are not assigned to any masjid yet.'
-            : 'Unable to load announcements.',
-        detail: _isNoMasjidError ? null : _errorMessage,
-        onPressed: () => _loadAnnouncements(force: true),
-      );
-    }
-
+  Widget build(BuildContext context, WidgetRef ref) {
     final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
-      _currentUser?.permissions ?? const <String>[],
+      ref.watch(currentPermissionsProvider),
     );
+    final announcements = state.items;
+    final controller = ref.read(announcementsControllerProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Announcements')),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _loadAnnouncements(force: true),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        'Announcements',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text('Important updates for your masjid community'),
-                      const SizedBox(height: 16),
-                      if (canManageAnnouncements) ...<Widget>[
-                        AppButton(
-                          label: 'Add Announcement',
-                          onPressed: _openAddAnnouncement,
+          onRefresh: controller.refresh,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) => _onScroll(notification, ref),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: <Widget>[
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Text(
+                          'Announcements',
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Important updates for your masjid community',
                         ),
                         const SizedBox(height: 16),
-                      ],
-                      if (_announcements.isEmpty)
-                        const AnnouncementEmptyView()
-                      else
-                        ..._announcements.map(
-                          (announcement) => AnnouncementCard(
-                            announcement: announcement,
-                            onEdit: canManageAnnouncements
-                                ? () => _openEditAnnouncement(announcement)
-                                : null,
-                            onDelete: canManageAnnouncements
-                                ? () => _deleteAnnouncement(announcement)
-                                : null,
+                        if (canManageAnnouncements) ...<Widget>[
+                          AppButton(
+                            label: 'Add Announcement',
+                            onPressed: () => context.push('/announcements/add'),
                           ),
-                        ),
-                    ],
+                          const SizedBox(height: 16),
+                        ],
+                        if (announcements.isEmpty)
+                          const AnnouncementEmptyView()
+                        else
+                          ...announcements.map(
+                            (announcement) => AnnouncementCard(
+                              announcement: announcement,
+                              onEdit: canManageAnnouncements
+                                  ? () => context.push(
+                                      '/announcements/${announcement.id}/edit',
+                                      extra: announcement,
+                                    )
+                                  : null,
+                              onDelete: canManageAnnouncements
+                                  ? () => _deleteAnnouncement(
+                                      context,
+                                      ref,
+                                      announcement,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        if (state.loadingMore)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        if (state.loadMoreError != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              children: <Widget>[
+                                Text(
+                                  userMessage(state.loadMoreError!),
+                                  textAlign: TextAlign.center,
+                                ),
+                                TextButton(
+                                  onPressed: controller.loadMore,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

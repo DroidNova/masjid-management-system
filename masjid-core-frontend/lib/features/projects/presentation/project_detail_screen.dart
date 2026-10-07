@@ -1,92 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_detail_controller.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_editor_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
-import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class ProjectDetailScreen extends StatefulWidget {
+class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({
     super.key,
     required this.projectId,
     this.initialProject,
-    ProjectsRepository? projectsRepository,
-    SessionStorage? sessionStorage,
-  }) : _projectsRepository = projectsRepository,
-       _sessionStorage = sessionStorage;
+  });
 
   final String projectId;
+
+  /// From the list (route `extra`): shown instantly while the project loads.
   final ProjectModel? initialProject;
-  final ProjectsRepository? _projectsRepository;
-  final SessionStorage? _sessionStorage;
 
   @override
-  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final projectState = ref.watch(projectDetailProvider(projectId));
+    final preview = initialProject?.id == projectId ? initialProject : null;
+
+    final Widget body;
+    if (projectState.hasError && !projectState.isLoading) {
+      body = _DetailError(
+        message: userMessage(projectState.error!),
+        onRetry: () => ref.invalidate(projectDetailProvider(projectId)),
+      );
+    } else {
+      final project = projectState.valueOrNull ?? preview;
+      body = project == null
+          ? const LoadingView()
+          : _ProjectDetailBody(project: project);
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Project Details')),
+      body: body,
+    );
+  }
 }
 
-class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
-  late final ProjectsRepository _projectsRepository =
-      widget._projectsRepository ?? ProjectsRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
+class _ProjectDetailBody extends ConsumerWidget {
+  const _ProjectDetailBody({required this.project});
 
-  ProjectModel? _project;
-  String? _errorMessage;
-  bool _isLoading = true;
-  bool _isDeleting = false;
-  bool _canManageProjects = false;
+  final ProjectModel project;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadPermissions();
-    _loadProject();
-  }
-
-  Future<void> _loadPermissions() async {
-    final user = await _sessionStorage.getUser();
-    if (!mounted) return;
-    setState(() {
-      _canManageProjects = PermissionHelper.canManageProjects(
-        user?.permissions ?? const <String>[],
-      );
-    });
-  }
-
-  Future<void> _loadProject() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final project =
-          widget.initialProject ??
-          await _projectsRepository.getProjectById(widget.projectId);
-      if (!mounted) return;
-      setState(() => _project = project);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _editProject() async {
-    final project = _project;
-    if (project == null) return;
-    await context.push('/projects/${project.id}/edit', extra: project);
-  }
-
-  Future<void> _deleteProject() async {
-    final project = _project;
-    if (project == null) return;
+  Future<void> _deleteProject(BuildContext context, WidgetRef ref) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -104,130 +73,141 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ],
       ),
     );
-    if (shouldDelete != true) return;
+    if (shouldDelete != true || !context.mounted) return;
 
-    setState(() => _isDeleting = true);
-    try {
-      await _projectsRepository.deleteProject(project.id);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Project deleted successfully.')),
-      );
-      context.pop(true);
-    } catch (error) {
-      if (mounted) _showError(_cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isDeleting = false);
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    final ok = await ref
+        .read(projectEditorControllerProvider.notifier)
+        .deleteProject(project.id);
+    if (!context.mounted) return;
+    final error = ref.read(projectEditorControllerProvider).error;
+    if (!ok && error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? 'Project deleted successfully.' : userMessage(error!),
+        ),
+      ),
+    );
+    if (ok) context.pop(true);
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Project Details')),
-        body: const LoadingView(),
-      );
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canManageProjects = PermissionHelper.canManageProjects(
+      ref.watch(currentPermissionsProvider),
+    );
+    final isDeleting = ref.watch(projectEditorControllerProvider).isLoading;
+    final description = project.description;
+    final startDate = project.startDate;
+    final endDate = project.endDate;
+    final createdAt = project.createdAt;
 
-    if (_errorMessage != null || _project == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Project Details')),
-        body: Center(
-          child: AppButton(label: 'Retry', onPressed: _loadProject),
-        ),
-      );
-    }
-
-    final project = _project!;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Project Details')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              project.title,
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            project.title,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          ProjectStatusChip(status: project.status),
-                        ],
-                      ),
-                      if (project.description != null) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Text(project.description!),
+                        ),
+                        ProjectStatusChip(status: project.status),
                       ],
-                      const SizedBox(height: 16),
-                      Text('Target: ${formatRupees(project.targetAmount)}'),
-                      Text(
-                        'Collected: ${formatRupees(project.collectedAmount)}',
+                    ),
+                    if (description != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      Text(description),
+                    ],
+                    const SizedBox(height: 16),
+                    Text('Target: ${AppFormat.rupees(project.targetAmount)}'),
+                    Text(
+                      'Collected: ${AppFormat.rupees(project.collectedAmount)}',
+                    ),
+                    Text('Spent: ${AppFormat.rupees(project.spentAmount)}'),
+                    const SizedBox(height: 16),
+                    ProjectProgressBar(
+                      progressPercentage: project.progressPercentage,
+                    ),
+                    const SizedBox(height: 12),
+                    AppButton(
+                      label: 'View Contributions',
+                      isOutlined: true,
+                      onPressed: () => context.push(
+                        '/projects/${project.id}/contributions',
+                        extra: project.title,
                       ),
-                      Text('Spent: ${formatRupees(project.spentAmount)}'),
-                      const SizedBox(height: 16),
-                      ProjectProgressBar(
-                        progressPercentage: project.progressPercentage,
+                    ),
+                    const Divider(height: 28),
+                    Text(
+                      'Start Date: '
+                      '${startDate == null ? 'Not set' : AppFormat.date(startDate)}',
+                    ),
+                    Text(
+                      'End Date: '
+                      '${endDate == null ? 'Not set' : AppFormat.date(endDate)}',
+                    ),
+                    Text(
+                      'Created: '
+                      '${createdAt == null ? '-' : AppFormat.dateTime(createdAt)}',
+                    ),
+                    if (canManageProjects) ...<Widget>[
+                      const SizedBox(height: 20),
+                      AppButton(
+                        label: 'Edit Project',
+                        onPressed: () => context.push(
+                          '/projects/${project.id}/edit',
+                          extra: project,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       AppButton(
-                        label: 'View Contributions',
+                        label: 'Delete / Cancel Project',
                         isOutlined: true,
-                        onPressed: () => context.push(
-                          '/projects/${project.id}/contributions',
-                          extra: project.title,
-                        ),
+                        isLoading: isDeleting,
+                        onPressed: () => _deleteProject(context, ref),
                       ),
-                      const Divider(height: 28),
-                      Text(
-                        'Start Date: ${formatReadableDate(parseApiDate(project.startDate))}',
-                      ),
-                      Text(
-                        'End Date: ${formatReadableDate(parseApiDate(project.endDate))}',
-                      ),
-                      Text('Created: ${project.createdAt ?? '-'}'),
-                      if (_canManageProjects) ...<Widget>[
-                        const SizedBox(height: 20),
-                        AppButton(
-                          label: 'Edit Project',
-                          onPressed: _editProject,
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          label: 'Delete / Cancel Project',
-                          isOutlined: true,
-                          isLoading: _isDeleting,
-                          onPressed: _deleteProject,
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailError extends StatelessWidget {
+  const _DetailError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            AppButton(label: 'Retry', onPressed: onRetry),
+          ],
         ),
       ),
     );

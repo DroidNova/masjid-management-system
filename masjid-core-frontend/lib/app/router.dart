@@ -34,9 +34,9 @@ import 'package:masjid_core_frontend/features/projects/presentation/edit_project
 import 'package:masjid_core_frontend/features/projects/presentation/project_detail_screen.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/projects_screen.dart';
 import 'package:masjid_core_frontend/features/splash/presentation/splash_screen.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_request_detail_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_requests_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjid_detail_screen.dart';
@@ -215,7 +215,8 @@ final List<RouteBase> _routes = <RouteBase>[
     path: '/projects/:id/contributions',
     builder: (context, state) => ProjectContributionsScreen(
       projectId: state.pathParameters['id'] ?? '',
-      projectTitle: (state.extra as String?) ?? 'Project',
+      // Title is loaded by id; extra only shows it instantly.
+      projectTitle: state.extra as String?,
     ),
   ),
   GoRoute(

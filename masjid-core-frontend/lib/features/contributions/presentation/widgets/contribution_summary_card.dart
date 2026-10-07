@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/features/contributions/models/my_contribution_summary_model.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/features/contributions/data/models/my_contribution_summary.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_card.dart';
 
 class ContributionSummaryCard extends StatelessWidget {
   const ContributionSummaryCard({super.key, required this.summary});
 
-  final ImamSalaryContributionSummaryModel summary;
+  final ImamSalaryContributionSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final values = <(String, String)>[
-      ('Total Expected', formatRupees(summary.totalExpected)),
-      ('Total Paid', formatRupees(summary.totalPaid)),
-      ('Total Due', formatRupees(summary.totalDue)),
+      ('Total Expected', AppFormat.rupees(summary.totalExpected)),
+      ('Total Paid', AppFormat.rupees(summary.totalPaid)),
+      ('Total Due', AppFormat.rupees(summary.totalDue)),
       ('Paid Months', '${summary.paidMonths}'),
       ('Partial Months', '${summary.partialMonths}'),
       ('Unpaid Months', '${summary.unpaidMonths}'),

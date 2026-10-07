@@ -1,231 +1,143 @@
-import 'package:dio/dio.dart';
 import 'package:masjid_core_frontend/core/network/api_client.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/create_imam_salary_request.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/imam_salary_ledger_models.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/imam_salary_model.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/update_imam_salary_request.dart';
-import 'package:masjid_core_frontend/shared/models/paginated_response.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
 
+/// Imam salary ledger endpoints. Errors surface as ApiException (with `code`,
+/// e.g. IMAM_SALARY_NOT_FOUND, IMAM_SALARY_ALREADY_EXISTS).
 class ImamSalaryApi {
-  ImamSalaryApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  ImamSalaryApi(this._apiClient);
 
   final ApiClient _apiClient;
 
-  Future<List<ImamSalaryModel>> getImamSalaries() async {
-    try {
-      final response = await _apiClient.dio.get<Object?>(
-        '/imam-salaries/my-masjid',
-      );
-      return _extractListData(response.data)
-          .whereType<Map<String, dynamic>>()
-          .map(ImamSalaryModel.fromJson)
-          .toList();
-    } on DioException catch (error) {
-      throw Exception(_readDioErrorMessage(error));
-    }
-  }
+  static const int pageSize = 20;
 
-  Future<ImamSalaryModel> getImamSalaryById(String id) async {
-    try {
-      final response = await _apiClient.dio.get<Object?>('/imam-salaries/$id');
-      return ImamSalaryModel.fromJson(_extractMapData(response.data));
-    } on DioException catch (error) {
-      throw Exception(_readDioErrorMessage(error));
-    }
-  }
-
-  Future<ImamSalaryModel> createImamSalary(
-    CreateImamSalaryRequest request,
-  ) async {
-    try {
-      final response = await _apiClient.dio.post<Object?>(
-        '/imam-salaries/my-masjid',
-        data: request.toJson(),
-      );
-      return ImamSalaryModel.fromJson(_extractMapData(response.data));
-    } on DioException catch (error) {
-      throw Exception(_readDioErrorMessage(error));
-    }
-  }
-
-  Future<ImamSalaryModel> updateImamSalary(
-    String id,
-    UpdateImamSalaryRequest request,
-  ) async {
-    try {
-      final response = await _apiClient.dio.patch<Object?>(
-        '/imam-salaries/$id',
-        data: request.toJson(),
-      );
-      return ImamSalaryModel.fromJson(_extractMapData(response.data));
-    } on DioException catch (error) {
-      throw Exception(_readDioErrorMessage(error));
-    }
-  }
-
-  Future<void> deleteImamSalary(String id) async {
-    try {
-      await _apiClient.dio.delete<Object?>('/imam-salaries/$id');
-    } on DioException catch (error) {
-      throw Exception(_readDioErrorMessage(error));
-    }
-  }
-
-  Map<String, dynamic> _extractMapData(Object? responseData) {
-    final data = _unwrapData(responseData);
-    if (data is Map<String, dynamic>) return data;
-    return <String, dynamic>{};
-  }
-
-  List<dynamic> _extractListData(Object? responseData) {
-    final data = _unwrapData(responseData);
-    if (data is List<dynamic>) return data;
-    if (data is Map<String, dynamic>) {
-      final items = data['items'];
-      if (items is List<dynamic>) return items;
-    }
-    return <dynamic>[];
-  }
-
-  Object? _unwrapData(Object? responseData) {
-    if (responseData is Map<String, dynamic> &&
-        responseData.containsKey('data')) {
-      return responseData['data'];
-    }
-    return responseData;
-  }
-
-  String _readDioErrorMessage(DioException error) {
-    final responseData = error.response?.data;
-    if (responseData is Map<String, dynamic>) {
-      final message = responseData['message'];
-      if (message is String && message.isNotEmpty) return message;
-      final responseError = responseData['error'];
-      if (responseError is Map<String, dynamic>) {
-        final errorMessage = responseError['message'];
-        if (errorMessage is String && errorMessage.isNotEmpty) {
-          return errorMessage;
-        }
-      }
-    }
-    return error.message ?? 'Unable to load imam salary records.';
-  }
-
-  Future<PaginatedResponse<ImamSalaryMonthModel>> getMonths({
+  Future<PageResult<ImamSalaryMonth>> getMonths({
     required int month,
     required int year,
     int page = 1,
-    int limit = 20,
   }) async {
-    final response = await _apiClient.dio.get<Object?>(
+    final data = await _apiClient.get<Map<String, dynamic>>(
       '/imam-salaries/months',
-      queryParameters: {
+      query: <String, dynamic>{
         'month': month,
         'year': year,
         'page': page,
-        'limit': limit,
+        'limit': pageSize,
       },
     );
-    return PaginatedResponse.fromJson(
-      _extractMapData(response.data),
-      ImamSalaryMonthModel.fromJson,
-    );
+    return PageResult<ImamSalaryMonth>.fromJson(data, ImamSalaryMonth.fromJson);
   }
 
-  Future<ImamSalaryMonthModel> getMonth(String id) async =>
-      ImamSalaryMonthModel.fromJson(
-        _extractMapData(
-          (await _apiClient.dio.get<Object?>('/imam-salaries/months/$id')).data,
-        ),
-      );
-  Future<ImamSalaryMonthModel> createMonth(
-    CreateImamSalaryMonthRequest request,
-  ) async => ImamSalaryMonthModel.fromJson(
-    _extractMapData(
-      (await _apiClient.dio.post<Object?>(
-        '/imam-salaries/months',
-        data: request.toJson(),
-      )).data,
-    ),
-  );
-  Future<ImamSalaryMonthModel> updateAmount(
-    String id,
-    UpdateImamSalaryAmountRequest request,
-  ) async => ImamSalaryMonthModel.fromJson(
-    _extractMapData(
-      (await _apiClient.dio.patch<Object?>(
-        '/imam-salaries/months/$id/amount',
-        data: request.toJson(),
-      )).data,
-    ),
-  );
-  Future<PaginatedResponse<ImamSalaryAssignmentModel>> getAssignments(
-    String id, {
+  Future<ImamSalaryMonth> createMonth({
+    required int month,
+    required int year,
+    required double amountPerHead,
+    String? note,
+  }) async {
+    final trimmedNote = note?.trim();
+    final data = await _apiClient.post<Map<String, dynamic>>(
+      '/imam-salaries/months',
+      body: <String, dynamic>{
+        'month': month,
+        'year': year,
+        'amountPerHead': amountPerHead,
+        if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
+      },
+    );
+    return ImamSalaryMonth.fromJson(data);
+  }
+
+  Future<ImamSalaryMonth> updateAmount(
+    String monthId, {
+    required double amountPerHead,
+    String? reason,
+  }) async {
+    final trimmedReason = reason?.trim();
+    final data = await _apiClient.patch<Map<String, dynamic>>(
+      '/imam-salaries/months/$monthId/amount',
+      body: <String, dynamic>{
+        'amountPerHead': amountPerHead,
+        if (trimmedReason != null && trimmedReason.isNotEmpty)
+          'reason': trimmedReason,
+      },
+    );
+    return ImamSalaryMonth.fromJson(data);
+  }
+
+  Future<PageResult<SalaryAssignment>> getAssignments(
+    String monthId, {
     String? status,
     String? search,
     int page = 1,
-    int limit = 20,
   }) async {
-    final response = await _apiClient.dio.get<Object?>(
-      '/imam-salaries/months/$id/assignments',
-      queryParameters: {
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/imam-salaries/months/$monthId/assignments',
+      query: <String, dynamic>{
         'page': page,
-        'limit': limit,
+        'limit': pageSize,
         'status': ?status,
-        if (search?.isNotEmpty == true) 'search': search,
+        if (search != null && search.isNotEmpty) 'search': search,
       },
     );
-    return PaginatedResponse.fromJson(
-      _extractMapData(response.data),
-      ImamSalaryAssignmentModel.fromJson,
+    return PageResult<SalaryAssignment>.fromJson(
+      data,
+      SalaryAssignment.fromJson,
     );
   }
 
-  Future<ImamSalaryPaymentModel> addPayment(
-    CreateImamSalaryPaymentRequest request,
-  ) async => ImamSalaryPaymentModel.fromJson(
-    _extractMapData(
-      (await _apiClient.dio.post<Object?>(
-        '/imam-salaries/payments',
-        data: request.toJson(),
-      )).data,
-    ),
-  );
-  Future<PaginatedResponse<ImamSalaryPaymentModel>> getPayments({
+  Future<SalaryPayment> addPayment({
+    required String assignmentId,
+    required double amount,
+    required String paymentMode,
+    required DateTime paidAt,
+    String? note,
+  }) async {
+    final trimmedNote = note?.trim();
+    final data = await _apiClient.post<Map<String, dynamic>>(
+      '/imam-salaries/payments',
+      body: <String, dynamic>{
+        'assignmentId': assignmentId,
+        'amount': amount,
+        'paymentMode': paymentMode,
+        'paidAt': paidAt.toUtc().toIso8601String(),
+        if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
+      },
+    );
+    return SalaryPayment.fromJson(data);
+  }
+
+  Future<PageResult<SalaryPayment>> getPayments({
     required int month,
     required int year,
     String? paymentMode,
     String? search,
     int page = 1,
-    int limit = 20,
   }) async {
-    final response = await _apiClient.dio.get<Object?>(
+    final data = await _apiClient.get<Map<String, dynamic>>(
       '/imam-salaries/payments',
-      queryParameters: {
+      query: <String, dynamic>{
         'month': month,
         'year': year,
         'page': page,
-        'limit': limit,
+        'limit': pageSize,
         'paymentMode': ?paymentMode,
-        if (search?.isNotEmpty == true) 'search': search,
+        if (search != null && search.isNotEmpty) 'search': search,
       },
     );
-    return PaginatedResponse.fromJson(
-      _extractMapData(response.data),
-      ImamSalaryPaymentModel.fromJson,
-    );
+    return PageResult<SalaryPayment>.fromJson(data, SalaryPayment.fromJson);
   }
 
-  Future<List<MyImamSalaryHistoryModel>> getMyHistory({
-    int monthsBack = 6,
-  }) async =>
-      _extractListData(
-            (await _apiClient.dio.get<Object?>(
-              '/imam-salaries/my-history',
-              queryParameters: {'monthsBack': monthsBack},
-            )).data,
-          )
-          .whereType<Map<String, dynamic>>()
-          .map(MyImamSalaryHistoryModel.fromJson)
-          .toList();
+  /// The signed-in member's last [monthsBack] months (not paged).
+  Future<List<MySalaryHistoryMonth>> getMyHistory({int monthsBack = 6}) async {
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/imam-salaries/my-history',
+      query: <String, dynamic>{'monthsBack': monthsBack},
+    );
+    final items = data['items'];
+    if (items is! List) return const <MySalaryHistoryMonth>[];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(MySalaryHistoryMonth.fromJson)
+        .toList();
+  }
 }

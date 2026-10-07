@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 
 class AnnouncementCard extends StatelessWidget {
@@ -41,7 +42,7 @@ class AnnouncementCard extends StatelessWidget {
             if (announcement.createdAt != null) ...<Widget>[
               const SizedBox(height: 8),
               Text(
-                announcement.createdAt!,
+                AppFormat.dateTime(announcement.createdAt!),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

@@ -1,36 +1,28 @@
-import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class ExpenseEntryModel {
-  const ExpenseEntryModel({
-    required this.id,
-    required this.type,
-    required this.amount,
-    this.title,
-    this.description,
-    this.spentAt,
-    this.status,
-    this.createdAt,
-  });
+part 'expense_entry_model.freezed.dart';
+part 'expense_entry_model.g.dart';
 
-  factory ExpenseEntryModel.fromJson(Map<String, dynamic> json) {
-    return ExpenseEntryModel(
-      id: parseRequiredString(json['id']),
-      type: parseRequiredString(json['type']),
-      amount: parseDouble(json['amount']),
-      title: parseOptionalString(json['title']),
-      description: parseOptionalString(json['description']),
-      spentAt: parseOptionalString(json['spentAt']),
-      status: parseOptionalString(json['status']),
-      createdAt: parseOptionalString(json['createdAt']),
-    );
-  }
+/// An expense (`/expenses/my-masjid`).
+@freezed
+abstract class ExpenseEntryModel with _$ExpenseEntryModel {
+  const ExpenseEntryModel._();
 
-  final String id;
-  final String type;
-  final double amount;
-  final String? title;
-  final String? description;
-  final String? spentAt;
-  final String? status;
-  final String? createdAt;
+  const factory ExpenseEntryModel({
+    required String id,
+    required String type,
+    required double amount,
+    String? title,
+    String? description,
+    DateTime? spentAt,
+
+    /// ACTIVE or CANCELLED.
+    @Default('ACTIVE') String status,
+    DateTime? createdAt,
+  }) = _ExpenseEntryModel;
+
+  factory ExpenseEntryModel.fromJson(Map<String, dynamic> json) =>
+      _$ExpenseEntryModelFromJson(json);
+
+  bool get isCancelled => status == 'CANCELLED';
 }

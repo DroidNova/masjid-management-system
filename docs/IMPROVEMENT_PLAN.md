@@ -8,8 +8,8 @@ Update the checkboxes and the status table as work lands.
 
 Last updated 2026-10-07.
 
-- **Done:** M0 Hygiene, M1 Backend security, M2 Access model, M3 Backend data and structure, M4 Flutter foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** M5 Flutter feature migration, one feature per session, following the dashboard pattern (`features/dashboard/application` + repository on `apiClientProvider` + `ConsumerWidget`). Order in the M5 list. Each feature also adopts the backend's single pagination envelope and drops its own error extractor.
+- **Done:** M0 to M5. Both apps lint, build, and test clean (backend 88 tests, app 173). CI runs on every push to `main`.
+- **Next:** M6 Deployment (VPS with Caddy, backups, CI deploy, staging, real OTP + SMS, Play Store internal track). Several owner decisions are needed first: VPS provider, domain, SMS provider (see section 5).
 - **App rules:** auth state lives only in `AuthController`; widgets read `currentUserProvider`/`currentPermissionsProvider`, never secure storage. Network calls go through `ApiClient` (`apiClientProvider`) and fail with `ApiException` (switch on `code`). Logging out = `authControllerProvider.notifier.signOut()`; the router redirect does the navigation.
 - **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
 - **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
@@ -17,7 +17,7 @@ Last updated 2026-10-07.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
-- **Known debt carried forward:** Screens other than the dashboard still keep per-screen state (M5 replaces it).
+- **Known debt carried forward:** None in the app structure; see M7 for strings and UI.
 
 ## 1. What the app is
 
@@ -242,22 +242,27 @@ Done when: login, logout, token refresh, and redirects work end to end through t
 
 ### M5: Flutter feature migration
 
-Goal: move each feature to the new stack. One feature per session, in this order, smallest first so the pattern settles early.
+Goal: move each feature to the new stack. Done in one session (2026-10-08) with five parallel agents, each owning separate feature folders, following `docs/APP_ARCHITECTURE.md`.
 
-- [ ] Dashboard
-- [ ] Namaz times
-- [ ] Announcements
-- [ ] Community (members)
-- [ ] Finance (collections, expenses, summary)
-- [ ] Projects and project contributions
-- [ ] Collection contributions and "my contributions"
-- [ ] Imam salary ledger (rewrite the minified screen, move validation such as "payment must not exceed due" out of dialogs)
-- [ ] Super admin (requests, masjids, users) with pinned response contracts, no key guessing
-- [ ] Masjid registration request and tracking (split the 633-line form)
+- [x] Dashboard (M4 reference)
+- [x] Namaz times
+- [x] Announcements (new backend `GET /announcements/:id` so edit works from a fresh URL)
+- [x] Community (members): phone/email hidden for members, USER_IN_ANOTHER_MASJID / MASJID_USER_ALREADY_LINKED shown clearly, leave-masjid menu
+- [x] Finance: summary with the new breakdown rows, paged collections and expenses with a type filter, cancel by long-press (committee only)
+- [x] Projects and project contributions (detail and edit load by id)
+- [x] Collection contributions and "my contributions"
+- [x] Imam salary ledger: minified screen rewritten into readable widgets and controllers; payment and amount validation in one place (compared in paise); disposed dialog controllers; errors with retry on every list
+- [x] Super admin (requests, masjids, users) on the real contract; key guessing removed; approval shows USER_IN_ANOTHER_MASJID; user detail now includes the masjid (backend)
+- [x] Masjid registration request and tracking: the 633-line form split into sections, validation and submission in a controller
+- [x] Login screens on `authRepositoryProvider`; errors by code (rate limit, wrong OTP, expired OTP offers a new one)
+- [x] Backend: one pagination envelope `{ items, meta: { page, limit, total, totalPages, hasNextPage } }` everywhere; imam salary errors carry real codes
+- [x] Deleted: refresh bus, request coordinator, text-matching error helper, old pagination helpers, role helper, per-feature Dio error extractors. `Page` renamed `PageResult` (clashed with Flutter's `Page`).
+- [x] 173 app tests (was 38). A live run of every repository against the backend on the scenario database matched the backend numbers and error codes.
+- [ ] Moved to M7: strings into ARB files. They are extracted together with the Hindi/Urdu translation and the UI redesign, so screens are not edited twice.
+- [ ] Not done on purpose: `go_router_builder`. Every detail route now loads by id from its path, which was the problem typed routes would have solved.
 
-For each feature: freezed models, repository provider, AsyncNotifier, strings in ARB, loading, empty, and error states with retry, permission-gated actions, widget test for the main screen. Existing look and feel is kept as is.
+Small UI additions agents made beyond wiring (no redesign): finance type filter and long-press cancel, imam month picker on the salary screen, a "Request new OTP" action, Indian date and money formats everywhere.
 
-Done when: no `setState`-driven data loading remains and `features/` has one pattern.
 
 ### M6: Deployment
 
@@ -303,6 +308,6 @@ Still open:
 | M2 Access model | done 2026-10-07 | membership table and tenant helper deferred (see M2 notes) |
 | M3 Backend structure | done 2026-10-08 | pagination envelope and salary error codes deferred to M4/M5 |
 | M4 Flutter foundation | done 2026-10-08 | typed routes and per-feature error cleanup move to M5 |
-| M5 Flutter features | next | |
-| M6 Deployment | not started | |
+| M5 Flutter features | done 2026-10-08 | ARB string extraction moved to M7 |
+| M6 Deployment | next | |
 | M7 Polish | not started | |

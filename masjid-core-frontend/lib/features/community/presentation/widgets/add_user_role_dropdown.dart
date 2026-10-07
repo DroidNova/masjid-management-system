@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/auth/current_user_role_helper.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 
 class AddUserRoleDropdown extends StatelessWidget {
   const AddUserRoleDropdown({
@@ -25,7 +25,7 @@ class AddUserRoleDropdown extends StatelessWidget {
           .map(
             (role) => DropdownMenuItem<String>(
               value: role,
-              child: Text(CurrentUserRoleHelper.roleLabel(role)),
+              child: Text(_roleLabel(role)),
             ),
           )
           .toList(),
@@ -39,3 +39,10 @@ class AddUserRoleDropdown extends StatelessWidget {
     );
   }
 }
+
+String _roleLabel(String role) => switch (role) {
+  PermissionHelper.member => 'Member',
+  PermissionHelper.imam => 'Imam',
+  PermissionHelper.committeeMember => 'Committee Member',
+  _ => role,
+};

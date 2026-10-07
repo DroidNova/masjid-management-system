@@ -25,9 +25,10 @@ features/<feature>/
    `ApiException` (`core/network/api_exception.dart`). Never catch
    `DioException` or parse error bodies in a feature. API shapes:
    `docs/openapi.json` (regenerate with `npm run openapi` in masjid-core).
-2. **Paged lists** return `{ items, meta }`. Parse with `Page.fromJson`
+2. **Paged lists** return `{ items, meta }`. Parse with `PageResult.fromJson`
    (`core/pagination/page.dart`) and extend `PagedController`
-   (`core/pagination/paged_controller.dart`) for infinite scroll.
+   (`core/pagination/paged_controller.dart`) for infinite scroll, or
+   `PagedFamilyController` when the list depends on an id or filter record.
 3. **State.** Screens hold no `_isLoading` / `_errorMessage` fields for server
    data. A controller (`AsyncNotifier`, `AutoDisposeAsyncNotifier`, or a
    `.family` by id) loads data; the screen renders `asyncValue.when(...)`.
@@ -58,7 +59,9 @@ features/<feature>/
     as the backend sends them. Money fields are `double` (the API sends
     numbers). Regenerate with
     `dart run build_runner build --delete-conflicting-outputs`; generated
-    files are committed.
+    files are committed. Request models that must omit null fields use
+    `@JsonSerializable(includeIfNull: false)` on the factory plus
+    `// ignore_for_file: invalid_annotation_target`.
 11. **Tests.** Each feature has at least one widget test for its main screen
     (provider overrides, no network) and unit tests for any non-trivial
     controller logic. `mocktail` for repositories.

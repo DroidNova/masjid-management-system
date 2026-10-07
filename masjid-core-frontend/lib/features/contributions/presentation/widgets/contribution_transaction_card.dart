@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_card.dart';
 
 class ContributionTransactionCard extends StatelessWidget {
@@ -14,39 +13,45 @@ class ContributionTransactionCard extends StatelessWidget {
     required this.collectedByName,
     this.note,
   });
-  final String title, paymentMode, collectedByName;
-  final String? subtitle, note;
+
+  final String title;
+  final String? subtitle;
   final double amount;
+  final String paymentMode;
   final DateTime? paidAt;
+  final String collectedByName;
+  final String? note;
+
   @override
-  Widget build(BuildContext context) => AppCard(
-    margin: const EdgeInsets.only(bottom: 10),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+  Widget build(BuildContext context) {
+    final paidOn = paidAt == null ? 'Not available' : AppFormat.date(paidAt!);
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
-            Text(
-              formatRupees(amount),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        if (subtitle?.isNotEmpty == true) Text(subtitle!),
-        Text(
-          '$paymentMode • ${formatReadableDate(paidAt, nullText: 'Not available')}',
-        ),
-        Text('Collected by $collectedByName'),
-        if (note != null) Text(note!),
-      ],
-    ),
-  );
+              Text(
+                AppFormat.rupees(amount),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (subtitle?.isNotEmpty ?? false) Text(subtitle!),
+          Text('$paymentMode • $paidOn'),
+          Text('Collected by $collectedByName'),
+          if (note != null) Text(note!),
+        ],
+      ),
+    );
+  }
 }

@@ -1,56 +1,35 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/create_project_request.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/projects_filter.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/update_project_request.dart';
 import 'package:masjid_core_frontend/features/projects/data/projects_api.dart';
 
+final projectsRepositoryProvider = Provider<ProjectsRepository>(
+  (ref) => ProjectsRepository(ProjectsApi(ref.watch(apiClientProvider))),
+);
+
 class ProjectsRepository {
-  ProjectsRepository({ProjectsApi? projectsApi})
-    : _projectsApi = projectsApi ?? ProjectsApi();
+  ProjectsRepository(this._api);
 
-  final ProjectsApi _projectsApi;
+  final ProjectsApi _api;
 
-  Future<List<ProjectModel>> getProjects() {
-    return ApiRequestCoordinator.instance.run<List<ProjectModel>>(
-      key: 'GET:/projects/my-masjid',
-      request: _projectsApi.getProjects,
-    );
-  }
+  static const int pageSize = 20;
 
-  Future<ProjectModel> getProjectById(String id) {
-    return ApiRequestCoordinator.instance.run<ProjectModel>(
-      key: 'GET:/projects/$id',
-      request: () => _projectsApi.getProjectById(id),
-    );
-  }
+  Future<PageResult<ProjectModel>> getProjects(
+    ProjectsFilter filter, {
+    int page = 1,
+  }) => _api.getProjects(filter, page: page, limit: pageSize);
 
-  Future<ProjectModel> createProject(CreateProjectRequest request) async {
-    final project = await _projectsApi.createProject(request);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.projects,
-      AppDataScope.dashboard,
-    ]);
-    return project;
-  }
+  Future<ProjectModel> getProjectById(String id) => _api.getProjectById(id);
 
-  Future<ProjectModel> updateProject(
-    String id,
-    UpdateProjectRequest request,
-  ) async {
-    final project = await _projectsApi.updateProject(id, request);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.projects,
-      AppDataScope.dashboard,
-    ]);
-    return project;
-  }
+  Future<ProjectModel> createProject(CreateProjectRequest request) =>
+      _api.createProject(request);
 
-  Future<void> deleteProject(String id) async {
-    await _projectsApi.deleteProject(id);
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.projects,
-      AppDataScope.dashboard,
-    ]);
-  }
+  Future<ProjectModel> updateProject(String id, UpdateProjectRequest request) =>
+      _api.updateProject(id, request);
+
+  Future<void> deleteProject(String id) => _api.deleteProject(id);
 }

@@ -1,36 +1,30 @@
-import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+// freezed: @JsonSerializable on the factory configures the generated class.
+// ignore_for_file: invalid_annotation_target
 
-class UpdateProjectRequest {
-  const UpdateProjectRequest({
-    this.title,
-    this.description,
-    this.targetAmount,
-    this.collectedAmount,
-    this.spentAmount,
-    this.status,
-    this.startDate,
-    this.endDate,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String? title;
-  final String? description;
-  final double? targetAmount;
-  final double? collectedAmount;
-  final double? spentAmount;
-  final String? status;
-  final String? startDate;
-  final String? endDate;
+part 'update_project_request.freezed.dart';
+part 'update_project_request.g.dart';
 
-  Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{};
-    addStringIfNotEmpty(json, 'title', title);
-    addStringIfNotEmpty(json, 'description', description);
-    if (targetAmount != null) json['targetAmount'] = targetAmount;
-    if (collectedAmount != null) json['collectedAmount'] = collectedAmount;
-    if (spentAmount != null) json['spentAmount'] = spentAmount;
-    addStringIfNotEmpty(json, 'status', status);
-    addStringIfNotEmpty(json, 'startDate', startDate);
-    addStringIfNotEmpty(json, 'endDate', endDate);
-    return json;
-  }
+/// Body of `PATCH /projects/{id}`. Null fields are left out (unchanged).
+@freezed
+abstract class UpdateProjectRequest with _$UpdateProjectRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory UpdateProjectRequest({
+    String? title,
+    String? description,
+    double? targetAmount,
+    double? collectedAmount,
+    double? spentAmount,
+    String? status,
+
+    /// `yyyy-MM-dd`.
+    String? startDate,
+
+    /// `yyyy-MM-dd`.
+    String? endDate,
+  }) = _UpdateProjectRequest;
+
+  factory UpdateProjectRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateProjectRequestFromJson(json);
 }

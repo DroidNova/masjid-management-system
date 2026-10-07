@@ -1,127 +1,81 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/imam_salary_api.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/create_imam_salary_request.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/imam_salary_ledger_models.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/imam_salary_model.dart';
-import 'package:masjid_core_frontend/features/imam_salary/models/update_imam_salary_request.dart';
-import 'package:masjid_core_frontend/shared/models/paginated_response.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+
+final imamSalaryRepositoryProvider = Provider<ImamSalaryRepository>(
+  (ref) => ImamSalaryRepository(ImamSalaryApi(ref.watch(apiClientProvider))),
+);
 
 class ImamSalaryRepository {
-  ImamSalaryRepository({ImamSalaryApi? imamSalaryApi})
-    : _imamSalaryApi = imamSalaryApi ?? ImamSalaryApi();
+  ImamSalaryRepository(this._api);
 
-  final ImamSalaryApi _imamSalaryApi;
+  final ImamSalaryApi _api;
 
-  Future<List<ImamSalaryModel>> getImamSalaries() {
-    return ApiRequestCoordinator.instance.run<List<ImamSalaryModel>>(
-      key: 'GET:/imam-salaries',
-      request: _imamSalaryApi.getImamSalaries,
-    );
-  }
-
-  Future<ImamSalaryModel> getImamSalaryById(String id) {
-    return ApiRequestCoordinator.instance.run<ImamSalaryModel>(
-      key: 'GET:/imam-salaries/$id',
-      request: () => _imamSalaryApi.getImamSalaryById(id),
-    );
-  }
-
-  Future<ImamSalaryModel> createImamSalary(
-    CreateImamSalaryRequest request,
-  ) async {
-    final salary = await _imamSalaryApi.createImamSalary(request);
-    _notifySalaryChanged();
-    return salary;
-  }
-
-  Future<ImamSalaryModel> updateImamSalary(
-    String id,
-    UpdateImamSalaryRequest request,
-  ) async {
-    final salary = await _imamSalaryApi.updateImamSalary(id, request);
-    _notifySalaryChanged();
-    return salary;
-  }
-
-  Future<void> deleteImamSalary(String id) async {
-    await _imamSalaryApi.deleteImamSalary(id);
-    _notifySalaryChanged();
-  }
-
-  void _notifySalaryChanged() {
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.imamSalary,
-      AppDataScope.finance,
-      AppDataScope.dashboard,
-    ]);
-  }
-
-  Future<PaginatedResponse<ImamSalaryMonthModel>> getMonths({
+  /// The salary month for [month]/[year], or null if it was not started.
+  Future<ImamSalaryMonth?> findMonth({
     required int month,
     required int year,
-    int page = 1,
-    int limit = 20,
-  }) => _imamSalaryApi.getMonths(
+  }) async {
+    final page = await _api.getMonths(month: month, year: year);
+    return page.items.isEmpty ? null : page.items.first;
+  }
+
+  Future<ImamSalaryMonth> createMonth({
+    required int month,
+    required int year,
+    required double amountPerHead,
+    String? note,
+  }) => _api.createMonth(
     month: month,
     year: year,
-    page: page,
-    limit: limit,
+    amountPerHead: amountPerHead,
+    note: note,
   );
-  Future<ImamSalaryMonthModel> getMonth(String id) =>
-      _imamSalaryApi.getMonth(id);
-  Future<PaginatedResponse<ImamSalaryAssignmentModel>> getAssignments(
-    String id, {
+
+  Future<ImamSalaryMonth> updateAmount(
+    String monthId, {
+    required double amountPerHead,
+    String? reason,
+  }) =>
+      _api.updateAmount(monthId, amountPerHead: amountPerHead, reason: reason);
+
+  Future<PageResult<SalaryAssignment>> getAssignments(
+    String monthId, {
     String? status,
     String? search,
     int page = 1,
-    int limit = 20,
-  }) => _imamSalaryApi.getAssignments(
-    id,
-    status: status,
-    search: search,
-    page: page,
-    limit: limit,
+  }) =>
+      _api.getAssignments(monthId, status: status, search: search, page: page);
+
+  Future<SalaryPayment> addPayment({
+    required String assignmentId,
+    required double amount,
+    required String paymentMode,
+    required DateTime paidAt,
+    String? note,
+  }) => _api.addPayment(
+    assignmentId: assignmentId,
+    amount: amount,
+    paymentMode: paymentMode,
+    paidAt: paidAt,
+    note: note,
   );
-  Future<PaginatedResponse<ImamSalaryPaymentModel>> getPayments({
+
+  Future<PageResult<SalaryPayment>> getPayments({
     required int month,
     required int year,
     String? paymentMode,
     String? search,
     int page = 1,
-    int limit = 20,
-  }) => _imamSalaryApi.getPayments(
+  }) => _api.getPayments(
     month: month,
     year: year,
     paymentMode: paymentMode,
     search: search,
     page: page,
-    limit: limit,
   );
-  Future<List<MyImamSalaryHistoryModel>> getMyHistory() =>
-      _imamSalaryApi.getMyHistory();
-  Future<ImamSalaryMonthModel> createMonth(
-    CreateImamSalaryMonthRequest request,
-  ) async {
-    final value = await _imamSalaryApi.createMonth(request);
-    _notifySalaryChanged();
-    return value;
-  }
 
-  Future<ImamSalaryMonthModel> updateAmount(
-    String id,
-    UpdateImamSalaryAmountRequest request,
-  ) async {
-    final value = await _imamSalaryApi.updateAmount(id, request);
-    _notifySalaryChanged();
-    return value;
-  }
-
-  Future<ImamSalaryPaymentModel> addPayment(
-    CreateImamSalaryPaymentRequest request,
-  ) async {
-    final value = await _imamSalaryApi.addPayment(request);
-    _notifySalaryChanged();
-    return value;
-  }
+  Future<List<MySalaryHistoryMonth>> getMyHistory() => _api.getMyHistory();
 }

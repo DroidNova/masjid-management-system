@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_editor_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/create_project_request.dart';
-import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
 import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
-class AddProjectScreen extends StatefulWidget {
-  const AddProjectScreen({super.key, ProjectsRepository? projectsRepository})
-    : _projectsRepository = projectsRepository;
-
-  final ProjectsRepository? _projectsRepository;
+class AddProjectScreen extends ConsumerStatefulWidget {
+  const AddProjectScreen({super.key});
 
   @override
-  State<AddProjectScreen> createState() => _AddProjectScreenState();
+  ConsumerState<AddProjectScreen> createState() => _AddProjectScreenState();
 }
 
-class _AddProjectScreenState extends State<AddProjectScreen> {
+class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -28,11 +26,11 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   final _spentAmountController = TextEditingController(text: '0');
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
-  late final ProjectsRepository _projectsRepository =
-      widget._projectsRepository ?? ProjectsRepository();
 
   String _status = 'ONGOING';
-  bool _isSubmitting = false;
+
+  /// Last server error, shown under the matching fields.
+  Object? _serverError;
 
   @override
   void dispose() {
@@ -47,40 +45,50 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   }
 
   Future<void> _submit() async {
+    _serverError = null;
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSubmitting = true);
-    try {
-      await _projectsRepository.createProject(
-        CreateProjectRequest(
-          title: _titleController.text,
-          description: _descriptionController.text,
-          targetAmount: _amount(_targetAmountController),
-          collectedAmount: _amount(_collectedAmountController),
-          spentAmount: _amount(_spentAmountController),
-          status: _status,
-          startDate: _startDateController.text,
-          endDate: _endDateController.text,
-        ),
-      );
-      if (!mounted) return;
+
+    final ok = await ref
+        .read(projectEditorControllerProvider.notifier)
+        .createProject(
+          CreateProjectRequest(
+            title: _titleController.text.trim(),
+            description: _optional(_descriptionController.text),
+            targetAmount: _amount(_targetAmountController),
+            collectedAmount: _amount(_collectedAmountController),
+            spentAmount: _amount(_spentAmountController),
+            status: _status,
+            startDate: _optional(_startDateController.text),
+            endDate: _optional(_endDateController.text),
+          ),
+        );
+    if (!mounted) return;
+
+    if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Project added successfully.')),
       );
       context.pop(true);
-    } catch (error) {
-      if (mounted) _showError(getReadableErrorMessage(error));
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      return;
     }
+
+    final error = ref.read(projectEditorControllerProvider).error;
+    if (error == null) return;
+    setState(() => _serverError = error);
+    _formKey.currentState!.validate();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(userMessage(error))));
   }
 
-  double _amount(TextEditingController controller) {
-    return double.tryParse(controller.text.trim()) ?? 0;
-  }
+  String? _optional(String text) => text.trim().isEmpty ? null : text.trim();
 
-  String? _required(String? value) {
+  double _amount(TextEditingController controller) =>
+      double.tryParse(controller.text.trim()) ?? 0;
+
+  String? _titleValidator(String? value) {
     if (value == null || value.trim().isEmpty) return 'Title is required.';
-    return null;
+    return fieldError(_serverError, 'title');
   }
 
   String? _amountValidator(String? value) {
@@ -92,14 +100,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
     return null;
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = ref.watch(projectEditorControllerProvider).isLoading;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Add Project')),
       body: ProjectFormBody(
@@ -113,10 +117,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
         endDateController: _endDateController,
         status: _status,
         onStatusChanged: (value) => setState(() => _status = value),
-        titleValidator: _required,
+        titleValidator: _titleValidator,
         amountValidator: _amountValidator,
         buttonLabel: 'Save Project',
-        isSubmitting: _isSubmitting,
+        isSubmitting: isSubmitting,
         onSubmit: _submit,
       ),
     );
@@ -141,6 +145,7 @@ class ProjectFormBody extends StatelessWidget {
     required this.buttonLabel,
     required this.isSubmitting,
     required this.onSubmit,
+    this.onChanged,
   });
 
   final GlobalKey<FormState> formKey;
@@ -159,6 +164,9 @@ class ProjectFormBody extends StatelessWidget {
   final bool isSubmitting;
   final VoidCallback onSubmit;
 
+  /// Called when any form field changes.
+  final VoidCallback? onChanged;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -169,6 +177,7 @@ class ProjectFormBody extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 560),
             child: Form(
               key: formKey,
+              onChanged: onChanged,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[

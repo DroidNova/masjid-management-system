@@ -1,49 +1,28 @@
-class NamazTimeModel {
-  const NamazTimeModel({
-    this.id,
-    this.masjidId,
-    this.fajr,
-    this.zuhr,
-    this.asr,
-    this.maghrib,
-    this.isha,
-    this.jumma,
-    this.note,
-    this.createdAt,
-    this.updatedAt,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  factory NamazTimeModel.fromJson(Map<String, dynamic> json) {
-    return NamazTimeModel(
-      id: _optionalString(json['id']),
-      masjidId: _optionalString(json['masjidId']),
-      fajr: _optionalString(json['fajr']),
-      zuhr: _optionalString(json['zuhr']),
-      asr: _optionalString(json['asr']),
-      maghrib: _optionalString(json['maghrib']),
-      isha: _optionalString(json['isha']),
-      jumma: _optionalString(json['jumma']),
-      note: _optionalString(json['note']),
-      createdAt: _optionalString(json['createdAt']),
-      updatedAt: _optionalString(json['updatedAt']),
-    );
-  }
+part 'namaz_time_model.freezed.dart';
+part 'namaz_time_model.g.dart';
 
-  final String? id;
-  final String? masjidId;
-  final String? fajr;
-  final String? zuhr;
-  final String? asr;
-  final String? maghrib;
-  final String? isha;
-  final String? jumma;
-  final String? note;
-  final String? createdAt;
-  final String? updatedAt;
-}
+/// Prayer timings of one masjid (`GET/PUT /namaz-times/:masjidId`).
+///
+/// A masjid that has not saved its times yet comes back with only
+/// `masjidId` and null times (no `id`, `createdAt`, `updatedAt`).
+@freezed
+abstract class NamazTimeModel with _$NamazTimeModel {
+  const factory NamazTimeModel({
+    String? id,
+    String? masjidId,
+    String? fajr,
+    String? zuhr,
+    String? asr,
+    String? maghrib,
+    String? isha,
+    String? jumma,
+    String? note,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _NamazTimeModel;
 
-String? _optionalString(Object? value) {
-  final parsed = value?.toString();
-  if (parsed == null || parsed.trim().isEmpty) return null;
-  return parsed;
+  factory NamazTimeModel.fromJson(Map<String, dynamic> json) =>
+      _$NamazTimeModelFromJson(json);
 }

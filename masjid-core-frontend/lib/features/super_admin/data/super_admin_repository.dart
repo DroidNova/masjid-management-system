@@ -1,152 +1,71 @@
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
+import 'package:masjid_core_frontend/core/pagination/page.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_dashboard_summary.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_list_filter.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/super_admin_api.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_dashboard_summary.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_user_detail_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
 
-class AdminPage<T> {
-  const AdminPage(this.items, this.total);
+final superAdminRepositoryProvider = Provider<SuperAdminRepository>(
+  (ref) => SuperAdminRepository(SuperAdminApi(ref.watch(apiClientProvider))),
+);
 
-  final List<T> items;
-  final int total;
-}
-
+/// Platform administration (super admin only). Screens change data through
+/// `superAdminActionsProvider`, which also refreshes the admin screens.
 class SuperAdminRepository {
-  SuperAdminRepository({SuperAdminApi? api}) : _api = api ?? SuperAdminApi();
+  SuperAdminRepository(this._api);
 
   final SuperAdminApi _api;
 
-  Future<AdminPage<AdminUserModel>> getUsers({
-    String? search,
-    String? status,
-    String? role,
+  Future<AdminDashboardSummary> getDashboardSummary() =>
+      _api.getDashboardSummary();
+
+  Future<PageResult<AdminUserModel>> getUsers(
+    AdminListFilter filter, {
     int page = 1,
-    int limit = 20,
-  }) async {
-    final result = await _api.getUsers(
-      search: search,
-      status: status,
-      role: role,
-      page: page,
-      limit: limit,
-    );
-    return AdminPage<AdminUserModel>(
-      result.items.map(AdminUserModel.fromJson).toList(),
-      result.total,
-    );
-  }
+  }) => _api.getUsers(filter, page);
 
-  Future<AdminUserDetailModel> getUser(String id) async {
-    return AdminUserDetailModel.fromJson(await _api.getUser(id));
-  }
+  Future<AdminUserModel> getUser(String id) => _api.getUser(id);
 
-  Future<AdminUserModel> updateUserStatus(String id, String status) async {
-    final updated = AdminUserModel.fromJson(
-      await _api.updateUserStatus(id, <String, dynamic>{'status': status}),
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.adminUsers,
-      AppDataScope.adminDashboard,
-    ]);
-    return updated;
-  }
+  Future<void> updateUserStatus(String id, String status) =>
+      _api.updateUserStatus(id, status);
 
-  Future<AdminUserModel> updateUserRoles(String id, List<String> roles) async {
-    final updated = AdminUserModel.fromJson(
-      await _api.updateUserRoles(id, <String, dynamic>{'roleNames': roles}),
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.adminUsers,
-      AppDataScope.adminDashboard,
-    ]);
-    return updated;
-  }
+  Future<AdminUserModel> assignUserRoles(String id, List<String> roles) =>
+      _api.assignUserRoles(id, roles);
 
-  Future<AdminPage<AdminMasjidRequestModel>> getMasjidRequests({
-    String? search,
-    String? status,
+  Future<PageResult<AdminMasjidModel>> getMasjids(
+    AdminListFilter filter, {
     int page = 1,
-    int limit = 20,
-  }) async {
-    final result = await _api.getMasjidRequests(
-      search: search,
-      status: status,
-      page: page,
-      limit: limit,
-    );
-    return AdminPage<AdminMasjidRequestModel>(
-      result.items.map(AdminMasjidRequestModel.fromJson).toList(),
-      result.total,
-    );
-  }
+  }) => _api.getMasjids(filter, page);
+
+  Future<AdminMasjidModel> getMasjid(String id) => _api.getMasjid(id);
+
+  Future<void> updateMasjidStatus(String id, String status, {String? reason}) =>
+      _api.updateMasjidStatus(id, status, reason: reason);
+
+  Future<PageResult<AdminMasjidRequestModel>> getMasjidRequests(
+    AdminListFilter filter, {
+    int page = 1,
+  }) => _api.getMasjidRequests(filter, page);
 
   Future<AdminMasjidRequestModel> getMasjidRequest(String id) async {
-    return AdminMasjidRequestModel.fromJson(await _api.getMasjidRequest(id));
+    final page = await _api.findMasjidRequestById(id);
+    if (page.items.isEmpty) {
+      throw const ApiException(
+        message: 'Masjid request not found.',
+        code: ApiErrorCodes.notFound,
+        statusCode: 404,
+      );
+    }
+    return page.items.first;
   }
 
-  Future<AdminMasjidRequestModel> updateMasjidRequestStatus(
-    String id,
-    String status, {
-    String? reason,
-  }) async {
-    final updated = AdminMasjidRequestModel.fromJson(
-      await _api.updateMasjidRequestStatus(id, <String, dynamic>{
-        'status': status,
-        'reason': ?reason,
-        'rejectionReason': ?reason,
-      }),
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.adminMasjidRequests,
-      AppDataScope.adminMasjids,
-      AppDataScope.adminDashboard,
-    ]);
-    return updated;
-  }
+  Future<void> approveMasjidRequest(String id) =>
+      _api.updateMasjidRequestStatus(id, 'APPROVED');
 
-  Future<AdminPage<AdminMasjidModel>> getMasjids({
-    String? search,
-    String? status,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    final result = await _api.getMasjids(
-      search: search,
-      status: status,
-      page: page,
-      limit: limit,
-    );
-    return AdminPage<AdminMasjidModel>(
-      result.items.map(AdminMasjidModel.fromJson).toList(),
-      result.total,
-    );
-  }
-
-  Future<AdminMasjidModel> getMasjid(String id) async {
-    return AdminMasjidModel.fromJson(await _api.getMasjid(id));
-  }
-
-  Future<AdminMasjidModel> updateMasjidStatus(
-    String id,
-    String status, {
-    String? reason,
-  }) async {
-    final updated = AdminMasjidModel.fromJson(
-      await _api.updateMasjidStatus(id, <String, dynamic>{
-        'status': status,
-        'reason': ?reason,
-      }),
-    );
-    AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
-      AppDataScope.adminMasjids,
-      AppDataScope.adminDashboard,
-    ]);
-    return updated;
-  }
-
-  Future<AdminDashboardSummary> getDashboardSummary() async {
-    return AdminDashboardSummary.fromJson(await _api.getDashboardSummary());
-  }
+  Future<void> rejectMasjidRequest(String id, {String? reason}) =>
+      _api.updateMasjidRequestStatus(id, 'REJECTED', reason: reason);
 }

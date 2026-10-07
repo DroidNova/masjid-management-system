@@ -1,27 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
+import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
-class LoginPhoneScreen extends StatefulWidget {
-  const LoginPhoneScreen({super.key, AuthRepository? authRepository})
-    : _authRepository = authRepository;
-
-  final AuthRepository? _authRepository;
+class LoginPhoneScreen extends ConsumerStatefulWidget {
+  const LoginPhoneScreen({super.key});
 
   @override
-  State<LoginPhoneScreen> createState() => _LoginPhoneScreenState();
+  ConsumerState<LoginPhoneScreen> createState() => _LoginPhoneScreenState();
 }
 
-class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
+class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
   final TextEditingController _phoneController = TextEditingController();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   CountryCode _selectedCountry = getDefaultCountryCode();
-  bool _isLoading = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -44,10 +41,10 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
       nationalNumber: nationalPhone,
     );
 
-    setState(() => _isLoading = true);
+    setState(() => _isSubmitting = true);
 
     try {
-      final response = await _authRepository.startLogin(phone);
+      final response = await ref.read(authRepositoryProvider).startLogin(phone);
 
       if (!mounted) return;
 
@@ -79,9 +76,9 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
 
       _showError('Unsupported login step. Please try again.');
     } catch (error) {
-      if (mounted) _showError(_cleanError(error));
+      if (mounted) _showError(authErrorText(error));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -89,10 +86,6 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
   }
 
   @override
@@ -134,7 +127,7 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
                   const SizedBox(height: 24),
                   AppButton(
                     label: 'Continue',
-                    isLoading: _isLoading,
+                    isLoading: _isSubmitting,
                     onPressed: _continue,
                   ),
                   const SizedBox(height: 12),
