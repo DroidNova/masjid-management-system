@@ -10,11 +10,15 @@ class OtpScreen extends StatefulWidget {
     super.key,
     required this.phone,
     required this.challengeId,
+    required this.otpLength,
     AuthRepository? authRepository,
   }) : _authRepository = authRepository;
 
   final String phone;
   final String challengeId;
+
+  /// Number of digits the server expects (4 in development: 1111).
+  final int otpLength;
   final AuthRepository? _authRepository;
 
   @override
@@ -22,7 +26,7 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  static const int _otpLength = 6;
+  int get _otpLength => widget.otpLength;
 
   late final List<TextEditingController> _controllers =
       List<TextEditingController>.generate(
@@ -64,8 +68,8 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!_isOtpComplete) return;
 
     final otp = _controllers.map((controller) => controller.text).join();
-    if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
-      _showError('OTP must be 6 digits.');
+    if (!RegExp('^\\d{$_otpLength}\$').hasMatch(otp)) {
+      _showError('OTP must be $_otpLength digits.');
       return;
     }
 

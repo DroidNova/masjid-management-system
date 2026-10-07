@@ -8,10 +8,12 @@ Update the checkboxes and the status table as work lands.
 
 Last updated 2026-10-07.
 
-- **Done:** M0 Hygiene (commit `301c235` and the CI fix after it). Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** M1 Backend security foundation. Start with `@nestjs/config` + zod validation and the env-driven dev auth (`AUTH_DEV_MODE`, `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`), then the `OtpChallenge` table, then `auth/password/change`, then refresh-token rework.
+- **Done:** M0 Hygiene and M1 Backend security foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
+- **Next:** M2 Access model and tenancy. Start by writing `src/access/permissions.ts` (catalogue + role matrix from section 1), then the `MasjidMembership` table and data migration, then swap every `@Roles(...)` for `@RequirePermission(...)`.
+- **Before M2 on a real database:** run `npx prisma migrate deploy` (adds `OtpChallenge`, clears old sessions) and optionally `npm run dev:reset-passwords` so existing imams and committee members use `123456`. M1 has only been verified with unit tests and a boot test; no database was available.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
+- **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
 - **Known debt carried forward:** about 200 ESLint `no-unsafe-*` warnings in the backend are downgraded until M3. `PermissionHelper` in the app still branches on role names until M4.
 
 ## 1. What the app is
@@ -153,15 +155,16 @@ Done when: CI is green on `main`, no dead files, both apps build.
 
 Goal: real authentication and basic hardening.
 
-- [ ] `@nestjs/config` with a zod-validated schema. App refuses to start on missing or short secrets.
-- [ ] `helmet`, `@nestjs/throttler` (tight limits on `auth/*` and `masjid-requests/*`), strict CORS from env, Swagger disabled when `NODE_ENV=production`.
-- [ ] `OtpChallenge` table replacing the in-memory map (challenge id, phone, hashed code, expiry, attempts). In dev mode the code is always `AUTH_DEV_OTP` (default `1111`); the real random generator and SMS sending are wired in M6.
-- [ ] `AuthConfig` with `AUTH_DEV_MODE`, `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`. Production startup fails if dev mode is on.
-- [ ] Replace the hardcoded `TEMPORARY_USER_PASSWORD` with `AUTH_DEV_PASSWORD`. Add `auth/password/change` now so users can move off the default. `mustSetPassword` on first login and OTP-based reset are added in M6 with real OTP.
-- [ ] Refresh token rework: SHA-256 hash, session id in JWT, rotate with reuse detection, `auth/logout-all`, expired session cleanup job.
-- [ ] Set `isPhoneVerified=true` after OTP success. Stop logging raw phone numbers.
-- [ ] Health endpoint checks the DB.
-- [ ] Tests: OTP flow, password flow, refresh rotation, throttling.
+- [x] Typed `AppConfig` validated with zod (`src/config/app-config.ts`); `@nestjs/config` was not needed. Refuses to start on missing values, secrets under 16 chars (32 in staging/production), or identical access/refresh secrets.
+- [x] `helmet`, `@nestjs/throttler` (limits in `src/common/rate-limit/rate-limit.ts`; `RATE_LIMIT_ENABLED=false` turns them off), CORS list required in staging/production, Swagger off by default in production, `TRUST_PROXY` for running behind Caddy.
+- [x] `OtpChallenge` table replacing the in-memory map (challenge id, phone, hashed code, expiry, attempts). In dev mode the code is always `AUTH_DEV_OTP` (default `1111`); the real random generator and SMS sending are wired in M6.
+- [x] `AUTH_DEV_MODE` (default on outside production), `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`. Production fails to start with dev mode on, and also without it until M6 (no SMS provider yet). Server returns `otpLength` so the app asks for 4 digits.
+- [x] Replace the hardcoded `TEMPORARY_USER_PASSWORD` with `AUTH_DEV_PASSWORD`. Add `auth/password/change` now so users can move off the default. `mustSetPassword` on first login and OTP-based reset are added in M6 with real OTP.
+- [x] Refresh token rework: SHA-256 hash, session id in JWT, rotate with reuse detection (`SESSION_REVOKED`), `auth/logout-all`, hourly cleanup of expired sessions and OTP rows. Access tokens are checked against their session on every request, so logout takes effect immediately.
+- [x] Set `isPhoneVerified=true` after OTP success. Stop logging raw phone numbers (also redacted from request logs).
+- [x] Health endpoint checks the DB (503 when unreachable).
+- [x] Tests: config rules, OTP flow, password flow, refresh rotation and reuse, logout-all, password change, cleanup, throttling (34 new backend tests, 2 app tests).
+- [x] Extra: `npm run dev:reset-passwords` resets existing imam/committee passwords to the dev password (refuses without dev mode). Local `docker-compose.yml` now runs the backend with `NODE_ENV=development`.
 
 Done when: dev auth is explicit and env-driven, challenges survive a restart, and production cannot start with dev auth on.
 
@@ -276,8 +279,8 @@ Still open:
 | Milestone | Status | Notes |
 |---|---|---|
 | M0 Hygiene | done 2026-10-07 | commit `301c235`; `no-unsafe-*` lint rules are warnings until M3 |
-| M1 Backend security | next | |
-| M2 Access model | not started | |
+| M1 Backend security | done 2026-10-07 | not yet run against a real database; run `prisma migrate deploy` first |
+| M2 Access model | next | |
 | M3 Backend structure | not started | |
 | M4 Flutter foundation | not started | |
 | M5 Flutter features | not started | |

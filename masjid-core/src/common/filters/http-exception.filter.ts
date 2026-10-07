@@ -158,6 +158,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof ConflictException) return ERROR_CODES.CONFLICT;
     if (exception instanceof BadRequestException)
       return ERROR_CODES.BAD_REQUEST;
+    if (status === 429) return ERROR_CODES.TOO_MANY_REQUESTS;
+    if (status === 503) return ERROR_CODES.SERVICE_UNAVAILABLE;
     if (status >= 500) return ERROR_CODES.INTERNAL_SERVER_ERROR;
     return ERROR_CODES.BAD_REQUEST;
   }

@@ -20,75 +20,94 @@ import { SessionsModule } from './modules/platform-core/sessions/sessions.module
 import { SettingsModule } from './modules/platform-core/settings/settings.module';
 import { UsersModule } from './modules/platform-core/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AppConfig } from './config/app-config';
+import { AppConfigModule } from './config/app-config.module';
+import { RateLimitModule } from './common/rate-limit/rate-limit';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { getLogUser } from './common/utils/log-user.util';
 import { getOrCreateRequestId } from './common/utils/request-id.util';
 
-const isProduction = process.env.NODE_ENV === 'production';
-const logLevel = process.env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug');
+/** Pretty logs in local development only, and only if pino-pretty is installed (it is a dev dependency). */
+function usePrettyLogs(config: AppConfig): boolean {
+  if (config.nodeEnv !== 'development') return false;
+  try {
+    require.resolve('pino-pretty');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 @Module({
   imports: [
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: logLevel,
-        genReqId: (req, res) => {
-          const requestId = getOrCreateRequestId(req);
-          res.setHeader('x-request-id', requestId);
-          return requestId;
+    AppConfigModule,
+    LoggerModule.forRootAsync({
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => ({
+        pinoHttp: {
+          level: config.logLevel,
+          genReqId: (req, res) => {
+            const requestId = getOrCreateRequestId(req);
+            res.setHeader('x-request-id', requestId);
+            return requestId;
+          },
+          transport: usePrettyLogs(config)
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  singleLine: true,
+                  colorize: true,
+                  translateTime: 'SYS:standard',
+                  ignore: 'pid,hostname',
+                },
+              }
+            : undefined,
+          redact: {
+            paths: [
+              'req.headers.authorization',
+              'req.headers.cookie',
+              'req.body.password',
+              'req.body.passwordHash',
+              'req.body.otp',
+              'req.body.phone',
+              'req.body.currentPassword',
+              'req.body.newPassword',
+              'req.body.accessToken',
+              'req.body.refreshToken',
+              'req.body.token',
+              'req.body.refreshTokenHash',
+              'res.headers["set-cookie"]',
+            ],
+            censor: '[REDACTED]',
+          },
+          customProps: (req) => ({
+            requestId: req.id,
+            ...getLogUser(req),
+          }),
+          customSuccessObject: (req, res, value) => ({
+            ...value,
+            requestId: req.id,
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            responseTime: (value as { responseTime?: number }).responseTime,
+            ...getLogUser(req),
+          }),
+          customErrorObject: (req, res, error, value) => ({
+            ...value,
+            requestId: req.id,
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            responseTime: (value as { responseTime?: number }).responseTime,
+            errorCode: (error as { code?: string } | undefined)?.code,
+            message: error?.message,
+            ...getLogUser(req),
+          }),
         },
-        transport: !isProduction
-          ? {
-              target: 'pino-pretty',
-              options: {
-                singleLine: true,
-                colorize: true,
-                translateTime: 'SYS:standard',
-                ignore: 'pid,hostname',
-              },
-            }
-          : undefined,
-        redact: {
-          paths: [
-            'req.headers.authorization',
-            'req.headers.cookie',
-            'req.body.password',
-            'req.body.passwordHash',
-            'req.body.otp',
-            'req.body.accessToken',
-            'req.body.refreshToken',
-            'req.body.token',
-            'req.body.refreshTokenHash',
-            'res.headers["set-cookie"]',
-          ],
-          censor: '[REDACTED]',
-        },
-        customProps: (req) => ({
-          requestId: req.id,
-          ...getLogUser(req),
-        }),
-        customSuccessObject: (req, res, value) => ({
-          ...value,
-          requestId: req.id,
-          method: req.method,
-          url: req.url,
-          statusCode: res.statusCode,
-          responseTime: (value as { responseTime?: number }).responseTime,
-          ...getLogUser(req),
-        }),
-        customErrorObject: (req, res, error, value) => ({
-          ...value,
-          requestId: req.id,
-          method: req.method,
-          url: req.url,
-          statusCode: res.statusCode,
-          responseTime: (value as { responseTime?: number }).responseTime,
-          errorCode: (error as { code?: string } | undefined)?.code,
-          message: error?.message,
-          ...getLogUser(req),
-        }),
-      },
+      }),
     }),
+    RateLimitModule,
     PrismaModule,
     AdminModule,
     AuthModule,

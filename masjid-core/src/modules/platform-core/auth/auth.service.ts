@@ -1,36 +1,47 @@
-import { Logger, ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { AppConfig } from '../../../config/app-config';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginPasswordDto } from './dto/login-password.dto';
 import { LoginStartDto } from './dto/login-start.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { JwtPayload } from './types/jwt-payload.type';
+import { AuthenticatedUser, JwtPayload } from './types/jwt-payload.type';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { successResponse } from '../../../common/helpers/api-response.helper';
-import { OtpChallengeService } from './services/otp-challenge.service';
+import { OtpService } from './services/otp.service';
 import {
   getPhoneSearchVariants,
   normalizePhone,
 } from '../../../common/utils/phone.util';
 
-type SafeUser = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  masjidId: string | null;
-  isEmailVerified: boolean;
-  isPhoneVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  roles: string[];
-  permissions: string[];
-};
+export const BCRYPT_ROUNDS = 10;
+
+/** Roles that must enter a password before the OTP step. */
+const PRIVILEGED_ROLES = new Set([
+  'SUPER_ADMIN',
+  'MASJID_ADMIN',
+  'IMAM',
+  'COMMITTEE_MEMBER',
+]);
+
+/** Prisma include that loads a user's roles and their permissions. */
+export const USER_ACCESS_INCLUDE = {
+  userRoles: {
+    include: {
+      role: {
+        include: { rolePermissions: { include: { permission: true } } },
+      },
+    },
+  },
+} as const;
+
+type SafeUser = Omit<AuthenticatedUser, 'sessionId'>;
 
 type UserWithAccess = {
   id: string;
@@ -52,44 +63,56 @@ type UserWithAccess = {
   }>;
 };
 
-type TokenDuration = `${number}${'s' | 'm' | 'h' | 'd'}`;
+export function toSafeUser(
+  user: Omit<UserWithAccess, 'passwordHash'>,
+): SafeUser {
+  const permissions = Array.from(
+    new Set(
+      user.userRoles.flatMap((userRole) =>
+        userRole.role.rolePermissions.map((rp) => rp.permission.name),
+      ),
+    ),
+  );
+
+  return {
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone,
+    status: user.status,
+    masjidId: user.masjidId,
+    isEmailVerified: user.isEmailVerified,
+    isPhoneVerified: user.isPhoneVerified,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    roles: user.userRoles.map((userRole) => userRole.role.name),
+    permissions,
+  };
+}
+
+/** Refresh tokens are long random JWTs, so a fast hash is enough to store them. */
+export function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  private readonly jwtAccessSecret = process.env.JWT_ACCESS_SECRET ?? '';
-  private readonly jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? '';
-  private readonly jwtAccessExpiresIn: TokenDuration = this.parseTokenDuration(
-    process.env.JWT_ACCESS_EXPIRES_IN,
-    '15m',
-  );
-  private readonly jwtRefreshExpiresIn: TokenDuration = this.parseTokenDuration(
-    process.env.JWT_REFRESH_EXPIRES_IN,
-    '30d',
-  );
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly otpChallengeService: OtpChallengeService,
-  ) {
-    if (!this.jwtAccessSecret || !this.jwtRefreshSecret) {
-      throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are required');
-    }
-  }
+    private readonly otpService: OtpService,
+    private readonly config: AppConfig,
+  ) {}
 
   async startLogin(loginStartDto: LoginStartDto) {
-    const phone = this.normalizePhone(loginStartDto.phone);
-    this.logger.debug({ message: 'Login flow started', phone });
+    const phone = normalizePhone(loginStartDto.phone);
     const user = await this.getUserByPhoneOrThrow(phone);
     this.assertUserActive(user);
 
     if (this.hasPrivilegedRole(user)) {
-      this.logger.debug({
-        message: 'Password login required for privileged user',
-        userId: user.id,
-      });
+      this.logger.debug({ message: 'Password step required', userId: user.id });
       return {
         nextStep: 'PASSWORD_REQUIRED',
         phone,
@@ -97,37 +120,35 @@ export class AuthService {
       };
     }
 
-    const challenge = this.otpChallengeService.create(phone, false);
-    await this.sendOtp(phone);
+    const challenge = await this.otpService.create(phone);
     this.logger.debug({
       message: 'OTP challenge created',
+      userId: user.id,
       challengeId: challenge.challengeId,
     });
 
     return {
       nextStep: 'OTP_REQUIRED',
       challengeId: challenge.challengeId,
+      otpLength: challenge.otpLength,
       phone,
       message: 'OTP sent successfully',
     };
   }
 
   async verifyPassword(loginPasswordDto: LoginPasswordDto) {
-    const invalidCredentialsMessage = 'Invalid phone or password';
-    const phone = this.normalizePhone(loginPasswordDto.phone);
-    this.logger.debug({ message: 'Password verification started', phone });
+    const invalidCredentials = new ApiException(
+      'Invalid phone or password',
+      401,
+      ERROR_CODES.INVALID_CREDENTIALS,
+    );
+    const phone = normalizePhone(loginPasswordDto.phone);
     const password =
       typeof loginPasswordDto.password === 'string'
         ? loginPasswordDto.password
         : '';
 
-    if (!phone || !password) {
-      throw new ApiException(
-        invalidCredentialsMessage,
-        401,
-        ERROR_CODES.INVALID_CREDENTIALS,
-      );
-    }
+    if (!phone || !password) throw invalidCredentials;
 
     const user = await this.getUserByPhoneOrThrow(phone);
     this.assertUserActive(user);
@@ -140,20 +161,15 @@ export class AuthService {
       );
     }
 
-    const isPasswordValid = await this.compareData(password, user.passwordHash);
-
-    if (!isPasswordValid) {
-      throw new ApiException(
-        invalidCredentialsMessage,
-        401,
-        ERROR_CODES.INVALID_CREDENTIALS,
-      );
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw invalidCredentials;
     }
 
-    const challenge = this.otpChallengeService.create(phone, true);
-    await this.sendOtp(phone);
+    const challenge = await this.otpService.create(phone, {
+      passwordVerified: true,
+    });
     this.logger.debug({
-      message: 'Password verified and OTP challenge created',
+      message: 'Password verified, OTP challenge created',
       userId: user.id,
       challengeId: challenge.challengeId,
     });
@@ -161,6 +177,7 @@ export class AuthService {
     return {
       nextStep: 'OTP_REQUIRED',
       challengeId: challenge.challengeId,
+      otpLength: challenge.otpLength,
       phone,
       message: 'OTP sent successfully',
     };
@@ -169,33 +186,14 @@ export class AuthService {
   async verifyOtp(
     verifyOtpDto: VerifyOtpDto,
     userAgent?: string,
+    ipAddress?: string,
   ): Promise<AuthResponseDto> {
-    const phone = this.normalizePhone(verifyOtpDto.phone);
-    const challengeId = verifyOtpDto.challengeId.trim();
-    const otp = verifyOtpDto.otp.trim();
-
-    const challenge = this.otpChallengeService.get(challengeId);
-
-    if (!challenge || challenge.used || challenge.phone !== phone) {
-      throw new ApiException(
-        'Invalid OTP challenge',
-        401,
-        ERROR_CODES.OTP_CHALLENGE_INVALID,
-      );
-    }
-
-    if (otp !== this.getMockOtp()) {
-      const attempts = this.otpChallengeService.incrementAttempts(challengeId);
-      throw new ApiException(
-        this.otpChallengeService.isMaxAttemptsReached(attempts)
-          ? 'OTP challenge expired'
-          : 'Invalid OTP',
-        401,
-        this.otpChallengeService.isMaxAttemptsReached(attempts)
-          ? ERROR_CODES.OTP_EXPIRED
-          : ERROR_CODES.OTP_INVALID,
-      );
-    }
+    const phone = normalizePhone(verifyOtpDto.phone);
+    const challenge = await this.otpService.verify(
+      verifyOtpDto.challengeId.trim(),
+      phone,
+      verifyOtpDto.otp.trim(),
+    );
 
     const user = await this.getUserByPhoneOrThrow(phone);
     this.assertUserActive(user);
@@ -208,204 +206,268 @@ export class AuthService {
       );
     }
 
-    this.otpChallengeService.remove(challengeId);
-    this.logger.log({ message: 'User authenticated', userId: user.id });
+    if (!user.isPhoneVerified) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { isPhoneVerified: true },
+      });
+      user.isPhoneVerified = true;
+    }
 
-    return this.createAuthenticatedSession(user, userAgent);
+    this.logger.log({ message: 'User authenticated', userId: user.id });
+    return this.createSession(user, userAgent, ipAddress);
   }
 
+  /**
+   * Rotates the refresh token. Presenting an old (already rotated) refresh
+   * token means it was copied, so the whole session is revoked.
+   */
   async refreshToken(
     refreshTokenDto: RefreshTokenDto,
   ): Promise<AuthResponseDto> {
-    const decoded = await this.verifyRefreshToken(refreshTokenDto.refreshToken);
-    const user = await this.getUserByIdOrThrow(decoded.sub);
+    const presented = refreshTokenDto.refreshToken;
+    const payload = await this.verifyRefreshToken(presented);
 
+    const session = await this.prisma.session.findFirst({
+      where: { id: payload.sid, userId: payload.sub },
+    });
+
+    if (!session || session.expiresAt.getTime() <= Date.now()) {
+      throw new ApiException(
+        'Your session has expired. Please login again.',
+        401,
+        ERROR_CODES.SESSION_EXPIRED,
+      );
+    }
+
+    const presentedHash = hashToken(presented);
+    if (session.refreshTokenHash !== presentedHash) {
+      await this.revokeForReuse(session.id, session.userId);
+    }
+
+    const user = await this.getUserByIdOrThrow(payload.sub);
     if (user.status !== 'ACTIVE') {
       throw new ForbiddenException('User is not active');
     }
 
-    const sessions = await this.prisma.session.findMany({
-      where: {
-        userId: user.id,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    });
-
-    if (!sessions.length) {
-      throw new ApiException(
-        'Invalid refresh token',
-        401,
-        ERROR_CODES.UNAUTHORIZED,
-      );
-    }
-
-    let matchedSessionId: string | null = null;
-
-    for (const session of sessions) {
-      const isMatch = await this.compareData(
-        refreshTokenDto.refreshToken,
-        session.refreshTokenHash,
-      );
-
-      if (isMatch) {
-        matchedSessionId = session.id;
-        break;
-      }
-    }
-
-    if (!matchedSessionId) {
-      throw new ApiException(
-        'Invalid refresh token',
-        401,
-        ERROR_CODES.UNAUTHORIZED,
-      );
-    }
-
-    const tokens = await this.generateTokens(user.id);
-    const newRefreshTokenHash = await this.hashData(tokens.refreshToken);
-
-    await this.prisma.session.update({
-      where: { id: matchedSessionId },
+    const tokens = await this.signTokens(user.id, session.id);
+    // Conditional on the old hash so two concurrent refreshes cannot both win.
+    const rotated = await this.prisma.session.updateMany({
+      where: { id: session.id, refreshTokenHash: presentedHash },
       data: {
-        refreshTokenHash: newRefreshTokenHash,
-        expiresAt: this.buildFutureDateFromDuration(this.jwtRefreshExpiresIn),
+        refreshTokenHash: hashToken(tokens.refreshToken),
+        expiresAt: this.refreshExpiryDate(),
       },
     });
+    if (rotated.count !== 1) {
+      await this.revokeForReuse(session.id, session.userId);
+    }
 
-    return {
-      user: this.toSafeUser(user),
-      tokens,
-    };
+    return { user: toSafeUser(user), tokens };
   }
 
   async logout(refreshTokenDto: RefreshTokenDto) {
-    const decoded = await this.verifyRefreshToken(
+    const payload = await this.verifyRefreshToken(
       refreshTokenDto.refreshToken,
       true,
     );
 
-    if (!decoded) {
-      return successResponse('Logged out successfully');
-    }
-
-    const sessions = await this.prisma.session.findMany({
-      where: { userId: decoded.sub },
-      select: {
-        id: true,
-        refreshTokenHash: true,
-      },
-    });
-
-    const matchingSession = await this.findMatchingSessionId(
-      sessions,
-      refreshTokenDto.refreshToken,
-    );
-
-    if (matchingSession) {
-      await this.prisma.session.delete({ where: { id: matchingSession } });
+    if (payload) {
+      await this.prisma.session.deleteMany({
+        where: { id: payload.sid, userId: payload.sub },
+      });
     }
 
     return successResponse('Logged out successfully');
   }
 
-  async getCurrentUser(userId: string): Promise<SafeUser> {
-    const user = await this.getUserByIdOrThrow(userId);
-
-    if (user.status !== 'ACTIVE') {
-      throw new ForbiddenException('User is not active');
-    }
-
-    return this.toSafeUser(user);
+  /** Ends every session of the user, including the current one. */
+  async logoutAll(actor: AuthenticatedUser) {
+    const result = await this.prisma.session.deleteMany({
+      where: { userId: actor.id },
+    });
+    this.logger.log({
+      message: 'All sessions revoked',
+      userId: actor.id,
+      count: result.count,
+    });
+    return { revokedSessions: result.count };
   }
 
-  async generateTokens(userId: string): Promise<AuthResponseDto['tokens']> {
-    const payload: JwtPayload = { sub: userId };
+  /**
+   * Changes the password of an imam, committee member or admin. Members log in
+   * with OTP only and have no password. Other sessions are signed out.
+   */
+  async changePassword(actor: AuthenticatedUser, dto: ChangePasswordDto) {
+    const user = await this.getUserByIdOrThrow(actor.id);
+
+    if (!this.hasPrivilegedRole(user)) {
+      throw new ApiException(
+        'Members log in with OTP and do not have a password',
+        403,
+        ERROR_CODES.PASSWORD_CHANGE_NOT_ALLOWED,
+      );
+    }
+
+    if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+      throw new ApiException(
+        'Current password is incorrect',
+        401,
+        ERROR_CODES.INVALID_CREDENTIALS,
+      );
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new ApiException(
+        'New password must be different from the current password',
+        400,
+        ERROR_CODES.PASSWORD_UNCHANGED,
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    const [, revoked] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      }),
+      this.prisma.session.deleteMany({
+        where: { userId: user.id, id: { not: actor.sessionId } },
+      }),
+    ]);
+
+    this.logger.log({
+      message: 'Password changed',
+      userId: user.id,
+      revokedSessions: revoked.count,
+    });
+    return {
+      passwordChanged: true,
+      otherSessionsSignedOut: revoked.count,
+    };
+  }
+
+  async getCurrentUser(userId: string): Promise<SafeUser> {
+    const user = await this.getUserByIdOrThrow(userId);
+    this.assertUserActive(user);
+    return toSafeUser(user);
+  }
+
+  /** Deletes sessions whose refresh token has expired. */
+  async deleteExpiredSessions(): Promise<number> {
+    const result = await this.prisma.session.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+    return result.count;
+  }
+
+  private async createSession(
+    user: UserWithAccess,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthResponseDto> {
+    const sessionId = randomUUID();
+    const tokens = await this.signTokens(user.id, sessionId);
+
+    await this.prisma.session.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenHash: hashToken(tokens.refreshToken),
+        userAgent: userAgent?.slice(0, 500) || null,
+        ipAddress: ipAddress || null,
+        expiresAt: this.refreshExpiryDate(),
+      },
+    });
+
+    return { user: toSafeUser(user), tokens };
+  }
+
+  private async signTokens(
+    userId: string,
+    sessionId: string,
+  ): Promise<AuthResponseDto['tokens']> {
+    const { jwt } = this.config;
+    const access: JwtPayload = { sub: userId, sid: sessionId, typ: 'access' };
+    const refresh: JwtPayload = {
+      sub: userId,
+      sid: sessionId,
+      typ: 'refresh',
+      jti: randomUUID(),
+    };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: this.jwtAccessSecret,
-        expiresIn: this.jwtAccessExpiresIn,
+      this.jwtService.signAsync(access, {
+        secret: jwt.accessSecret,
+        expiresIn: jwt.accessExpiresIn,
       }),
-      this.jwtService.signAsync(payload, {
-        secret: this.jwtRefreshSecret,
-        expiresIn: this.jwtRefreshExpiresIn,
+      this.jwtService.signAsync(refresh, {
+        secret: jwt.refreshSecret,
+        expiresIn: jwt.refreshExpiresIn,
       }),
     ]);
 
     return {
       accessToken,
       refreshToken,
-      accessTokenExpiresIn: this.durationToSeconds(this.jwtAccessExpiresIn),
+      accessTokenExpiresIn: jwt.accessExpiresInSeconds,
     };
   }
 
-  async hashData(value: string): Promise<string> {
-    return bcrypt.hash(value, 10);
-  }
-
-  async compareData(value: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(value, hash);
-  }
-
-  private async createAuthenticatedSession(
-    user: UserWithAccess,
-    userAgent?: string,
-    deviceName?: string,
-  ): Promise<AuthResponseDto> {
-    const initialRefreshTokenHash = await this.hashData(
-      `${user.id}:${Date.now()}`,
+  private async revokeForReuse(
+    sessionId: string,
+    userId: string,
+  ): Promise<never> {
+    await this.prisma.session.deleteMany({ where: { id: sessionId } });
+    this.logger.warn({
+      message: 'Refresh token reuse detected; session revoked',
+      userId,
+      sessionId,
+    });
+    throw new ApiException(
+      'This session was signed out for security. Please login again.',
+      401,
+      ERROR_CODES.SESSION_REVOKED,
     );
-    const session = await this.prisma.session.create({
-      data: {
-        userId: user.id,
-        refreshTokenHash: initialRefreshTokenHash,
-        deviceName: deviceName?.trim() || null,
-        userAgent: userAgent || null,
-        expiresAt: this.buildFutureDateFromDuration(this.jwtRefreshExpiresIn),
-      },
-    });
+  }
 
-    const tokens = await this.generateTokens(user.id);
-    const refreshTokenHash = await this.hashData(tokens.refreshToken);
+  private refreshExpiryDate(): Date {
+    return new Date(
+      Date.now() + this.config.jwt.refreshExpiresInSeconds * 1000,
+    );
+  }
 
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: {
-        refreshTokenHash,
-        expiresAt: this.buildFutureDateFromDuration(this.jwtRefreshExpiresIn),
-      },
-    });
-
-    return {
-      user: this.toSafeUser(user),
-      tokens,
-    };
+  private async verifyRefreshToken(token: string): Promise<JwtPayload>;
+  private async verifyRefreshToken(
+    token: string,
+    silent: true,
+  ): Promise<JwtPayload | null>;
+  private async verifyRefreshToken(
+    token: string,
+    silent = false,
+  ): Promise<JwtPayload | null> {
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: this.config.jwt.refreshSecret,
+      });
+      if (payload.typ !== 'refresh' || !payload.sid || !payload.sub) {
+        throw new Error('Not a refresh token');
+      }
+      return payload;
+    } catch {
+      if (silent) return null;
+      throw new ApiException(
+        'Invalid refresh token',
+        401,
+        ERROR_CODES.UNAUTHORIZED,
+      );
+    }
   }
 
   private async getUserByPhoneOrThrow(phone: string): Promise<UserWithAccess> {
-    const phoneVariants = getPhoneSearchVariants(phone);
     const user = await this.prisma.user.findFirst({
-      where: { phone: { in: phoneVariants } },
-      include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      where: { phone: { in: getPhoneSearchVariants(phone) } },
+      include: USER_ACCESS_INCLUDE,
     });
 
     if (!user) {
@@ -419,82 +481,10 @@ export class AuthService {
     return user;
   }
 
-  private assertUserActive(user: UserWithAccess): void {
-    if (user.status !== 'ACTIVE') {
-      throw new ForbiddenException('User is not active');
-    }
-  }
-
-  private hasPrivilegedRole(user: UserWithAccess): boolean {
-    const privilegedRoles = new Set([
-      'SUPER_ADMIN',
-      'MASJID_ADMIN',
-      'IMAM',
-      'COMMITTEE_MEMBER',
-    ]);
-
-    return user.userRoles.some((userRole) =>
-      privilegedRoles.has(userRole.role.name),
-    );
-  }
-
-  private normalizePhone(phone: string): string {
-    return normalizePhone(phone);
-  }
-
-  private getMockOtp(): string {
-    return '111111';
-  }
-
-  private async sendOtp(_phone: string): Promise<void> {
-    // TODO: Replace mock OTP 111111 with real SMS OTP provider before production.
-    // TODO: Add rate limiting for OTP sends before production.
-    return Promise.resolve();
-  }
-
-  private async verifyRefreshToken(token: string): Promise<JwtPayload>;
-  private async verifyRefreshToken(
-    token: string,
-    silent: true,
-  ): Promise<JwtPayload | null>;
-  private async verifyRefreshToken(
-    token: string,
-    silent = false,
-  ): Promise<JwtPayload | null> {
-    try {
-      return await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.jwtRefreshSecret,
-      });
-    } catch {
-      if (silent) {
-        return null;
-      }
-      throw new ApiException(
-        'Invalid refresh token',
-        401,
-        ERROR_CODES.UNAUTHORIZED,
-      );
-    }
-  }
-
   private async getUserByIdOrThrow(userId: string): Promise<UserWithAccess> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: USER_ACCESS_INCLUDE,
     });
 
     if (!user) {
@@ -504,84 +494,15 @@ export class AuthService {
     return user;
   }
 
-  private toSafeUser(user: UserWithAccess): SafeUser {
-    const permissions = Array.from(
-      new Set(
-        user.userRoles.flatMap((userRole) =>
-          userRole.role.rolePermissions.map(
-            (rolePermission) => rolePermission.permission.name,
-          ),
-        ),
-      ),
+  private assertUserActive(user: UserWithAccess): void {
+    if (user.status !== 'ACTIVE') {
+      throw new ForbiddenException('User is not active');
+    }
+  }
+
+  private hasPrivilegedRole(user: UserWithAccess): boolean {
+    return user.userRoles.some((userRole) =>
+      PRIVILEGED_ROLES.has(userRole.role.name),
     );
-
-    return {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      status: user.status,
-      masjidId: user.masjidId,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      roles: user.userRoles.map((userRole) => userRole.role.name),
-      permissions,
-    };
-  }
-
-  private durationToSeconds(value: TokenDuration): number {
-    const match = /^([0-9]+)(s|m|h|d)$/i.exec(value);
-
-    if (!match) {
-      return 900;
-    }
-
-    const amount = Number(match[1]);
-    const unit = match[2].toLowerCase();
-
-    if (unit === 's') return amount;
-    if (unit === 'm') return amount * 60;
-    if (unit === 'h') return amount * 3600;
-    return amount * 86400;
-  }
-
-  private buildFutureDateFromDuration(duration: TokenDuration): Date {
-    const seconds = this.durationToSeconds(duration);
-    return new Date(Date.now() + seconds * 1000);
-  }
-
-  private parseTokenDuration(
-    value: string | undefined,
-    fallback: TokenDuration,
-  ): TokenDuration {
-    if (!value) {
-      return fallback;
-    }
-
-    const normalized = value.trim();
-    if (/^[0-9]+(s|m|h|d)$/i.test(normalized)) {
-      return normalized as TokenDuration;
-    }
-
-    return fallback;
-  }
-
-  private async findMatchingSessionId(
-    sessions: Array<{ id: string; refreshTokenHash: string }>,
-    refreshToken: string,
-  ): Promise<string | null> {
-    for (const session of sessions) {
-      const matched = await this.compareData(
-        refreshToken,
-        session.refreshTokenHash,
-      );
-      if (matched) {
-        return session.id;
-      }
-    }
-
-    return null;
   }
 }

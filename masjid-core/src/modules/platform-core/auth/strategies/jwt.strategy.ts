@@ -2,42 +2,46 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../../../prisma/prisma.service';
+import { AppConfig } from '../../../../config/app-config';
 import { AuthenticatedUser, JwtPayload } from '../types/jwt-payload.type';
 import { ApiException } from '../../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../../common/constants/error-codes.constant';
+import { toSafeUser, USER_ACCESS_INCLUDE } from '../auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly prisma: PrismaService) {
-    const secretOrKey = process.env.JWT_ACCESS_SECRET;
-
-    if (!secretOrKey) {
-      throw new Error('JWT_ACCESS_SECRET is required');
-    }
-
+  constructor(
+    private readonly prisma: PrismaService,
+    config: AppConfig,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey,
+      secretOrKey: config.jwt.accessSecret,
     });
   }
 
+  /**
+   * Runs on every authenticated request. The token is only accepted while its
+   * session row exists, so logout, logout-all and password changes take effect
+   * immediately rather than when the access token expires.
+   */
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    if (payload.typ !== 'access' || !payload.sid) {
+      throw new ApiException(
+        'Invalid authentication token',
+        401,
+        ERROR_CODES.UNAUTHORIZED,
+      );
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
+        ...USER_ACCESS_INCLUDE,
+        sessions: {
+          where: { id: payload.sid, expiresAt: { gt: new Date() } },
+          select: { id: true },
         },
       },
     });
@@ -50,35 +54,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
-    const permissions: string[] = Array.from(
-      new Set(
-        user.userRoles.flatMap(
-          (userRole: {
-            role: { rolePermissions: Array<{ permission: { name: string } }> };
-          }) =>
-            userRole.role.rolePermissions.map(
-              (rolePermission: { permission: { name: string } }) =>
-                rolePermission.permission.name,
-            ),
-        ),
-      ),
-    );
+    if (!user.sessions.length) {
+      throw new ApiException(
+        'Your session has ended. Please login again.',
+        401,
+        ERROR_CODES.SESSION_EXPIRED,
+      );
+    }
 
-    return {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      masjidId: user.masjidId,
-      status: user.status,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      roles: user.userRoles.map(
-        (userRole: { role: { name: string } }) => userRole.role.name,
-      ),
-      permissions,
-    };
+    return { ...toSafeUser(user), sessionId: payload.sid };
   }
 }

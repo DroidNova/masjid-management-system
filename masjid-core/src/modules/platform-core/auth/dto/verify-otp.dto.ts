@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class VerifyOtpDto {
   @ApiProperty({
@@ -21,10 +21,15 @@ export class VerifyOtpDto {
   @MinLength(1, { message: 'Challenge ID is required' })
   challengeId!: string;
 
-  @ApiProperty({ example: '111111', minLength: 6, maxLength: 6 })
+  @ApiProperty({
+    example: '1111',
+    description:
+      'Digits only. The expected length is returned as otpLength when the challenge is created.',
+    minLength: 4,
+    maxLength: 8,
+  })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({ message: 'OTP must be a string' })
-  @MinLength(6, { message: 'OTP must be 6 digits' })
-  @MaxLength(6, { message: 'OTP must be 6 digits' })
+  @Matches(/^\d{4,8}$/, { message: 'OTP must be 4 to 8 digits' })
   otp!: string;
 }

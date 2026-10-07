@@ -7,6 +7,7 @@ import 'package:masjid_core_frontend/features/announcements/data/models/announce
 import 'package:masjid_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/announcements_screen.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/edit_announcement_screen.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_landing_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/login_password_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/login_phone_screen.dart';
@@ -82,7 +83,13 @@ final GoRouter appRouter = GoRouter(
           return const _MissingLoginDataScreen();
         }
 
-        return OtpScreen(phone: phone, challengeId: challengeId);
+        return OtpScreen(
+          phone: phone,
+          challengeId: challengeId,
+          otpLength:
+              int.tryParse(extra?['otpLength'] ?? '') ??
+              LoginStartResponse.defaultOtpLength,
+        );
       },
     ),
     GoRoute(

@@ -8,6 +8,9 @@ import {
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { AppConfig } from '../../../config/app-config';
+import { initialPasswordFor } from '../../platform-core/auth/initial-password';
+import { BCRYPT_ROUNDS } from '../../platform-core/auth/auth.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
   CreateMasjidUserDto,
@@ -309,7 +312,10 @@ const masjidMemberSelect = {
 export class MasjidsService {
   private readonly logger = new Logger(MasjidsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfig,
+  ) {}
 
   private get db(): MasjidsPrismaDelegate {
     return this.prisma as unknown as MasjidsPrismaDelegate;
@@ -457,13 +463,16 @@ export class MasjidsService {
       );
     }
 
-    const temporaryPassword = this.requiresTemporaryPassword(dto.role)
-      ? '12345678'
+    // Imams and committee members log in with a password; members use OTP only
+    // and get an unguessable password they never need.
+    const initial = this.requiresTemporaryPassword(dto.role)
+      ? initialPasswordFor(this.config)
       : null;
-    const generatedPassword =
-      temporaryPassword ?? randomBytes(32).toString('hex');
-    // TODO: Replace temporary password with secure invite/reset password flow before production.
-    const passwordHash = await bcrypt.hash(generatedPassword, 10);
+    const temporaryPassword = initial?.disclosable ? initial.password : null;
+    const passwordHash = await bcrypt.hash(
+      initial?.password ?? randomBytes(32).toString('hex'),
+      BCRYPT_ROUNDS,
+    );
 
     const createdUser = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -538,8 +547,7 @@ export class MasjidsService {
 
     if (temporaryPassword) {
       response.temporaryPassword = temporaryPassword;
-      response.message =
-        'Temporary password is 12345678. Ask user to change it later.';
+      response.message = `Initial password is ${temporaryPassword}. Ask the user to change it after first login.`;
     }
 
     return response;

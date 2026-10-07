@@ -63,6 +63,7 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
           extra: <String, String>{
             'phone': response.phone,
             'challengeId': challengeId,
+            'otpLength': response.otpLength.toString(),
           },
         );
         return;

@@ -1,8 +1,10 @@
 import { Controller, Get, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HealthService } from './health.service';
 
 @ApiTags('Health')
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
@@ -16,9 +18,13 @@ export class HealthController {
       example: {
         success: true,
         message: 'Request successful',
-        data: { status: 'ok' },
+        data: { status: 'ok', database: 'up' },
       },
     },
+  })
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
+    description: 'Database is unreachable',
   })
   getHealth() {
     return this.healthService.getHealth();

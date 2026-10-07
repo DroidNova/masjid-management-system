@@ -65,6 +65,7 @@ class _LoginPasswordScreenState extends State<LoginPasswordScreen> {
         extra: <String, String>{
           'phone': response.phone,
           'challengeId': challengeId,
+          'otpLength': response.otpLength.toString(),
         },
       );
     } catch (error) {

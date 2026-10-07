@@ -19,7 +19,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { RATE_LIMITS } from '../../../common/rate-limit/rate-limit';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
@@ -47,6 +49,7 @@ export class MasjidRequestsController {
   constructor(private readonly masjidRequestsService: MasjidRequestsService) {}
 
   @Post()
+  @Throttle(RATE_LIMITS.publicSubmit)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Submit a public masjid registration request',
@@ -62,6 +65,7 @@ export class MasjidRequestsController {
   }
 
   @Post('track')
+  @Throttle(RATE_LIMITS.publicLookup)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Track public masjid registration requests by requester phone',

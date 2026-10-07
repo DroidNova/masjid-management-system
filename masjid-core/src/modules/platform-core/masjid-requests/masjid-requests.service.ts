@@ -9,6 +9,8 @@ import {
   normalizePhone,
 } from '../../../common/utils/phone.util';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { AppConfig } from '../../../config/app-config';
+import { initialPasswordFor } from '../auth/initial-password';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
 import {
   CommitteeMemberDto,
@@ -22,7 +24,6 @@ import {
 
 const IMAM_ROLE = 'IMAM';
 const COMMITTEE_MEMBER_ROLE = 'COMMITTEE_MEMBER';
-const TEMPORARY_USER_PASSWORD = '12345678';
 const BCRYPT_SALT_ROUNDS = 10;
 
 const MasjidRegistrationRequestStatus = {
@@ -343,7 +344,10 @@ const masjidRequestTrackingSelect = {
 export class MasjidRequestsService {
   private readonly logger = new Logger(MasjidRequestsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfig,
+  ) {}
 
   private get db(): MasjidRequestsPrismaDelegate {
     return this.prisma as unknown as MasjidRequestsPrismaDelegate;
@@ -839,9 +843,10 @@ export class MasjidRequestsService {
     },
     db: MasjidRequestsPrismaDelegate,
   ): Promise<RequestUser> {
-    // TODO: Replace temporary password with OTP/email/SMS invitation before production.
+    // Dev mode: AUTH_DEV_PASSWORD. Otherwise a random secret; the user sets a
+    // real password through the OTP reset flow (milestone M6).
     const passwordHash = await bcrypt.hash(
-      TEMPORARY_USER_PASSWORD,
+      initialPasswordFor(this.config).password,
       BCRYPT_SALT_ROUNDS,
     );
 

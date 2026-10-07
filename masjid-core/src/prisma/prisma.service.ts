@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import { AppConfig } from '../config/app-config';
 
 @Injectable()
 export class PrismaService
@@ -14,18 +15,9 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor() {
-    const databaseUrl = process.env.DATABASE_URL;
-
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL is required to initialize PrismaService');
-    }
-
-    const adapter = new PrismaPg({ connectionString: databaseUrl });
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const shouldLogQueries =
-      isDevelopment && process.env.PRISMA_LOG_QUERIES === 'true';
-    const log: Prisma.LogLevel[] = shouldLogQueries
+  constructor(config: AppConfig) {
+    const adapter = new PrismaPg({ connectionString: config.databaseUrl });
+    const log: Prisma.LogLevel[] = config.prismaLogQueries
       ? ['query', 'warn', 'error']
       : ['warn', 'error'];
 
@@ -39,5 +31,10 @@ export class PrismaService
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
+  }
+
+  /** Cheap round trip used by the health check. */
+  async ping(): Promise<void> {
+    await this.$queryRaw`SELECT 1`;
   }
 }

@@ -18,6 +18,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   ): TUser {
     if (user) return user as TUser;
 
+    // Errors thrown by JwtStrategy.validate already carry the right code
+    // (for example SESSION_EXPIRED after logout-all).
+    if (err instanceof ApiException) throw err;
+
     if (info?.name === 'TokenExpiredError') {
       throw new ApiException(
         'Your session has expired. Please login again.',
