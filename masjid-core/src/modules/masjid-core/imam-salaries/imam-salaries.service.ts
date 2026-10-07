@@ -13,15 +13,10 @@ import {
   type Money,
   formatMoney,
   money,
-  sumMoney,
   toAmount,
+  ZERO,
 } from '../../../common/money';
-import {
-  Prisma,
-  type ImamSalaryAssignment,
-  type ImamSalaryMonth,
-  type ImamSalaryPayment,
-} from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
 import {
   ImamSalaryAssignmentStatus,
   RoleName,
@@ -38,14 +33,83 @@ import {
   SalaryPaymentsQueryDto,
   UpdateSalaryAmountDto,
 } from './dto/imam-salary-ledger.dto';
-import { paged } from '../../../common/pagination';
+import { pageArgs, paged } from '../../../common/pagination';
 import { requireMasjidId } from '../../../common/tenant';
+import { isPrismaError } from '../prisma-errors';
 
 type Db = PrismaService | Prisma.TransactionClient;
-type Pagination = { page?: number; limit?: number };
 
-const SERIALIZABLE = {
-  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+/** Month fields the app reads (no masjidId / createdById / updatedById). */
+const monthSelect = {
+  id: true,
+  month: true,
+  year: true,
+  amountPerHead: true,
+  totalExpected: true,
+  totalCollected: true,
+  totalDue: true,
+  paidCount: true,
+  partialCount: true,
+  unpaidCount: true,
+  status: true,
+  note: true,
+  createdByName: true,
+  updatedByName: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.ImamSalaryMonthSelect;
+
+const assignmentSelect = {
+  id: true,
+  imamSalaryMonthId: true,
+  memberId: true,
+  memberName: true,
+  memberPhone: true,
+  expectedAmount: true,
+  paidAmount: true,
+  dueAmount: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.ImamSalaryAssignmentSelect;
+
+const paymentSelect = {
+  id: true,
+  imamSalaryMonthId: true,
+  assignmentId: true,
+  memberId: true,
+  memberName: true,
+  memberPhone: true,
+  amount: true,
+  paymentMode: true,
+  paymentForMonth: true,
+  paymentForYear: true,
+  paidAt: true,
+  collectedByName: true,
+  note: true,
+  createdAt: true,
+} as const satisfies Prisma.ImamSalaryPaymentSelect;
+
+type MonthRow = Prisma.ImamSalaryMonthGetPayload<{
+  select: typeof monthSelect;
+}>;
+type AssignmentRow = Prisma.ImamSalaryAssignmentGetPayload<{
+  select: typeof assignmentSelect;
+}>;
+type PaymentRow = Prisma.ImamSalaryPaymentGetPayload<{
+  select: typeof paymentSelect;
+}>;
+
+type StatusCounts = {
+  paidCount: number;
+  partialCount: number;
+  unpaidCount: number;
+};
+
+const COUNT_FIELD: Record<ImamSalaryAssignmentStatus, keyof StatusCounts> = {
+  PAID: 'paidCount',
+  PARTIAL: 'partialCount',
+  UNPAID: 'unpaidCount',
 };
 
 @Injectable()
@@ -55,73 +119,77 @@ export class ImamSalariesService {
     private readonly audit: AuditService,
   ) {}
 
+  /**
+   * Creates a month and one assignment per active family head. A second
+   * month for the same masjid/month/year hits the unique key (P2002) and
+   * becomes 409 IMAM_SALARY_ALREADY_EXISTS.
+   */
   async createMonth(dto: CreateSalaryMonthDto, actor: AuthenticatedUser) {
     const masjidId = this.masjidId(actor);
     const amountPerHead = money(dto.amountPerHead);
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.imamSalaryMonth.findUnique({
-        where: {
-          masjidId_month_year: { masjidId, month: dto.month, year: dto.year },
-        },
-        select: { id: true },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // Read inside the transaction so the head list and the month agree.
+        const heads = await tx.user.findMany({
+          where: {
+            masjidId,
+            status: UserStatus.ACTIVE,
+            isFamilyHead: true,
+            userRoles: { some: { role: { name: RoleName.MEMBER } } },
+          },
+          select: { id: true, fullName: true, phone: true },
+        });
+        const total = amountPerHead.times(heads.length);
+        const month = await tx.imamSalaryMonth.create({
+          data: {
+            masjidId,
+            month: dto.month,
+            year: dto.year,
+            amountPerHead,
+            totalExpected: total,
+            totalDue: total,
+            unpaidCount: heads.length,
+            note: dto.note?.trim() || null,
+            createdById: actor.id,
+            createdByName: actor.fullName,
+          },
+          select: monthSelect,
+        });
+        if (heads.length)
+          await tx.imamSalaryAssignment.createMany({
+            data: heads.map((member) => ({
+              masjidId,
+              imamSalaryMonthId: month.id,
+              memberId: member.id,
+              memberName: member.fullName,
+              memberPhone: member.phone ?? '',
+              expectedAmount: amountPerHead,
+              dueAmount: amountPerHead,
+            })),
+          });
+        await this.audit.record(
+          {
+            masjidId,
+            actor,
+            action: AUDIT_ACTION.CREATE,
+            entity: AUDIT_ENTITY.SALARY_MONTH,
+            entityId: month.id,
+            summary: `Salary month ${month.month}/${month.year} at ${formatMoney(month.amountPerHead)} per head for ${heads.length} heads, total ${formatMoney(month.totalExpected)}`,
+            after: { ...month, masjidId },
+          },
+          tx,
+        );
+        return this.toMonth(month);
       });
-      if (existing)
+    } catch (error) {
+      if (isPrismaError(error, 'P2002'))
         this.fail(
           'Salary month already exists',
           HttpStatus.CONFLICT,
           ERROR_CODES.IMAM_SALARY_ALREADY_EXISTS,
         );
-      // Read inside the transaction so the head list and the month agree.
-      const heads = await tx.user.findMany({
-        where: {
-          masjidId,
-          status: UserStatus.ACTIVE,
-          isFamilyHead: true,
-          userRoles: { some: { role: { name: RoleName.MEMBER } } },
-        },
-        select: { id: true, fullName: true, phone: true },
-      });
-      const total = amountPerHead.times(heads.length);
-      const month = await tx.imamSalaryMonth.create({
-        data: {
-          masjidId,
-          month: dto.month,
-          year: dto.year,
-          amountPerHead,
-          totalExpected: total,
-          totalDue: total,
-          unpaidCount: heads.length,
-          note: dto.note?.trim() || null,
-          createdById: actor.id,
-          createdByName: actor.fullName,
-        },
-      });
-      if (heads.length)
-        await tx.imamSalaryAssignment.createMany({
-          data: heads.map((member) => ({
-            masjidId,
-            imamSalaryMonthId: month.id,
-            memberId: member.id,
-            memberName: member.fullName,
-            memberPhone: member.phone ?? '',
-            expectedAmount: amountPerHead,
-            dueAmount: amountPerHead,
-          })),
-        });
-      await this.audit.record(
-        {
-          masjidId,
-          actor,
-          action: AUDIT_ACTION.CREATE,
-          entity: AUDIT_ENTITY.SALARY_MONTH,
-          entityId: month.id,
-          summary: `Salary month ${month.month}/${month.year} at ${formatMoney(month.amountPerHead)} per head for ${heads.length} heads, total ${formatMoney(month.totalExpected)}`,
-          after: month,
-        },
-        tx,
-      );
-      return this.toMonth(month);
-    }, SERIALIZABLE);
+      throw error;
+    }
   }
 
   async listMonths(query: SalaryMonthsQueryDto, actor: AuthenticatedUser) {
@@ -130,13 +198,14 @@ export class ImamSalariesService {
       ...(query.month ? { month: query.month } : {}),
       ...(query.year ? { year: query.year } : {}),
     };
-    const { page, limit, skip } = this.paging(query);
+    const { page, limit, skip, take } = pageArgs(query);
     const [rows, total] = await Promise.all([
       this.prisma.imamSalaryMonth.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        select: monthSelect,
       }),
       this.prisma.imamSalaryMonth.count({ where }),
     ]);
@@ -158,7 +227,6 @@ export class ImamSalariesService {
     actor: AuthenticatedUser,
   ) {
     const masjidId = this.masjidId(actor);
-    await this.findMonth(id, masjidId);
     const search = query.search?.trim();
     const where: Prisma.ImamSalaryAssignmentWhereInput = {
       masjidId,
@@ -173,13 +241,16 @@ export class ImamSalariesService {
           }
         : {}),
     };
-    const { page, limit, skip } = this.paging(query);
-    const [rows, total] = await Promise.all([
+    const { page, limit, skip, take } = pageArgs(query);
+    // Rows are scoped by masjidId, so the month check runs in parallel.
+    const [, rows, total] = await Promise.all([
+      this.findMonth(id, masjidId),
       this.prisma.imamSalaryAssignment.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: [{ memberName: 'asc' }],
+        select: assignmentSelect,
       }),
       this.prisma.imamSalaryAssignment.count({ where }),
     ]);
@@ -191,6 +262,13 @@ export class ImamSalariesService {
     );
   }
 
+  /**
+   * Raises the amount per head. Every assignment is updated by one SQL
+   * statement (expected = new amount, due = expected - paid, status from
+   * paid); the month totals are then computed once and written once.
+   * No "below an amount already paid" check is needed: paid never exceeds
+   * the old amount, and the new amount is not lower.
+   */
   async updateAmount(
     id: string,
     dto: UpdateSalaryAmountDto,
@@ -199,51 +277,63 @@ export class ImamSalariesService {
     const masjidId = this.masjidId(actor);
     const amountPerHead = money(dto.amountPerHead);
     return this.prisma.$transaction(async (tx) => {
-      const month = await this.findMonth(id, masjidId, tx);
-      const before = { ...month };
-      if (amountPerHead.lessThan(month.amountPerHead))
+      const before = await this.findMonth(id, masjidId, tx);
+      if (amountPerHead.lessThan(before.amountPerHead))
         this.fail('Monthly amount can only be increased');
-      const assignments = await tx.imamSalaryAssignment.findMany({
-        where: { imamSalaryMonthId: id },
-        select: { id: true, paidAmount: true },
-      });
-      if (assignments.some((a) => amountPerHead.lessThan(a.paidAmount)))
-        this.fail('Amount cannot be lower than an amount already paid');
 
-      // Assignments with the same paid amount end up with the same
-      // expected/due/status, so update them in one statement per paid amount.
-      const byPaid = new Map<string, { paid: Money; ids: string[] }>();
-      for (const assignment of assignments) {
-        const paid = money(assignment.paidAmount);
-        const key = paid.toFixed(2);
-        const group = byPaid.get(key) ?? { paid, ids: [] };
-        group.ids.push(assignment.id);
-        byPaid.set(key, group);
-      }
-      for (const { paid, ids } of byPaid.values()) {
-        await tx.imamSalaryAssignment.updateMany({
-          where: { id: { in: ids } },
-          data: {
-            expectedAmount: amountPerHead,
-            dueAmount: amountPerHead.minus(paid),
-            status: this.status(paid, amountPerHead),
-          },
-        });
+      const amount = amountPerHead.toFixed(2);
+      await tx.$executeRaw`
+        UPDATE "ImamSalaryAssignment"
+        SET "expectedAmount" = ${amount}::numeric,
+            "dueAmount" = ${amount}::numeric - "paidAmount",
+            "status" = (CASE
+              WHEN "paidAmount" <= 0 THEN 'UNPAID'
+              WHEN "paidAmount" >= ${amount}::numeric THEN 'PAID'
+              ELSE 'PARTIAL'
+            END)::"ImamSalaryAssignmentStatus",
+            "updatedAt" = (NOW() AT TIME ZONE 'UTC')
+        WHERE "imamSalaryMonthId" = ${id}::uuid
+          AND "masjidId" = ${masjidId}::uuid`;
+
+      const groups = await tx.imamSalaryAssignment.groupBy({
+        by: ['status'],
+        where: { imamSalaryMonthId: id },
+        _count: { _all: true },
+        _sum: { expectedAmount: true, paidAmount: true, dueAmount: true },
+      });
+      const counts: StatusCounts = {
+        paidCount: 0,
+        partialCount: 0,
+        unpaidCount: 0,
+      };
+      let totalExpected = ZERO;
+      let totalCollected = ZERO;
+      let totalDue = ZERO;
+      for (const group of groups) {
+        counts[COUNT_FIELD[group.status]] = group._count._all;
+        totalExpected = totalExpected.plus(money(group._sum.expectedAmount));
+        totalCollected = totalCollected.plus(money(group._sum.paidAmount));
+        totalDue = totalDue.plus(money(group._sum.dueAmount));
       }
 
       const reason = dto.reason?.trim();
-      await tx.imamSalaryMonth.update({
+      const updated = await tx.imamSalaryMonth.update({
         where: { id },
         data: {
           amountPerHead,
+          totalExpected,
+          totalCollected,
+          totalDue,
+          ...counts,
+          status: this.status(totalCollected, totalExpected),
           note: reason
-            ? [month.note, reason].filter(Boolean).join('\n')
-            : month.note,
+            ? [before.note, reason].filter(Boolean).join('\n')
+            : before.note,
           updatedById: actor.id,
           updatedByName: actor.fullName,
         },
+        select: monthSelect,
       });
-      const updated = await this.recalculate(tx, id);
       await this.audit.record(
         {
           masjidId,
@@ -253,33 +343,91 @@ export class ImamSalariesService {
           entityId: id,
           summary: `Salary month ${before.month}/${before.year} amount per head ${formatMoney(before.amountPerHead)} -> ${formatMoney(amountPerHead)}${reason ? ` (${reason})` : ''}`,
           before,
-          after: updated,
+          // Same plain-number shape as the API response.
+          after: this.toMonth(updated),
         },
         tx,
       );
-      return updated;
-    }, SERIALIZABLE);
+      return this.toMonth(updated);
+    });
   }
 
+  /**
+   * Records a payment without locking the whole month or re-reading every
+   * assignment:
+   *
+   * 1. One conditional UPDATE on the assignment that only matches while
+   *    `dueAmount >= amount`, adding to paid and subtracting from due in the
+   *    database. Two concurrent payments can never overpay: the second one
+   *    re-checks the condition against the first one's committed row.
+   * 2. The new status is derived from the updated row; the month gets
+   *    increments for its totals and +/-1 for the old and new status counts.
+   */
   async addPayment(dto: CreateSalaryPaymentDto, actor: AuthenticatedUser) {
     const masjidId = this.masjidId(actor);
     const amount = money(dto.amount);
     return this.prisma.$transaction(async (tx) => {
-      const assignment = await tx.imamSalaryAssignment.findFirst({
-        where: { id: dto.assignmentId, masjidId },
-        include: { imamSalaryMonth: { select: { month: true, year: true } } },
+      const { count } = await tx.imamSalaryAssignment.updateMany({
+        where: {
+          id: dto.assignmentId,
+          masjidId,
+          dueAmount: { gte: amount },
+        },
+        data: {
+          paidAmount: { increment: amount },
+          dueAmount: { decrement: amount },
+        },
       });
-      if (!assignment)
-        this.fail(
-          'Salary assignment not found',
-          HttpStatus.NOT_FOUND,
-          ERROR_CODES.IMAM_SALARY_NOT_FOUND,
-        );
-      if (amount.greaterThan(assignment.dueAmount))
+      if (count === 0) {
+        const exists = await tx.imamSalaryAssignment.findFirst({
+          where: { id: dto.assignmentId, masjidId },
+          select: { id: true },
+        });
+        if (!exists)
+          this.fail(
+            'Salary assignment not found',
+            HttpStatus.NOT_FOUND,
+            ERROR_CODES.IMAM_SALARY_NOT_FOUND,
+          );
         this.fail('Payment amount cannot exceed current due amount');
-      const expected = money(assignment.expectedAmount);
-      const paidAmount = money(assignment.paidAmount).plus(amount);
-      const dueAmount = expected.minus(paidAmount);
+      }
+
+      // This transaction now holds the row lock, so `status` is still the
+      // status from before this payment.
+      const assignment = await tx.imamSalaryAssignment.findUniqueOrThrow({
+        where: { id: dto.assignmentId },
+        select: {
+          id: true,
+          imamSalaryMonthId: true,
+          memberId: true,
+          memberName: true,
+          memberPhone: true,
+          expectedAmount: true,
+          paidAmount: true,
+          status: true,
+          imamSalaryMonth: { select: { month: true, year: true } },
+        },
+      });
+      const oldStatus = assignment.status;
+      const newStatus = this.status(
+        money(assignment.paidAmount),
+        money(assignment.expectedAmount),
+      );
+      if (newStatus !== oldStatus)
+        await tx.imamSalaryAssignment.update({
+          where: { id: assignment.id },
+          data: { status: newStatus },
+          select: { id: true },
+        });
+
+      await this.applyToMonth(
+        tx,
+        assignment.imamSalaryMonthId,
+        amount,
+        oldStatus,
+        newStatus,
+      );
+
       const payment = await tx.imamSalaryPayment.create({
         data: {
           masjidId,
@@ -297,16 +445,8 @@ export class ImamSalariesService {
           collectedByName: actor.fullName,
           note: dto.note?.trim() || null,
         },
+        select: paymentSelect,
       });
-      await tx.imamSalaryAssignment.update({
-        where: { id: assignment.id },
-        data: {
-          paidAmount,
-          dueAmount,
-          status: this.status(paidAmount, expected),
-        },
-      });
-      await this.recalculate(tx, assignment.imamSalaryMonthId);
       await this.audit.record(
         {
           masjidId,
@@ -315,12 +455,12 @@ export class ImamSalariesService {
           entity: AUDIT_ENTITY.SALARY_PAYMENT,
           entityId: payment.id,
           summary: `Payment ${formatMoney(payment.amount)} ${payment.paymentMode} from ${payment.memberName} for ${payment.paymentForMonth}/${payment.paymentForYear}`,
-          after: payment,
+          after: { ...payment, masjidId, collectedById: actor.id },
         },
         tx,
       );
       return this.toPayment(payment);
-    }, SERIALIZABLE);
+    });
   }
 
   async listPayments(query: SalaryPaymentsQueryDto, actor: AuthenticatedUser) {
@@ -339,13 +479,14 @@ export class ImamSalariesService {
           }
         : {}),
     };
-    const { page, limit, skip } = this.paging(query);
+    const { page, limit, skip, take } = pageArgs(query);
     const [rows, total] = await Promise.all([
       this.prisma.imamSalaryPayment.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
+        select: paymentSelect,
       }),
       this.prisma.imamSalaryPayment.count({ where }),
     ]);
@@ -366,7 +507,11 @@ export class ImamSalariesService {
         { imamSalaryMonth: { year: 'desc' } },
         { imamSalaryMonth: { month: 'desc' } },
       ],
-      include: {
+      select: {
+        expectedAmount: true,
+        paidAmount: true,
+        dueAmount: true,
+        status: true,
         imamSalaryMonth: { select: { month: true, year: true } },
         payments: {
           orderBy: { paidAt: 'desc' },
@@ -396,34 +541,42 @@ export class ImamSalariesService {
     };
   }
 
-  /** Re-derives month totals, counts and status from its assignments. */
-  private async recalculate(tx: Prisma.TransactionClient, id: string) {
-    const rows = await tx.imamSalaryAssignment.findMany({
-      where: { imamSalaryMonthId: id },
-      select: {
-        expectedAmount: true,
-        paidAmount: true,
-        dueAmount: true,
-        status: true,
-      },
-    });
-    const totalExpected = sumMoney(rows.map((r) => r.expectedAmount));
-    const totalCollected = sumMoney(rows.map((r) => r.paidAmount));
-    const count = (status: ImamSalaryAssignmentStatus) =>
-      rows.filter((r) => r.status === status).length;
+  /**
+   * Adds one payment to the month: totals by increment, counts by moving one
+   * assignment from its old status to its new one. The status is rewritten
+   * only when the new totals change it.
+   */
+  private async applyToMonth(
+    tx: Prisma.TransactionClient,
+    monthId: string,
+    amount: Money,
+    oldStatus: ImamSalaryAssignmentStatus,
+    newStatus: ImamSalaryAssignmentStatus,
+  ): Promise<void> {
+    const countDeltas: Prisma.ImamSalaryMonthUpdateInput = {};
+    if (oldStatus !== newStatus) {
+      countDeltas[COUNT_FIELD[oldStatus]] = { decrement: 1 };
+      countDeltas[COUNT_FIELD[newStatus]] = { increment: 1 };
+    }
     const month = await tx.imamSalaryMonth.update({
-      where: { id },
+      where: { id: monthId },
       data: {
-        totalExpected,
-        totalCollected,
-        totalDue: sumMoney(rows.map((r) => r.dueAmount)),
-        paidCount: count(ImamSalaryAssignmentStatus.PAID),
-        partialCount: count(ImamSalaryAssignmentStatus.PARTIAL),
-        unpaidCount: count(ImamSalaryAssignmentStatus.UNPAID),
-        status: this.status(totalCollected, totalExpected),
+        totalCollected: { increment: amount },
+        totalDue: { decrement: amount },
+        ...countDeltas,
       },
+      select: { totalCollected: true, totalExpected: true, status: true },
     });
-    return this.toMonth(month);
+    const monthStatus = this.status(
+      money(month.totalCollected),
+      money(month.totalExpected),
+    );
+    if (monthStatus !== (month.status as string))
+      await tx.imamSalaryMonth.update({
+        where: { id: monthId },
+        data: { status: monthStatus },
+        select: { id: true },
+      });
   }
 
   private status(paid: Money, expected: Money): ImamSalaryAssignmentStatus {
@@ -437,9 +590,10 @@ export class ImamSalariesService {
     id: string,
     masjidId: string,
     db: Db = this.prisma,
-  ): Promise<ImamSalaryMonth> {
+  ): Promise<MonthRow> {
     const month = await db.imamSalaryMonth.findFirst({
       where: { id, masjidId },
+      select: monthSelect,
     });
     if (!month) {
       this.fail(
@@ -463,13 +617,7 @@ export class ImamSalariesService {
     throw new ApiException(message, status, errorCode);
   }
 
-  private paging(query: Pagination) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    return { page, limit, skip: (page - 1) * limit };
-  }
-
-  private toMonth(month: ImamSalaryMonth) {
+  private toMonth(month: MonthRow) {
     return {
       ...month,
       amountPerHead: toAmount(month.amountPerHead),
@@ -479,7 +627,7 @@ export class ImamSalariesService {
     };
   }
 
-  private toAssignment(assignment: ImamSalaryAssignment) {
+  private toAssignment(assignment: AssignmentRow) {
     return {
       ...assignment,
       expectedAmount: toAmount(assignment.expectedAmount),
@@ -488,7 +636,7 @@ export class ImamSalariesService {
     };
   }
 
-  private toPayment(payment: ImamSalaryPayment) {
+  private toPayment(payment: PaymentRow) {
     return { ...payment, amount: toAmount(payment.amount) };
   }
 }

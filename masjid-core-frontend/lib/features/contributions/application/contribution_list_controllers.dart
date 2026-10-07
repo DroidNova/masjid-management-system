@@ -3,11 +3,13 @@ import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/core/pagination/paged_controller.dart';
 import 'package:masjid_core_frontend/core/pagination/paged_family_controller.dart';
 import 'package:masjid_core_frontend/core/refresh/data_scopes.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/contributions/data/contributions_repository.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/collection_contribution.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/contributor_option.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/new_contribution.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/project_contribution.dart';
+import 'package:masjid_core_frontend/features/projects/application/project_detail_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Project contributions (committee view of one project).
@@ -32,8 +34,9 @@ class ProjectContributionsController
         PagedFamilyController<ProjectContribution, ProjectContributionsQuery> {
   @override
   Future<PagedState<ProjectContribution>> build(ProjectContributionsQuery arg) {
+    // Not DataScope.projects: editing a project's title or details does not
+    // change its contributions.
     ref.watch(dataVersionProvider(DataScope.contributions));
-    ref.watch(dataVersionProvider(DataScope.projects));
     return super.build(arg);
   }
 
@@ -51,10 +54,15 @@ class ProjectContributionsController
       );
 }
 
-/// Title of the project, loaded by id so the screen works from a fresh URL.
+/// Title of the project when the screen opens from a fresh URL (no title in
+/// the route). Reuses the project detail if it is already loaded.
 final projectTitleProvider = FutureProvider.autoDispose.family<String?, String>(
   (ref, projectId) async {
-    ref.watch(dataVersionProvider(DataScope.projects));
+    final detail = projectDetailProvider(projectId);
+    if (ref.exists(detail)) {
+      final loaded = ref.read(detail).valueOrNull;
+      if (loaded != null) return loaded.title;
+    }
     return ref
         .watch(contributionsRepositoryProvider)
         .getProjectTitle(projectId);
@@ -110,18 +118,16 @@ class CollectionContributionsController
 // Recording contributions.
 // ---------------------------------------------------------------------------
 
-/// Members to pick from when recording. Empty if they cannot be loaded: an
-/// external contributor can still be entered by name.
-final contributorOptionsProvider =
-    FutureProvider.autoDispose<List<ContributorOption>>((ref) async {
-      try {
-        return await ref
-            .watch(contributionsRepositoryProvider)
-            .getContributorOptions();
-      } catch (_) {
-        return const <ContributorOption>[];
-      }
-    });
+/// Members to pick from when recording. Loaded once per session (and again
+/// when members change or another user signs in), not per dialog. On error
+/// the dialog shows it; an external contributor can still be entered by name.
+final contributorOptionsProvider = FutureProvider<List<ContributorOption>>((
+  ref,
+) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  ref.watch(dataVersionProvider(DataScope.members));
+  return ref.watch(contributionsRepositoryProvider).getContributorOptions();
+});
 
 final contributionRecorderProvider = Provider<ContributionRecorder>(
   ContributionRecorder.new,

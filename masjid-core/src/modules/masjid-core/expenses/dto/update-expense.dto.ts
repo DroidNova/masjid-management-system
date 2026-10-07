@@ -11,7 +11,6 @@ import {
 } from 'class-validator';
 import {
   ExpenseTypeDto,
-  FinanceEntryStatusDto,
   toOptionalDate,
   toOptionalNumber,
   trimString,
@@ -49,9 +48,4 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsDateString({}, { message: 'Spent date must be a valid ISO date string' })
   spentAt?: string;
-
-  @ApiPropertyOptional({ enum: FinanceEntryStatusDto })
-  @IsOptional()
-  @IsEnum(FinanceEntryStatusDto)
-  status?: FinanceEntryStatusDto;
 }

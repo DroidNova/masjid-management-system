@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_dashboard_summary.dart';
@@ -51,17 +50,8 @@ class SuperAdminRepository {
     int page = 1,
   }) => _api.getMasjidRequests(filter, page);
 
-  Future<AdminMasjidRequestModel> getMasjidRequest(String id) async {
-    final page = await _api.findMasjidRequestById(id);
-    if (page.items.isEmpty) {
-      throw const ApiException(
-        message: 'Masjid request not found.',
-        code: ApiErrorCodes.notFound,
-        statusCode: 404,
-      );
-    }
-    return page.items.first;
-  }
+  Future<AdminMasjidRequestModel> getMasjidRequest(String id) =>
+      _api.getMasjidRequest(id);
 
   Future<void> approveMasjidRequest(String id) =>
       _api.updateMasjidRequestStatus(id, 'APPROVED');

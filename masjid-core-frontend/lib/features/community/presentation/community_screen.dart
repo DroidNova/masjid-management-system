@@ -113,6 +113,7 @@ class _CommunityContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(currentPermissionsProvider);
     final canAddUsers = PermissionHelper.canAddCommunityUser(permissions);
+    final busyUserIds = ref.watch(communityBusyUserIdsProvider);
 
     Widget section(
       String title,
@@ -125,6 +126,7 @@ class _CommunityContent extends ConsumerWidget {
       currentUserPermissions: permissions,
       onEditUser: (user) => _editUser(context, ref, user),
       onChangeUserStatus: (user) => _changeStatus(context, ref, user),
+      busyUserIds: busyUserIds,
     );
 
     return SafeArea(

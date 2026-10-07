@@ -27,6 +27,12 @@ const dashboardMasjidSelect = {
   description: true,
   welcomeMsg: true,
   status: true,
+  _count: {
+    select: {
+      users: { where: { status: 'ACTIVE' } },
+      projects: { where: { status: { in: ['ONGOING', 'PLANNED'] } } },
+    },
+  },
   namazTime: {
     select: {
       fajr: true,
@@ -93,10 +99,16 @@ export class DashboardService {
   async getMyMasjidDashboard(actor: AuthenticatedUser) {
     const masjidId = requireMasjidId(actor);
 
-    const masjidRecord = await this.prisma.masjid.findUnique({
-      where: { id: masjidId },
-      select: dashboardMasjidSelect,
-    });
+    // One round trip: the masjid (with counts and latest rows) and the
+    // finance totals (same numbers as the finance screen) in parallel.
+    const [masjidRecord, finance] = await Promise.all([
+      this.prisma.masjid.findUnique({
+        where: { id: masjidId },
+        select: dashboardMasjidSelect,
+      }),
+      this.finance.summary(masjidId, this.finance.currentMonth()),
+    ]);
+    const { total, period: thisMonth } = finance;
 
     if (!masjidRecord) {
       throw new ApiException(
@@ -106,23 +118,8 @@ export class DashboardService {
       );
     }
 
-    const [membersCount, activeProjectsCount, total, thisMonth] =
-      await Promise.all([
-        this.prisma.user.count({
-          where: { masjidId, status: 'ACTIVE' },
-        }),
-        this.prisma.project.count({
-          where: {
-            masjidId,
-            status: { in: ['ONGOING', 'PLANNED'] },
-          },
-        }),
-        // Same numbers as the finance screen (FinanceCalculator).
-        this.finance.totals(masjidId),
-        this.finance.totals(masjidId, this.finance.currentMonth()),
-      ]);
-
     const {
+      _count: { users: membersCount, projects: activeProjectsCount },
       namazTime,
       imamUser,
       announcements,

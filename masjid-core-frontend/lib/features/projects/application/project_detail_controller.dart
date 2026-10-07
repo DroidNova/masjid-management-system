@@ -16,9 +16,9 @@ class ProjectDetailController
   @override
   Future<ProjectModel> build(String projectId) {
     ref.watch(currentUserProvider.select((user) => user?.id));
+    // Recording a project contribution marks DataScope.projects too (the
+    // collected amount changes), so that scope alone keeps this current.
     ref.watch(dataVersionProvider(DataScope.projects));
-    // Contributions change the collected amount.
-    ref.watch(dataVersionProvider(DataScope.contributions));
     return ref.watch(projectsRepositoryProvider).getProjectById(projectId);
   }
 

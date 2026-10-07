@@ -13,7 +13,13 @@ enum DataScope {
   projects,
   contributions,
   imamSalary,
-  admin,
+
+  // Super admin: each list reloads only when its own data changed; the
+  // summary counts everything, so every admin change marks it too.
+  adminUsers,
+  adminMasjids,
+  adminRequests,
+  adminSummary,
 }
 
 /// Version counter per scope. Watch it in a controller's `build`:

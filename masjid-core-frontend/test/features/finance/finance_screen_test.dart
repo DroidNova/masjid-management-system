@@ -12,6 +12,7 @@ import 'package:masjid_core_frontend/features/auth/application/auth_controller.d
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/collection_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/expense_entry_model.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/finance_entry_filter.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/finance_screen.dart';
@@ -204,5 +205,66 @@ void main() {
 
     expect(find.text('Finance Summary'), findsOneWidget);
     expect(find.text('Could not load collections'), findsOneWidget);
+  });
+
+  testWidgets('a failed summary still shows the lists', (tester) async {
+    when(() => repository.getFinanceSummary()).thenThrow(
+      const ApiException(
+        message: 'Server unavailable',
+        code: ApiErrorCodes.unknown,
+        statusCode: 500,
+      ),
+    );
+
+    await _pump(tester, repository);
+
+    expect(find.text('Server unavailable'), findsOneWidget);
+    expect(find.text('Friday collection'), findsOneWidget);
+  });
+
+  testWidgets('switching tabs keeps both lists and filters, no reload', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => repository.getExpenses(any(), page: any(named: 'page')),
+    ).thenAnswer(
+      (_) async => const PageResult<ExpenseEntryModel>(
+        items: <ExpenseEntryModel>[
+          ExpenseEntryModel(id: 'e1', type: 'OTHER', amount: 50),
+        ],
+        meta: PageMeta(
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+          hasNextPage: false,
+        ),
+      ),
+    );
+
+    await _pump(tester, repository);
+    // Filter the collections, then go to expenses and back twice.
+    await tester.tap(find.text('All types'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Zakat').last);
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('Expenses').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Collections').first);
+      await tester.pumpAndSettle();
+    }
+
+    // Unfiltered + filtered collections once each, expenses once.
+    verify(
+      () => repository.getCollections(any(), page: any(named: 'page')),
+    ).called(2);
+    verify(
+      () => repository.getExpenses(any(), page: any(named: 'page')),
+    ).called(1);
+    expect(find.text('Zakat'), findsOneWidget);
   });
 }

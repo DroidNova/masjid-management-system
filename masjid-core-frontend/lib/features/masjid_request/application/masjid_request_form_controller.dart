@@ -47,12 +47,15 @@ class MasjidRequestFormController
       return false;
     }
 
+    // Finish even if the screen closes meanwhile.
+    final keepAlive = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
           .read(masjidRequestRepositoryProvider)
           .submitMasjidRequest(draft.toRequest()),
     );
+    keepAlive.close();
     return !state.hasError;
   }
 }

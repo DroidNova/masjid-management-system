@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
+import { Prisma } from '../../generated/prisma/client';
 import { ApiException } from '../exceptions/api.exception';
 import { ERROR_CODES, type ErrorCode } from '../constants/error-codes.constant';
 import { getLogUser } from '../utils/log-user.util';
@@ -25,7 +26,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     this.logger.setContext(HttpExceptionFilter.name);
   }
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  catch(rawException: unknown, host: ArgumentsHost): void {
+    // Database errors with a clear meaning become normal API errors
+    // instead of 500s (duplicate value, missing row, bad id, write conflict).
+    const exception = mapPrismaError(rawException) ?? rawException;
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request & { id?: string }>();
     const response = ctx.getResponse<Response>();
@@ -187,5 +191,63 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private extractErrorCode(body: object): ErrorCode | undefined {
     const errorCode = (body as { errorCode?: unknown }).errorCode;
     return typeof errorCode === 'string' ? (errorCode as ErrorCode) : undefined;
+  }
+}
+
+/** Translates Prisma known request errors into ApiExceptions; null otherwise. */
+export function mapPrismaError(error: unknown): ApiException | null {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return null;
+
+  switch (error.code) {
+    case 'P2002': {
+      // Unique constraint. With the pg driver adapter the field names sit in
+      // meta.target or deeper in meta.driverAdapterError; search the meta.
+      const meta = JSON.stringify(error.meta ?? {});
+      if (meta.includes('phone')) {
+        return new ApiException(
+          'This phone number is already registered',
+          HttpStatus.CONFLICT,
+          ERROR_CODES.PHONE_ALREADY_EXISTS,
+        );
+      }
+      if (meta.includes('email')) {
+        return new ApiException(
+          'This email is already registered',
+          HttpStatus.CONFLICT,
+          ERROR_CODES.EMAIL_ALREADY_EXISTS,
+        );
+      }
+      return new ApiException(
+        'This record already exists',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.CONFLICT,
+      );
+    }
+    case 'P2025':
+      return new ApiException(
+        'Record not found',
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND,
+      );
+    case 'P2003':
+      return new ApiException(
+        'A referenced record does not exist',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    case 'P2023':
+      return new ApiException(
+        'Invalid id',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    case 'P2034':
+      return new ApiException(
+        'Someone else changed this at the same time. Please try again.',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.CONFLICT,
+      );
+    default:
+      return null;
   }
 }

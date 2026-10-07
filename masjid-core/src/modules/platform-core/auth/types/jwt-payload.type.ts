@@ -24,6 +24,8 @@ export type AuthenticatedUser = {
   status: string;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  /** Head of a family: owes the monthly imam salary share. */
+  isFamilyHead: boolean;
   createdAt: Date;
   updatedAt: Date;
   roles: string[];

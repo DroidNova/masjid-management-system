@@ -4,9 +4,17 @@ import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
 
 class AdminUserCard extends StatelessWidget {
-  const AdminUserCard({super.key, required this.item, this.onStatus});
+  const AdminUserCard({
+    super.key,
+    required this.item,
+    this.onStatus,
+    this.busy = false,
+  });
   final AdminUserModel item;
   final VoidCallback? onStatus;
+
+  /// A change to this item is in flight: actions are off.
+  final bool busy;
   @override
   Widget build(BuildContext c) => Card(
     child: ListTile(
@@ -24,7 +32,10 @@ class AdminUserCard extends StatelessWidget {
             onPressed: () => c.go('/super-admin/users/${item.id}', extra: item),
             child: const Text('View'),
           ),
-          TextButton(onPressed: onStatus, child: const Text('Change Status')),
+          TextButton(
+            onPressed: busy ? null : onStatus,
+            child: const Text('Change Status'),
+          ),
         ],
       ),
     ),

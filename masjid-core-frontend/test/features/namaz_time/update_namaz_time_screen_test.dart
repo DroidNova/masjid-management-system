@@ -42,14 +42,14 @@ Future<ProviderContainer> _pump(
   WidgetTester tester,
   NamazTimeRepository repository, {
   AppUser user = _user,
-  String? masjidId,
+  NamazTimeModel? initial,
 }) async {
   final router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const Text('Home')),
       GoRoute(
         path: '/update',
-        builder: (_, _) => UpdateNamazTimeScreen(masjidId: masjidId),
+        builder: (_, _) => UpdateNamazTimeScreen(initial: initial),
       ),
     ],
   );
@@ -87,9 +87,7 @@ void main() {
     tester,
   ) async {
     final response = Completer<NamazTimeModel>();
-    when(
-      () => repository.getNamazTime('user-masjid'),
-    ).thenAnswer((_) => response.future);
+    when(() => repository.getMyNamazTime()).thenAnswer((_) => response.future);
 
     await _pump(tester, repository);
     await tester.pump();
@@ -104,20 +102,17 @@ void main() {
     expect(_fieldText(tester, 'Note'), 'Ramadan timings');
   });
 
-  testWidgets('uses the masjid id from the route when given', (tester) async {
-    when(
-      () => repository.getNamazTime('route-masjid'),
-    ).thenAnswer((_) async => _times);
-
-    await _pump(tester, repository, masjidId: 'route-masjid');
+  testWidgets('prefilled from the dashboard: no request', (tester) async {
+    await _pump(tester, repository, initial: _times);
     await tester.pumpAndSettle();
 
-    verify(() => repository.getNamazTime('route-masjid')).called(1);
-    verifyNever(() => repository.getNamazTime('user-masjid'));
+    expect(_fieldText(tester, 'Fajr'), '05:00 AM');
+    expect(_fieldText(tester, 'Note'), 'Ramadan timings');
+    verifyNever(() => repository.getMyNamazTime());
   });
 
   testWidgets('shows the server message and retries on error', (tester) async {
-    when(() => repository.getNamazTime('user-masjid')).thenThrow(
+    when(() => repository.getMyNamazTime()).thenThrow(
       const ApiException(
         message: 'You are not allowed to access this masjid',
         code: 'MASJID_ACCESS_FORBIDDEN',
@@ -133,9 +128,7 @@ void main() {
       findsOneWidget,
     );
 
-    when(
-      () => repository.getNamazTime('user-masjid'),
-    ).thenAnswer((_) async => _times);
+    when(() => repository.getMyNamazTime()).thenAnswer((_) async => _times);
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
 
@@ -151,20 +144,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Masjid not found for this user.'), findsOneWidget);
-    verifyNever(() => repository.getNamazTime(any()));
+    verifyNever(() => repository.getMyNamazTime());
   });
 
   testWidgets('save sends filled fields, marks changes and goes back', (
     tester,
   ) async {
+    when(() => repository.getMyNamazTime()).thenAnswer((_) async => _times);
     when(
-      () => repository.getNamazTime('user-masjid'),
-    ).thenAnswer((_) async => _times);
-    when(
-      () => repository.updateNamazTime(
-        masjidId: any(named: 'masjidId'),
-        request: any(named: 'request'),
-      ),
+      () => repository.updateMyNamazTime(any()),
     ).thenAnswer((_) async => _times);
 
     final container = await _pump(tester, repository);
@@ -174,12 +162,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final request =
-        verify(
-              () => repository.updateNamazTime(
-                masjidId: 'user-masjid',
-                request: captureAny(named: 'request'),
-              ),
-            ).captured.single
+        verify(() => repository.updateMyNamazTime(captureAny())).captured.single
             as UpdateNamazTimeRequest;
     expect(request.toJson(), <String, dynamic>{
       'fajr': '05:00 AM',
@@ -194,15 +177,8 @@ void main() {
   testWidgets('a failed save shows the message and field errors', (
     tester,
   ) async {
-    when(
-      () => repository.getNamazTime('user-masjid'),
-    ).thenAnswer((_) async => _times);
-    when(
-      () => repository.updateNamazTime(
-        masjidId: any(named: 'masjidId'),
-        request: any(named: 'request'),
-      ),
-    ).thenThrow(
+    when(() => repository.getMyNamazTime()).thenAnswer((_) async => _times);
+    when(() => repository.updateMyNamazTime(any())).thenThrow(
       const ApiException(
         message: 'Validation failed',
         code: ApiErrorCodes.validation,

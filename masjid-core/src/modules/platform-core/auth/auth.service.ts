@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
+import { Prisma } from '../../../generated/prisma/client';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginPasswordDto } from './dto/login-password.dto';
@@ -32,33 +33,42 @@ const PRIVILEGED_ROLES = new Set([
 ]);
 
 /**
- * Prisma include that loads a user's role names. Permissions are derived from
- * the roles in code (src/access/permissions.ts), not from the database.
+ * bcrypt hash (cost 10) of a random throwaway string. Compared against when
+ * the phone is unknown, so the response time does not reveal whether an
+ * account exists.
  */
-export const USER_ACCESS_INCLUDE = {
-  userRoles: { include: { role: { select: { name: true } } } },
-} as const;
+const DUMMY_PASSWORD_HASH =
+  '$2b$10$H9d6nvzQgiZbH33t3jhx7ueg.o/YPRJbQwk3qMJap2i2NCKcwCNFW';
+
+/**
+ * Columns of the signed-in user returned to the app, plus role names.
+ * Permissions are derived from the roles in code (src/access/permissions.ts).
+ * Never includes the password hash.
+ */
+export const USER_ACCESS_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+  phone: true,
+  status: true,
+  masjidId: true,
+  isEmailVerified: true,
+  isPhoneVerified: true,
+  isFamilyHead: true,
+  createdAt: true,
+  updatedAt: true,
+  userRoles: { select: { role: { select: { name: true } } } },
+} as const satisfies Prisma.UserSelect;
 
 type SafeUser = Omit<AuthenticatedUser, 'sessionId'>;
 
-type UserWithAccess = {
-  id: string;
-  fullName: string;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  masjidId: string | null;
-  isEmailVerified: boolean;
-  isPhoneVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  passwordHash: string;
-  userRoles: Array<{ role: { name: string } }>;
-};
+type UserWithAccess = Prisma.UserGetPayload<{
+  select: typeof USER_ACCESS_SELECT;
+}>;
 
-export function toSafeUser(
-  user: Omit<UserWithAccess, 'passwordHash'>,
-): SafeUser {
+type RoleRows = { userRoles: Array<{ role: { name: string } }> };
+
+export function toSafeUser(user: UserWithAccess): SafeUser {
   const roles = user.userRoles.map((userRole) => userRole.role.name);
 
   return {
@@ -70,6 +80,7 @@ export function toSafeUser(
     masjidId: user.masjidId,
     isEmailVerified: user.isEmailVerified,
     isPhoneVerified: user.isPhoneVerified,
+    isFamilyHead: user.isFamilyHead,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     roles,
@@ -95,7 +106,12 @@ export class AuthService {
 
   async startLogin(loginStartDto: LoginStartDto) {
     const phone = normalizePhone(loginStartDto.phone);
-    const user = await this.getUserByPhoneOrThrow(phone);
+    const user = await this.findUserByPhone(phone, {
+      id: true,
+      status: true,
+      userRoles: USER_ACCESS_SELECT.userRoles,
+    });
+    if (!user) throw this.invalidCredentials();
     this.assertUserActive(user);
 
     if (this.hasPrivilegedRole(user)) {
@@ -123,34 +139,45 @@ export class AuthService {
     };
   }
 
+  /**
+   * Password step for privileged roles. The bcrypt comparison always runs
+   * (against a dummy hash for unknown phones) so timing does not reveal
+   * whether the phone exists, and the account status is only reported after
+   * a correct password.
+   */
   async verifyPassword(loginPasswordDto: LoginPasswordDto) {
-    const invalidCredentials = new ApiException(
-      'Invalid phone or password',
-      401,
-      ERROR_CODES.INVALID_CREDENTIALS,
-    );
     const phone = normalizePhone(loginPasswordDto.phone);
     const password =
       typeof loginPasswordDto.password === 'string'
         ? loginPasswordDto.password
         : '';
 
-    if (!phone || !password) throw invalidCredentials;
+    if (!phone || !password) throw this.invalidCredentials();
 
-    const user = await this.getUserByPhoneOrThrow(phone);
-    this.assertUserActive(user);
+    const user = await this.findUserByPhone(phone, {
+      id: true,
+      status: true,
+      passwordHash: true,
+      userRoles: USER_ACCESS_SELECT.userRoles,
+    });
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
 
+    if (!user) throw this.invalidCredentials();
+
+    // Not a secret: /login/start already tells the app members use OTP only.
     if (!this.hasPrivilegedRole(user)) {
       throw new ApiException(
         'Members are not allowed to login using password',
-        403,
+        HttpStatus.FORBIDDEN,
         ERROR_CODES.PASSWORD_LOGIN_NOT_ALLOWED_FOR_MEMBER,
       );
     }
 
-    if (!(await bcrypt.compare(password, user.passwordHash))) {
-      throw invalidCredentials;
-    }
+    if (!passwordMatches) throw this.invalidCredentials();
+    this.assertUserActive(user);
 
     const challenge = await this.otpService.create(phone, {
       passwordVerified: true,
@@ -182,27 +209,48 @@ export class AuthService {
       verifyOtpDto.otp.trim(),
     );
 
-    const user = await this.getUserByPhoneOrThrow(phone);
+    const user = await this.findUserByPhone(phone, USER_ACCESS_SELECT);
+    if (!user) throw this.invalidCredentials();
     this.assertUserActive(user);
 
     if (this.hasPrivilegedRole(user) && !challenge.passwordVerified) {
       throw new ApiException(
         'Password verification is required before OTP verification',
-        401,
+        HttpStatus.UNAUTHORIZED,
         ERROR_CODES.OTP_CHALLENGE_INVALID,
       );
     }
 
-    if (!user.isPhoneVerified) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { isPhoneVerified: true },
-      });
+    const sessionId = randomUUID();
+    const tokens = await this.signTokens(user.id, sessionId);
+    const createSession = this.prisma.session.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenHash: hashToken(tokens.refreshToken),
+        userAgent: userAgent?.slice(0, 500) || null,
+        ipAddress: ipAddress || null,
+        expiresAt: this.refreshExpiryDate(),
+      },
+      select: { id: true },
+    });
+
+    if (user.isPhoneVerified) {
+      await createSession;
+    } else {
+      await this.prisma.$transaction([
+        createSession,
+        this.prisma.user.update({
+          where: { id: user.id },
+          data: { isPhoneVerified: true },
+          select: { id: true },
+        }),
+      ]);
       user.isPhoneVerified = true;
     }
 
     this.logger.log({ message: 'User authenticated', userId: user.id });
-    return this.createSession(user, userAgent, ipAddress);
+    return { user: toSafeUser(user), tokens };
   }
 
   /**
@@ -217,12 +265,19 @@ export class AuthService {
 
     const session = await this.prisma.session.findFirst({
       where: { id: payload.sid, userId: payload.sub },
+      select: {
+        id: true,
+        userId: true,
+        refreshTokenHash: true,
+        expiresAt: true,
+        user: { select: USER_ACCESS_SELECT },
+      },
     });
 
     if (!session || session.expiresAt.getTime() <= Date.now()) {
       throw new ApiException(
         'Your session has expired. Please login again.',
-        401,
+        HttpStatus.UNAUTHORIZED,
         ERROR_CODES.SESSION_EXPIRED,
       );
     }
@@ -232,9 +287,11 @@ export class AuthService {
       await this.revokeForReuse(session.id, session.userId);
     }
 
-    const user = await this.getUserByIdOrThrow(payload.sub);
+    const { user } = session;
     if (user.status !== 'ACTIVE') {
-      throw new ForbiddenException('User is not active');
+      // A deactivated account cannot keep refreshing; end the session now.
+      await this.prisma.session.deleteMany({ where: { id: session.id } });
+      throw this.userInactive();
     }
 
     const tokens = await this.signTokens(user.id, session.id);
@@ -253,6 +310,7 @@ export class AuthService {
     return { user: toSafeUser(user), tokens };
   }
 
+  /** Always succeeds with data null; an invalid token has nothing to end. */
   async logout(refreshTokenDto: RefreshTokenDto) {
     const payload = await this.verifyRefreshToken(
       refreshTokenDto.refreshToken,
@@ -286,46 +344,57 @@ export class AuthService {
    * with OTP only and have no password. Other sessions are signed out.
    */
   async changePassword(actor: AuthenticatedUser, dto: ChangePasswordDto) {
-    const user = await this.getUserByIdOrThrow(actor.id);
-
-    if (!this.hasPrivilegedRole(user)) {
+    if (!actor.roles.some((role) => PRIVILEGED_ROLES.has(role))) {
       throw new ApiException(
         'Members log in with OTP and do not have a password',
-        403,
+        HttpStatus.FORBIDDEN,
         ERROR_CODES.PASSWORD_CHANGE_NOT_ALLOWED,
-      );
-    }
-
-    if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
-      throw new ApiException(
-        'Current password is incorrect',
-        401,
-        ERROR_CODES.INVALID_CREDENTIALS,
       );
     }
 
     if (dto.currentPassword === dto.newPassword) {
       throw new ApiException(
         'New password must be different from the current password',
-        400,
+        HttpStatus.BAD_REQUEST,
         ERROR_CODES.PASSWORD_UNCHANGED,
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: actor.id },
+      select: { passwordHash: true },
+    });
+    if (!user) {
+      throw new ApiException(
+        'User not found',
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.USER_NOT_FOUND,
+      );
+    }
+
+    if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+      throw new ApiException(
+        'Current password is incorrect',
+        HttpStatus.UNAUTHORIZED,
+        ERROR_CODES.INVALID_CREDENTIALS,
       );
     }
 
     const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
     const [, revoked] = await this.prisma.$transaction([
       this.prisma.user.update({
-        where: { id: user.id },
+        where: { id: actor.id },
         data: { passwordHash },
+        select: { id: true },
       }),
       this.prisma.session.deleteMany({
-        where: { userId: user.id, id: { not: actor.sessionId } },
+        where: { userId: actor.id, id: { not: actor.sessionId } },
       }),
     ]);
 
     this.logger.log({
       message: 'Password changed',
-      userId: user.id,
+      userId: actor.id,
       revokedSessions: revoked.count,
     });
     return {
@@ -334,40 +403,12 @@ export class AuthService {
     };
   }
 
-  async getCurrentUser(userId: string): Promise<SafeUser> {
-    const user = await this.getUserByIdOrThrow(userId);
-    this.assertUserActive(user);
-    return toSafeUser(user);
-  }
-
   /** Deletes sessions whose refresh token has expired. */
   async deleteExpiredSessions(): Promise<number> {
     const result = await this.prisma.session.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
     return result.count;
-  }
-
-  private async createSession(
-    user: UserWithAccess,
-    userAgent?: string,
-    ipAddress?: string,
-  ): Promise<AuthResponseDto> {
-    const sessionId = randomUUID();
-    const tokens = await this.signTokens(user.id, sessionId);
-
-    await this.prisma.session.create({
-      data: {
-        id: sessionId,
-        userId: user.id,
-        refreshTokenHash: hashToken(tokens.refreshToken),
-        userAgent: userAgent?.slice(0, 500) || null,
-        ipAddress: ipAddress || null,
-        expiresAt: this.refreshExpiryDate(),
-      },
-    });
-
-    return { user: toSafeUser(user), tokens };
   }
 
   private async signTokens(
@@ -413,7 +454,7 @@ export class AuthService {
     });
     throw new ApiException(
       'This session was signed out for security. Please login again.',
-      401,
+      HttpStatus.UNAUTHORIZED,
       ERROR_CODES.SESSION_REVOKED,
     );
   }
@@ -445,49 +486,43 @@ export class AuthService {
       if (silent) return null;
       throw new ApiException(
         'Invalid refresh token',
-        401,
+        HttpStatus.UNAUTHORIZED,
         ERROR_CODES.UNAUTHORIZED,
       );
     }
   }
 
-  private async getUserByPhoneOrThrow(phone: string): Promise<UserWithAccess> {
-    const user = await this.prisma.user.findFirst({
+  private findUserByPhone<S extends Prisma.UserSelect>(
+    phone: string,
+    select: S,
+  ) {
+    return this.prisma.user.findFirst({
       where: { phone: { in: getPhoneSearchVariants(phone) } },
-      include: USER_ACCESS_INCLUDE,
+      select,
     });
-
-    if (!user) {
-      throw new ApiException(
-        'Invalid phone or password',
-        401,
-        ERROR_CODES.INVALID_CREDENTIALS,
-      );
-    }
-
-    return user;
   }
 
-  private async getUserByIdOrThrow(userId: string): Promise<UserWithAccess> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: USER_ACCESS_INCLUDE,
-    });
-
-    if (!user) {
-      throw new ApiException('User not found', 404, ERROR_CODES.NOT_FOUND);
-    }
-
-    return user;
+  private invalidCredentials(): ApiException {
+    return new ApiException(
+      'Invalid phone or password',
+      HttpStatus.UNAUTHORIZED,
+      ERROR_CODES.INVALID_CREDENTIALS,
+    );
   }
 
-  private assertUserActive(user: UserWithAccess): void {
-    if (user.status !== 'ACTIVE') {
-      throw new ForbiddenException('User is not active');
-    }
+  private userInactive(): ApiException {
+    return new ApiException(
+      'This account is not active. Please contact your masjid.',
+      HttpStatus.FORBIDDEN,
+      ERROR_CODES.USER_INACTIVE,
+    );
   }
 
-  private hasPrivilegedRole(user: UserWithAccess): boolean {
+  private assertUserActive(user: { status: string }): void {
+    if (user.status !== 'ACTIVE') throw this.userInactive();
+  }
+
+  private hasPrivilegedRole(user: RoleRows): boolean {
     return user.userRoles.some((userRole) =>
       PRIVILEGED_ROLES.has(userRole.role.name),
     );

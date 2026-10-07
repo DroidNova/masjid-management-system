@@ -88,7 +88,8 @@
             "schema": {
               "minimum": 1,
               "maximum": 100,
-              "example": 10,
+              "default": 20,
+              "example": 20,
               "type": "number"
             }
           },
@@ -200,7 +201,7 @@
             "required": true,
             "in": "path",
             "schema": {
-              "example": "usr_01HXYZ123",
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
               "type": "string"
             }
           }
@@ -249,6 +250,7 @@
     },
     "/admin/users/{id}/status": {
       "patch": {
+        "description": "INACTIVE and SUSPENDED also sign the user out of every session. SUPER_ADMIN accounts: 403 SUPER_ADMIN_IMMUTABLE. Unknown id: 404 USER_NOT_FOUND.",
         "operationId": "AdminController_updateUserStatus",
         "parameters": [
           {
@@ -256,7 +258,7 @@
             "required": true,
             "in": "path",
             "schema": {
-              "example": "usr_01HXYZ123",
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
               "type": "string"
             }
           }
@@ -314,6 +316,7 @@
     },
     "/admin/users/{id}/roles": {
       "post": {
+        "description": "Returns the same shape as GET /admin/users/:id. Only IMAM, COMMITTEE_MEMBER and MEMBER can be assigned (403 ROLE_NOT_ASSIGNABLE).",
         "operationId": "AdminController_assignRoles",
         "parameters": [
           {
@@ -321,7 +324,7 @@
             "required": true,
             "in": "path",
             "schema": {
-              "example": "usr_01HXYZ123",
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
               "type": "string"
             }
           }
@@ -374,7 +377,7 @@
             "bearer": []
           }
         ],
-        "summary": "Assign roles to a user",
+        "summary": "Replace the roles of a user",
         "tags": [
           "Admin"
         ]
@@ -532,6 +535,7 @@
     },
     "/admin/masjids/{id}/status": {
       "patch": {
+        "description": "REJECTED and SUSPENDED require a reason (400 VALIDATION_ERROR). Unknown id: 404 MASJID_NOT_FOUND.",
         "operationId": "AdminMasjidsController_updateMasjidStatus",
         "parameters": [
           {
@@ -619,6 +623,22 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Account is inactive or suspended (USER_INACTIVE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "Start phone-first login and determine next step",
@@ -664,6 +684,22 @@
           },
           "401": {
             "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "statusCode": 400,
+                    "message": "Error message",
+                    "errorCode": "INVALID_CREDENTIALS",
+                    "requestId": "6f1c2c8e-5d1b-4a8e-9f0e-0f2a1b3c4d5e"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Member account (PASSWORD_LOGIN_NOT_ALLOWED_FOR_MEMBER), or correct password for an inactive account (USER_INACTIVE)",
             "content": {
               "application/json": {
                 "schema": {
@@ -746,7 +782,7 @@
     },
     "/auth/refresh": {
       "post": {
-        "description": "Each refresh token works once. Reusing an old one signs the session out (errorCode SESSION_REVOKED).",
+        "description": "Each refresh token works once. Reusing an old one signs the session out (errorCode SESSION_REVOKED). A deactivated or suspended account gets 403 USER_INACTIVE and its session is ended.",
         "operationId": "AuthController_refresh",
         "parameters": [],
         "requestBody": {
@@ -790,6 +826,7 @@
     },
     "/auth/logout": {
       "post": {
+        "description": "Always succeeds with data null, also for an invalid or already ended refresh token.",
         "operationId": "AuthController_logout",
         "parameters": [],
         "requestBody": {
@@ -808,21 +845,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessResponseDto"
-                    },
-                    {
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "example": {
-                            "loggedOut": true
-                          }
-                        }
-                      }
-                    }
-                  ]
+                  "example": {
+                    "success": true,
+                    "message": "Logged out successfully",
+                    "data": null
+                  }
                 }
               }
             }
@@ -2651,7 +2678,7 @@
     },
     "/masjid-requests/track": {
       "post": {
-        "description": "Public endpoint. No bearer token or tracking token is required.",
+        "description": "Public endpoint. No bearer token or tracking token is required. Returns { items } with the 20 newest applications for the phone; this list is not paged (no meta).",
         "operationId": "MasjidRequestsController_track",
         "parameters": [],
         "requestBody": {
@@ -2666,7 +2693,28 @@
         },
         "responses": {
           "200": {
-            "description": "Applications fetched successfully"
+            "description": "Applications fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Applications fetched successfully",
+                    "data": {
+                      "items": [
+                        {
+                          "masjidName": "Jama Masjid",
+                          "status": "PENDING",
+                          "imamName": "Abdul Rahman",
+                          "requestedAt": "2026-06-19T00:00:00.000Z",
+                          "reviewedAt": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "Track public masjid registration requests by requester phone",
@@ -2675,8 +2723,68 @@
         ]
       }
     },
+    "/masjid-requests/{id}": {
+      "get": {
+        "description": "Same shape as an item of GET /masjid-requests.",
+        "operationId": "MasjidRequestsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "4e0798d2-3fd3-4caa-9966-9f85c96f8b2f",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Masjid request retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: platform.masjid_requests.manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Forbidden resource",
+                    "errorCode": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MASJID_REQUEST_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "Forbidden resource",
+                    "errorCode": "FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one masjid request",
+        "tags": [
+          "Masjid Requests"
+        ]
+      }
+    },
     "/masjid-requests/{id}/status": {
       "patch": {
+        "description": "Only a PENDING request can change. Already decided: 409 MASJID_REQUEST_ALREADY_APPROVED / MASJID_REQUEST_ALREADY_REJECTED (also for the loser of two simultaneous decisions). Imam or committee member in another masjid: 409 USER_IN_ANOTHER_MASJID. New imam whose email belongs to another account: 409 EMAIL_ALREADY_EXISTS.",
         "operationId": "MasjidRequestsController_updateStatus",
         "parameters": [
           {
@@ -3065,6 +3173,82 @@
         "summary": "Update a user status in current masjid",
         "tags": [
           "Masjids"
+        ]
+      }
+    },
+    "/namaz-times/my-masjid": {
+      "get": {
+        "operationId": "NamazTimesController_findMyMasjid",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Namaz times retrieved successfully"
+          },
+          "403": {
+            "description": "Requires permission: namaz_times.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the current user's masjid namaz times",
+        "tags": [
+          "Namaz Times"
+        ]
+      },
+      "put": {
+        "operationId": "NamazTimesController_upsertMyMasjid",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertNamazTimeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Namaz times saved successfully"
+          },
+          "403": {
+            "description": "Requires permission: namaz_times.update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": false,
+                    "message": "You are not allowed to access this masjid",
+                    "errorCode": "MASJID_ACCESS_FORBIDDEN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Insert or update the current user's masjid namaz times",
+        "tags": [
+          "Namaz Times"
         ]
       }
     },
@@ -3798,6 +3982,11 @@
             "type": "boolean",
             "example": true
           },
+          "isFamilyHead": {
+            "type": "boolean",
+            "example": false,
+            "description": "Head of a family: owes the monthly imam salary share"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -3837,6 +4026,7 @@
           "masjidId",
           "isEmailVerified",
           "isPhoneVerified",
+          "isFamilyHead",
           "createdAt",
           "updatedAt",
           "roles",
@@ -4186,13 +4376,6 @@
           "spentAt": {
             "type": "string",
             "example": "2026-06-16T00:00:00.000Z"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "CANCELLED"
-            ]
           }
         }
       },
@@ -4333,13 +4516,6 @@
           "collectedAt": {
             "type": "string",
             "example": "2026-06-16T00:00:00.000Z"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "CANCELLED"
-            ]
           }
         }
       },
@@ -4799,16 +4975,6 @@
             "example": 200000,
             "minimum": 0
           },
-          "collectedAmount": {
-            "type": "number",
-            "example": 80000,
-            "minimum": 0
-          },
-          "spentAmount": {
-            "type": "number",
-            "example": 30000,
-            "minimum": 0
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -4899,16 +5065,6 @@
           "targetAmount": {
             "type": "number",
             "example": 250000,
-            "minimum": 0
-          },
-          "collectedAmount": {
-            "type": "number",
-            "example": 120000,
-            "minimum": 0
-          },
-          "spentAmount": {
-            "type": "number",
-            "example": 50000,
             "minimum": 0
           },
           "status": {

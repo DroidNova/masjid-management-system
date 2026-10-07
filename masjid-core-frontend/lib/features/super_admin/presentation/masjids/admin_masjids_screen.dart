@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/approve_reject_request_dialog.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/admin_masjid_card.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/update_masjid_status_dialog.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_action_feedback.dart';
@@ -19,17 +20,28 @@ class AdminMasjidsScreen extends ConsumerWidget {
   ) async {
     final status = await showUpdateMasjidStatusDialog(context);
     if (status == null || !context.mounted) return;
+    String? reason;
+    if (masjidStatusNeedsReason(status)) {
+      reason = await showReasonDialog(
+        context,
+        title: 'Reason for $status',
+        confirmLabel: 'Save',
+        required: true,
+      );
+      if (reason == null || !context.mounted) return;
+    }
     await runAdminAction(
       context,
       () => ref
           .read(superAdminActionsProvider)
-          .updateMasjidStatus(item.id, status),
+          .updateMasjidStatus(item.id, status, reason: reason),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(adminMasjidsFilterProvider);
+    final busyIds = ref.watch(adminBusyIdsProvider);
     final filterController = ref.read(adminMasjidsFilterProvider.notifier);
 
     Widget statusChip(String label, String? status) => FilterChip(
@@ -70,6 +82,7 @@ class AdminMasjidsScreen extends ConsumerWidget {
             itemBuilder: (context, item) => AdminMasjidCard(
               item: item,
               onStatus: () => _changeStatus(context, ref, item),
+              busy: busyIds.contains(item.id),
             ),
           ),
         ),

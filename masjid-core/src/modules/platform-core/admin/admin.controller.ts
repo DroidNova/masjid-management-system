@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  ParseUUIDPipe,
   Param,
   Patch,
   Post,
@@ -35,6 +36,8 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { PERMISSIONS } from '../../../access/permissions';
 import { RequirePermissions } from '../../../access/require-permissions';
 
+const UUID_V4 = new ParseUUIDPipe({ version: '4' });
+
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
 };
@@ -61,7 +64,7 @@ export class AdminController {
   @RequirePermissions(PERMISSIONS.PLATFORM_USERS_READ)
   @ApiOperation({ summary: 'Get users with pagination and optional search' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiQuery({ name: 'search', required: false, example: 'alex' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -85,7 +88,7 @@ export class AdminController {
   @Get(':id')
   @RequirePermissions(PERMISSIONS.PLATFORM_USERS_READ)
   @ApiOperation({ summary: 'Get user by id' })
-  @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
+  @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'User retrieved successfully',
@@ -107,14 +110,18 @@ export class AdminController {
       ],
     },
   })
-  getUserById(@Param('id') id: string) {
+  getUserById(@Param('id', UUID_V4) id: string) {
     return this.adminService.getUserById(id);
   }
 
   @Patch(':id/status')
   @RequirePermissions(PERMISSIONS.PLATFORM_USERS_MANAGE)
-  @ApiOperation({ summary: 'Update user status' })
-  @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
+  @ApiOperation({
+    summary: 'Update user status',
+    description:
+      'INACTIVE and SUSPENDED also sign the user out of every session. SUPER_ADMIN accounts: 403 SUPER_ADMIN_IMMUTABLE. Unknown id: 404 USER_NOT_FOUND.',
+  })
+  @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiBody({ type: UpdateUserStatusDto })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -134,7 +141,7 @@ export class AdminController {
     },
   })
   updateUserStatus(
-    @Param('id') id: string,
+    @Param('id', UUID_V4) id: string,
     @Body() dto: UpdateUserStatusDto,
     @Req() request: AuthenticatedRequest,
   ) {
@@ -143,8 +150,12 @@ export class AdminController {
 
   @Post(':id/roles')
   @RequirePermissions(PERMISSIONS.PLATFORM_ROLES_ASSIGN)
-  @ApiOperation({ summary: 'Assign roles to a user' })
-  @ApiParam({ name: 'id', example: 'usr_01HXYZ123' })
+  @ApiOperation({
+    summary: 'Replace the roles of a user',
+    description:
+      'Returns the same shape as GET /admin/users/:id. Only IMAM, COMMITTEE_MEMBER and MEMBER can be assigned (403 ROLE_NOT_ASSIGNABLE).',
+  })
+  @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiBody({ type: AssignUserRolesDto })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -167,7 +178,7 @@ export class AdminController {
     },
   })
   assignRoles(
-    @Param('id') id: string,
+    @Param('id', UUID_V4) id: string,
     @Body() dto: AssignUserRolesDto,
     @Req() request: AuthenticatedRequest,
   ) {
@@ -207,15 +218,19 @@ export class AdminMasjidsController {
   @Get(':id')
   @RequirePermissions(PERMISSIONS.PLATFORM_MASJIDS_MANAGE)
   @ApiOperation({ summary: 'Get masjid details by id' })
-  getMasjid(@Param('id') id: string) {
+  getMasjid(@Param('id', UUID_V4) id: string) {
     return this.adminService.getMasjidById(id);
   }
 
   @Patch(':id/status')
   @RequirePermissions(PERMISSIONS.PLATFORM_MASJIDS_MANAGE)
-  @ApiOperation({ summary: 'Update masjid status' })
+  @ApiOperation({
+    summary: 'Update masjid status',
+    description:
+      'REJECTED and SUSPENDED require a reason (400 VALIDATION_ERROR). Unknown id: 404 MASJID_NOT_FOUND.',
+  })
   updateMasjidStatus(
-    @Param('id') id: string,
+    @Param('id', UUID_V4) id: string,
     @Body() dto: UpdateMasjidStatusDto,
     @Req() request: AuthenticatedRequest,
   ) {

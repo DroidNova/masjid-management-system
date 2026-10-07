@@ -9,9 +9,13 @@ class AdminMasjidRequestCard extends StatelessWidget {
     required this.item,
     this.onApprove,
     this.onReject,
+    this.busy = false,
   });
   final AdminMasjidRequestModel item;
   final VoidCallback? onApprove, onReject;
+
+  /// A change to this request is in flight: actions are off.
+  final bool busy;
   @override
   Widget build(BuildContext c) => Card(
     child: ListTile(
@@ -31,9 +35,15 @@ class AdminMasjidRequestCard extends StatelessWidget {
             child: const Text('View'),
           ),
           if (item.isPending)
-            TextButton(onPressed: onApprove, child: const Text('Approve')),
+            TextButton(
+              onPressed: busy ? null : onApprove,
+              child: const Text('Approve'),
+            ),
           if (item.isPending)
-            TextButton(onPressed: onReject, child: const Text('Reject')),
+            TextButton(
+              onPressed: busy ? null : onReject,
+              child: const Text('Reject'),
+            ),
         ],
       ),
     ),

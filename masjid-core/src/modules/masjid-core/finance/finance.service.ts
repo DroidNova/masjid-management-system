@@ -33,10 +33,10 @@ export class FinanceService {
     const masjidId = requireMasjidId(actor);
     const period = this.resolvePeriod(query);
 
-    const [total, inPeriod] = await Promise.all([
-      this.calculator.totals(masjidId),
-      this.calculator.totals(masjidId, period),
-    ]);
+    const { total, period: inPeriod } = await this.calculator.summary(
+      masjidId,
+      period,
+    );
 
     return {
       totalCollection: toAmount(total.income),

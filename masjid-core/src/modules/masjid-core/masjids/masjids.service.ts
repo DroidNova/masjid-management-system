@@ -16,7 +16,13 @@ import { requireMasjidId } from '../../../common/tenant';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AppConfig } from '../../../config/app-config';
 import { hasPermission, PERMISSIONS } from '../../../access/permissions';
-import { MasjidStatus, UserStatus } from '../../../generated/prisma/enums';
+import { Prisma } from '../../../generated/prisma/client';
+import {
+  MasjidStatus,
+  RoleName,
+  UserStatus,
+} from '../../../generated/prisma/enums';
+import { isPrismaError } from '../prisma-errors';
 import { initialPasswordFor } from '../../platform-core/auth/initial-password';
 import { BCRYPT_ROUNDS } from '../../platform-core/auth/auth.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
@@ -60,14 +66,7 @@ export class MasjidsService {
       select: masjidProfileSelect,
     });
 
-    if (!masjid) {
-      throw new ApiException(
-        'Masjid not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_NOT_FOUND,
-      );
-    }
-
+    if (!masjid) throw this.masjidNotFound();
     return masjid;
   }
 
@@ -83,6 +82,7 @@ export class MasjidsService {
           where: { id: masjidId },
           select: masjidWelcomeSelect,
         });
+        if (!before) throw this.masjidNotFound();
         const updated = await tx.masjid.update({
           where: { id: masjidId },
           data: { welcomeMsg: dto.welcomeMsg },
@@ -105,12 +105,11 @@ export class MasjidsService {
       });
       this.logger.log({ message: 'Masjid welcome message updated', masjidId });
       return masjid;
-    } catch {
-      throw new ApiException(
-        'Masjid not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_NOT_FOUND,
-      );
+    } catch (error) {
+      // Only "the masjid is gone" becomes MASJID_NOT_FOUND; anything else
+      // (database down, audit failure, ...) goes to the global filter.
+      if (isPrismaError(error, 'P2025')) throw this.masjidNotFound();
+      throw error;
     }
   }
 
@@ -129,19 +128,31 @@ export class MasjidsService {
       );
     }
 
+    this.assertProfileFields(dto.role, dto.isFamilyHead);
     const masjidId = this.resolveTargetMasjidId(callerRoles, actor, dto);
-    const masjid = await this.prisma.masjid.findUnique({
-      where: { id: masjidId },
-      select: { id: true, status: true },
-    });
+    const phone = normalizePhone(dto.phone);
+    const email = dto.email?.trim().toLowerCase() || null;
 
-    if (!masjid) {
-      throw new ApiException(
-        'Masjid not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_NOT_FOUND,
-      );
-    }
+    // Independent reads in one round trip.
+    const [masjid, existingByPhone, existingByEmail] = await Promise.all([
+      this.prisma.masjid.findUnique({
+        where: { id: masjidId },
+        select: { id: true, status: true },
+      }),
+      // One person = one phone number = one masjid at a time.
+      this.prisma.user.findFirst({
+        where: { phone: { in: getPhoneSearchVariants(phone) } },
+        select: existingUserByPhoneSelect,
+      }),
+      email
+        ? this.prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    if (!masjid) throw this.masjidNotFound();
 
     if (masjid.status !== MasjidStatus.APPROVED) {
       throw new ApiException(
@@ -151,46 +162,13 @@ export class MasjidsService {
       );
     }
 
-    this.assertProfileFields(dto.role, dto.isFamilyHead);
-
-    const phone = normalizePhone(dto.phone);
-    const email = dto.email?.trim().toLowerCase() || null;
-
-    // One person = one phone number = one masjid at a time.
-    const existingByPhone = await this.prisma.user.findFirst({
-      where: { phone: { in: getPhoneSearchVariants(phone) } },
-      select: existingUserByPhoneSelect,
-    });
-
     if (existingByPhone) {
       this.assertCanLinkExistingUser(existingByPhone, masjidId);
-    }
-
-    if (email && !existingByPhone) {
-      const existingByEmail = await this.prisma.user.findUnique({
-        where: { email },
-        select: { id: true },
-      });
-
-      if (existingByEmail) {
-        throw new ApiException(
-          'Email already exists',
-          HttpStatus.CONFLICT,
-          ERROR_CODES.EMAIL_ALREADY_EXISTS,
-        );
-      }
-    }
-
-    const role = await this.prisma.role.findUnique({
-      where: { name: dto.role },
-      select: { id: true, name: true },
-    });
-
-    if (!role) {
+    } else if (existingByEmail) {
       throw new ApiException(
-        'Role not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.ROLE_NOT_FOUND,
+        'Email already exists',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.EMAIL_ALREADY_EXISTS,
       );
     }
 
@@ -200,26 +178,29 @@ export class MasjidsService {
       ? initialPasswordFor(this.config)
       : null;
     const temporaryPassword = initial?.disclosable ? initial.password : null;
+
+    if (existingByPhone) {
+      // A linked member keeps their password; only a known one is set.
+      return this.linkExistingUser({
+        actor,
+        existing: existingByPhone,
+        masjidId,
+        dto,
+        passwordHash: initial
+          ? await bcrypt.hash(initial.password, BCRYPT_ROUNDS)
+          : null,
+        temporaryPassword,
+      });
+    }
+
     const passwordHash = await bcrypt.hash(
       initial?.password ?? randomBytes(32).toString('hex'),
       BCRYPT_ROUNDS,
     );
 
-    if (existingByPhone) {
-      return this.linkExistingUser({
-        actor,
-        existing: existingByPhone,
-        userId: existingByPhone.id,
-        masjidId,
-        dto,
-        roleId: role.id,
-        passwordHash: initial ? passwordHash : null,
-        temporaryPassword,
-      });
-    }
-
     const createdUser = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+      // User, role link and the response row in one call.
+      const created = await tx.user.create({
         data: {
           fullName: dto.fullName.trim(),
           phone,
@@ -234,34 +215,27 @@ export class MasjidsService {
           isPhoneVerified: false,
           isEmailVerified: false,
           passwordHash,
+          userRoles: this.singleRole(dto.role),
         },
-        select: { id: true },
-      });
-
-      await tx.userRole.create({
-        data: { userId: user.id, roleId: role.id },
+        select: masjidUserCreateSelect,
       });
 
       if (dto.role === CreateMasjidUserRoleDto.IMAM) {
         // Replacing imamUserId is allowed here; the previous imam user is not deleted.
         await tx.masjid.update({
           where: { id: masjidId },
-          data: { imamUserId: user.id },
+          data: { imamUserId: created.id },
           select: { id: true },
         });
       }
 
-      const created = await tx.user.findUnique({
-        where: { id: user.id },
-        select: masjidUserCreateSelect,
-      });
       await this.audit.record(
         {
           masjidId,
           actor,
           action: AUDIT_ACTION.CREATE,
           entity: AUDIT_ENTITY.MEMBER,
-          entityId: user.id,
+          entityId: created.id,
           summary: `Member "${dto.fullName.trim()}" added as ${dto.role}`,
           after: created,
         },
@@ -271,7 +245,7 @@ export class MasjidsService {
     });
 
     const response = this.toCreatedMasjidUserResponse(
-      this.requireMasjidUser(createdUser),
+      createdUser,
       temporaryPassword,
     );
 
@@ -290,7 +264,31 @@ export class MasjidsService {
     userId: string,
     dto: UpdateMasjidUserDto,
   ): Promise<MasjidMemberResponse> {
-    const target = await this.ensureCanManageTargetUser(actor, userId);
+    const phone = normalizePhone(dto.phone);
+    // Omitted email: left unchanged. Empty email: cleared.
+    const email =
+      dto.email === undefined
+        ? undefined
+        : dto.email?.trim().toLowerCase() || null;
+
+    // Permission check and both duplicate checks in one round trip; the
+    // duplicate results are only looked at once the caller is allowed.
+    const [target, duplicatePhone, duplicateEmail] = await Promise.all([
+      this.ensureCanManageTargetUser(actor, userId),
+      this.prisma.user.findFirst({
+        where: {
+          phone: { in: getPhoneSearchVariants(phone) },
+          NOT: { id: userId },
+        },
+        select: { id: true },
+      }),
+      email
+        ? this.prisma.user.findFirst({
+            where: { email, NOT: { id: userId } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (
       target.userRoles.some(
@@ -305,15 +303,6 @@ export class MasjidsService {
         ERROR_CODES.BAD_REQUEST,
       );
     }
-
-    const phone = normalizePhone(dto.phone);
-    const duplicatePhone = await this.prisma.user.findFirst({
-      where: {
-        phone: { in: getPhoneSearchVariants(phone) },
-        NOT: { id: target.id },
-      },
-      select: { id: true },
-    });
     if (duplicatePhone) {
       throw new ApiException(
         'Phone number already exists',
@@ -321,27 +310,21 @@ export class MasjidsService {
         ERROR_CODES.PHONE_ALREADY_EXISTS,
       );
     }
-
-    // Omitted email: left unchanged. Empty email: cleared.
-    const email =
-      dto.email === undefined
-        ? undefined
-        : dto.email?.trim().toLowerCase() || null;
-    if (email) {
-      const duplicateEmail = await this.prisma.user.findFirst({
-        where: { email, NOT: { id: target.id } },
-        select: { id: true },
-      });
-      if (duplicateEmail) {
-        throw new ApiException(
-          'Email already exists',
-          HttpStatus.CONFLICT,
-          ERROR_CODES.EMAIL_ALREADY_EXISTS,
-        );
-      }
+    if (duplicateEmail) {
+      throw new ApiException(
+        'Email already exists',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.EMAIL_ALREADY_EXISTS,
+      );
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      // The audit "before" is read in the same transaction as the write.
+      const before = await tx.user.findFirst({
+        where: { id: userId, masjidId: target.masjidId },
+        select: masjidMemberSelect,
+      });
+      if (!before) throw this.masjidUserNotFound();
       const user = await tx.user.update({
         where: { id: userId },
         data: {
@@ -364,7 +347,7 @@ export class MasjidsService {
           entity: AUDIT_ENTITY.MEMBER,
           entityId: user.id,
           summary: `Member "${user.fullName}" profile updated`,
-          before: target,
+          before,
           after: user,
         },
         tx,
@@ -459,26 +442,18 @@ export class MasjidsService {
       );
     }
 
-    const memberRole = await this.prisma.role.findUnique({
-      where: { name: CreateMasjidUserRoleDto.MEMBER },
-      select: { id: true },
-    });
-    if (!memberRole) {
-      throw new ApiException(
-        'Role not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.ROLE_NOT_FOUND,
-      );
-    }
-
     await this.prisma.$transaction(async (tx) => {
+      // Masjid cleared and roles reset to MEMBER in one nested write.
       await tx.user.update({
         where: { id: actor.id },
-        data: { masjidId: null },
-      });
-      await tx.userRole.deleteMany({ where: { userId: actor.id } });
-      await tx.userRole.create({
-        data: { userId: actor.id, roleId: memberRole.id },
+        data: {
+          masjidId: null,
+          userRoles: {
+            deleteMany: {},
+            ...this.singleRole(CreateMasjidUserRoleDto.MEMBER),
+          },
+        },
+        select: { id: true },
       });
       // If they were this masjid's imam, the masjid no longer has one.
       await tx.masjid.updateMany({
@@ -521,11 +496,7 @@ export class MasjidsService {
       );
     }
     if (existing.masjidId) {
-      throw new ApiException(
-        'This person is already a member of another masjid. Ask them to leave that masjid from the app first, then add them again.',
-        HttpStatus.CONFLICT,
-        ERROR_CODES.USER_IN_ANOTHER_MASJID,
-      );
+      throw this.userInAnotherMasjid();
     }
     const roles = existing.userRoles.map((userRole) => userRole.role.name);
     if (this.isPlatformAdmin(roles)) {
@@ -541,58 +512,63 @@ export class MasjidsService {
   private async linkExistingUser(params: {
     actor: AuthenticatedUser;
     existing: ExistingUserByPhone;
-    userId: string;
     masjidId: string;
     dto: CreateMasjidUserDto;
-    roleId: string;
     passwordHash: string | null;
     temporaryPassword: string | null;
   }): Promise<CreatedMasjidUserResponse> {
-    const { userId, masjidId, dto, roleId } = params;
+    const { existing, masjidId, dto } = params;
+    const userId = existing.id;
 
-    const linked = await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          masjidId,
-          status: UserStatus.ACTIVE,
-          isFamilyHead: this.isFamilyHeadFor(dto),
-          familyMemberCount: dto.familyMemberCount ?? null,
-          // Imams and committee members need a password they know.
-          ...(params.passwordHash ? { passwordHash: params.passwordHash } : {}),
-        },
-      });
-      await tx.userRole.deleteMany({ where: { userId } });
-      await tx.userRole.create({ data: { userId, roleId } });
-      if (dto.role === CreateMasjidUserRoleDto.IMAM) {
-        await tx.masjid.update({
-          where: { id: masjidId },
-          data: { imamUserId: userId },
-          select: { id: true },
+    let linked: CreatedMasjidUser;
+    try {
+      linked = await this.prisma.$transaction(async (tx) => {
+        // `masjidId: null` in the where: if another masjid linked them in
+        // the meantime, nothing matches (P2025) and nothing is changed.
+        const user = await tx.user.update({
+          where: { id: userId, masjidId: null },
+          data: {
+            masjidId,
+            status: UserStatus.ACTIVE,
+            isFamilyHead: this.isFamilyHeadFor(dto),
+            familyMemberCount: dto.familyMemberCount ?? null,
+            // Imams and committee members need a password they know.
+            ...(params.passwordHash
+              ? { passwordHash: params.passwordHash }
+              : {}),
+            userRoles: { deleteMany: {}, ...this.singleRole(dto.role) },
+          },
+          select: masjidUserCreateSelect,
         });
-      }
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: masjidUserCreateSelect,
+        if (dto.role === CreateMasjidUserRoleDto.IMAM) {
+          await tx.masjid.update({
+            where: { id: masjidId },
+            data: { imamUserId: userId },
+            select: { id: true },
+          });
+        }
+        await this.audit.record(
+          {
+            masjidId,
+            actor: params.actor,
+            action: AUDIT_ACTION.JOIN,
+            entity: AUDIT_ENTITY.MEMBER,
+            entityId: userId,
+            summary: `Existing user "${user.fullName}" joined as ${dto.role}`,
+            before: existing,
+            after: user,
+          },
+          tx,
+        );
+        return user;
       });
-      await this.audit.record(
-        {
-          masjidId,
-          actor: params.actor,
-          action: AUDIT_ACTION.JOIN,
-          entity: AUDIT_ENTITY.MEMBER,
-          entityId: userId,
-          summary: `Existing user "${user?.fullName ?? dto.fullName.trim()}" joined as ${dto.role}`,
-          before: params.existing,
-          after: user,
-        },
-        tx,
-      );
-      return user;
-    });
+    } catch (error) {
+      if (isPrismaError(error, 'P2025')) throw this.userInAnotherMasjid();
+      throw error;
+    }
 
     const response = this.toCreatedMasjidUserResponse(
-      this.requireMasjidUser(linked),
+      linked,
       params.temporaryPassword,
     );
     this.logger.log({
@@ -609,30 +585,29 @@ export class MasjidsService {
     userId: string,
   ): Promise<MasjidMember> {
     const callerRoles = actor.roles;
-    const target = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: masjidMemberSelect,
-    });
+    const isPlatformAdmin = this.isPlatformAdmin(callerRoles);
 
-    if (!target) {
-      throw new ApiException(
-        'Masjid user not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_USER_NOT_FOUND,
-      );
-    }
-
-    if (this.isPlatformAdmin(callerRoles)) return target;
-
-    // Not requireMasjidId/assertSameMasjid: a caller without a masjid gets
-    // this same FORBIDDEN response, not USER_MASJID_NOT_ASSIGNED.
-    if (!actor.masjidId || target.masjidId !== actor.masjidId) {
+    // Not requireMasjidId: a caller without a masjid gets FORBIDDEN, not
+    // USER_MASJID_NOT_ASSIGNED, and no query is made.
+    if (!isPlatformAdmin && !actor.masjidId) {
       throw new ApiException(
         'You are not allowed to manage this user',
         HttpStatus.FORBIDDEN,
         ERROR_CODES.FORBIDDEN,
       );
     }
+
+    // Scoped lookup: a user of another masjid is simply not found here.
+    const target = await this.prisma.user.findFirst({
+      where: isPlatformAdmin
+        ? { id: userId }
+        : { id: userId, masjidId: actor.masjidId },
+      select: masjidMemberSelect,
+    });
+
+    if (!target) throw this.masjidUserNotFound();
+
+    if (isPlatformAdmin) return target;
 
     const targetRoles = target.userRoles.map((userRole) => userRole.role.name);
     const isOnlyMember =
@@ -695,14 +670,14 @@ export class MasjidsService {
     );
   }
 
-  /** A super admin without a masjid of their own picks one in the body. */
+  /** A super admin may pick the masjid in the body; otherwise their own. */
   private resolveTargetMasjidId(
     callerRoles: string[],
     actor: AuthenticatedUser,
     dto: CreateMasjidUserDto,
   ): string {
     const masjidId = this.isPlatformAdmin(callerRoles)
-      ? (actor.masjidId ?? dto.masjidId)
+      ? (dto.masjidId ?? actor.masjidId)
       : actor.masjidId;
 
     return requireMasjidId({ masjidId: masjidId ?? null });
@@ -735,15 +710,40 @@ export class MasjidsService {
       : (dto.isFamilyHead ?? false);
   }
 
-  private requireMasjidUser(user: CreatedMasjidUser | null): CreatedMasjidUser {
-    if (!user) {
-      throw new ApiException(
-        'Masjid user not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_USER_NOT_FOUND,
-      );
-    }
-    return user;
+  /**
+   * Nested write that gives a user exactly this role, connected by its
+   * unique name (no separate role lookup). Pair with `deleteMany: {}` on
+   * update to replace existing roles.
+   */
+  private singleRole(role: CreateMasjidUserRoleDto) {
+    return {
+      create: { role: { connect: { name: role as RoleName } } },
+    } satisfies Prisma.UserRoleCreateNestedManyWithoutUserInput &
+      Prisma.UserRoleUpdateManyWithoutUserNestedInput;
+  }
+
+  private masjidNotFound(): ApiException {
+    return new ApiException(
+      'Masjid not found',
+      HttpStatus.NOT_FOUND,
+      ERROR_CODES.MASJID_NOT_FOUND,
+    );
+  }
+
+  private masjidUserNotFound(): ApiException {
+    return new ApiException(
+      'Masjid user not found',
+      HttpStatus.NOT_FOUND,
+      ERROR_CODES.MASJID_USER_NOT_FOUND,
+    );
+  }
+
+  private userInAnotherMasjid(): ApiException {
+    return new ApiException(
+      'This person is already a member of another masjid. Ask them to leave that masjid from the app first, then add them again.',
+      HttpStatus.CONFLICT,
+      ERROR_CODES.USER_IN_ANOTHER_MASJID,
+    );
   }
 
   private toCreatedMasjidUserResponse(

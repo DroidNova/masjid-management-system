@@ -39,6 +39,7 @@ const envSchema = z
     DATABASE_URL: z
       .string()
       .regex(/^postgres(ql)?:\/\//, 'must be a postgresql:// connection URL'),
+    DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
 
     JWT_ACCESS_SECRET: z.string().min(16, 'must be at least 16 characters'),
     JWT_REFRESH_SECRET: z.string().min(16, 'must be at least 16 characters'),
@@ -150,6 +151,8 @@ export class AppConfig {
   /** Empty list means "allow any origin" and is only possible outside staging/production. */
   readonly corsAllowedOrigins: string[];
   readonly databaseUrl: string;
+  /** Most open database connections this process keeps. */
+  readonly dbPoolMax: number;
 
   readonly jwt: {
     readonly accessSecret: string;
@@ -184,6 +187,7 @@ export class AppConfig {
     this.rateLimitEnabled = env.RATE_LIMIT_ENABLED ?? true;
     this.corsAllowedOrigins = parseOrigins(env.CORS_ALLOWED_ORIGINS);
     this.databaseUrl = env.DATABASE_URL;
+    this.dbPoolMax = env.DB_POOL_MAX;
 
     this.jwt = {
       accessSecret: env.JWT_ACCESS_SECRET,

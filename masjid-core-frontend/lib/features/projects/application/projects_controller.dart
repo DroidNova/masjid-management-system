@@ -23,9 +23,8 @@ class ProjectsController extends PagedController<ProjectModel> {
   Future<PagedState<ProjectModel>> build() {
     ref.watch(currentUserProvider.select((user) => user?.id));
     ref.watch(projectsFilterProvider);
+    // Recording a project contribution marks DataScope.projects too.
     ref.watch(dataVersionProvider(DataScope.projects));
-    // Contributions change a project's collected amount.
-    ref.watch(dataVersionProvider(DataScope.contributions));
     return super.build();
   }
 

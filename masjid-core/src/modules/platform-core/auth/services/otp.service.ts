@@ -26,6 +26,8 @@ export type VerifiedOtpChallenge = {
   passwordVerified: boolean;
 };
 
+const HOUR_MS = 60 * 60 * 1000;
+
 /**
  * Creates and verifies one-time passwords stored in the OtpChallenge table.
  *
@@ -53,20 +55,24 @@ export class OtpService {
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + otpTtlSeconds * 1000);
 
-    // Only the newest challenge per phone and purpose is valid.
-    await this.prisma.otpChallenge.deleteMany({
-      where: { phone, purpose, consumedAt: null },
-    });
-    await this.prisma.otpChallenge.create({
-      data: {
-        id: challengeId,
-        phone,
-        purpose,
-        codeHash: this.hashCode(challengeId, code),
-        passwordVerified: options.passwordVerified ?? false,
-        expiresAt,
-      },
-    });
+    // Only the newest challenge per phone and purpose is valid. One
+    // transaction, so a failed insert never leaves the phone without one.
+    await this.prisma.$transaction([
+      this.prisma.otpChallenge.deleteMany({
+        where: { phone, purpose, consumedAt: null },
+      }),
+      this.prisma.otpChallenge.create({
+        data: {
+          id: challengeId,
+          phone,
+          purpose,
+          codeHash: this.hashCode(challengeId, code),
+          passwordVerified: options.passwordVerified ?? false,
+          expiresAt,
+        },
+        select: { id: true },
+      }),
+    ]);
 
     this.deliver(challengeId, code);
     return { challengeId, otpLength, expiresAt };
@@ -74,8 +80,11 @@ export class OtpService {
 
   /**
    * Checks the code and consumes the challenge. Throws OTP_CHALLENGE_INVALID,
-   * OTP_EXPIRED or OTP_INVALID. A wrong code counts as an attempt; reaching
-   * the maximum expires the challenge.
+   * OTP_EXPIRED or OTP_INVALID.
+   *
+   * Every try (right or wrong) first takes one attempt with a conditional
+   * update, so parallel requests can never guess more than otpMaxAttempts
+   * times. Reaching the maximum expires the challenge.
    */
   async verify(
     challengeId: string,
@@ -85,6 +94,13 @@ export class OtpService {
   ): Promise<VerifiedOtpChallenge> {
     const challenge = await this.prisma.otpChallenge.findUnique({
       where: { id: challengeId },
+      select: {
+        phone: true,
+        purpose: true,
+        codeHash: true,
+        passwordVerified: true,
+        consumedAt: true,
+      },
     });
 
     if (
@@ -100,10 +116,17 @@ export class OtpService {
     }
 
     const maxAttempts = this.config.auth.otpMaxAttempts;
-    if (
-      challenge.expiresAt.getTime() <= Date.now() ||
-      challenge.attempts >= maxAttempts
-    ) {
+    const taken = await this.prisma.otpChallenge.updateManyAndReturn({
+      where: {
+        id: challengeId,
+        consumedAt: null,
+        attempts: { lt: maxAttempts },
+        expiresAt: { gt: new Date() },
+      },
+      data: { attempts: { increment: 1 } },
+      select: { attempts: true },
+    });
+    if (taken.length !== 1) {
       throw this.error(
         'OTP has expired. Please request a new one.',
         ERROR_CODES.OTP_EXPIRED,
@@ -111,12 +134,7 @@ export class OtpService {
     }
 
     if (!this.matches(challengeId, code, challenge.codeHash)) {
-      const attempts = challenge.attempts + 1;
-      await this.prisma.otpChallenge.update({
-        where: { id: challengeId },
-        data: { attempts },
-      });
-      if (attempts >= maxAttempts) {
+      if (taken[0].attempts >= maxAttempts) {
         throw this.error(
           'Too many wrong attempts. Please request a new OTP.',
           ERROR_CODES.OTP_EXPIRED,
@@ -144,13 +162,13 @@ export class OtpService {
     };
   }
 
-  /** Removes challenges that expired or were consumed more than an hour ago. */
+  /**
+   * Removes challenges that expired more than an hour ago. A consumed
+   * challenge expires shortly after it was used, so it is covered as well.
+   */
   async deleteStale(): Promise<number> {
-    const cutoff = new Date(Date.now() - 60 * 60 * 1000);
     const result = await this.prisma.otpChallenge.deleteMany({
-      where: {
-        OR: [{ expiresAt: { lt: cutoff } }, { consumedAt: { lt: cutoff } }],
-      },
+      where: { expiresAt: { lt: new Date(Date.now() - HOUR_MS) } },
     });
     return result.count;
   }

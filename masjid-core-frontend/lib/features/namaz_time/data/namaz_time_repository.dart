@@ -13,11 +13,9 @@ class NamazTimeRepository {
 
   final NamazTimeApi _api;
 
-  Future<NamazTimeModel> getNamazTime(String masjidId) =>
-      _api.getNamazTime(masjidId);
+  /// Namaz times of the signed-in user's masjid.
+  Future<NamazTimeModel> getMyNamazTime() => _api.getMyNamazTime();
 
-  Future<NamazTimeModel> updateNamazTime({
-    required String masjidId,
-    required UpdateNamazTimeRequest request,
-  }) => _api.updateNamazTime(masjidId: masjidId, request: request);
+  Future<NamazTimeModel> updateMyNamazTime(UpdateNamazTimeRequest request) =>
+      _api.updateMyNamazTime(request);
 }

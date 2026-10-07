@@ -9,9 +9,8 @@ import 'package:masjid_core_frontend/features/announcements/presentation/widgets
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-/// Edits one announcement. Loads it by [announcementId], so the route works
-/// from a fresh URL; [announcement] (route `extra`) is only shown instantly
-/// while the real data loads.
+/// Edits one announcement. [announcement] (route `extra`, from the list) is
+/// used as is; from a fresh URL it is loaded by [announcementId].
 class EditAnnouncementScreen extends ConsumerWidget {
   const EditAnnouncementScreen({
     super.key,
@@ -24,9 +23,20 @@ class EditAnnouncementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final passed = announcement;
+    if (passed != null) {
+      // Opened from the list: it is already up to date, no request needed.
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Announcement')),
+        body: _EditAnnouncementForm(
+          announcementId: announcementId,
+          initial: passed,
+        ),
+      );
+    }
+
     final loaded = ref.watch(announcementByIdProvider(announcementId));
-    final preview = announcement;
-    final current = loaded.valueOrNull ?? preview;
+    final current = loaded.valueOrNull;
 
     Widget body;
     if (current != null) {

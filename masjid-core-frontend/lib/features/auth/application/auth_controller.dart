@@ -89,11 +89,19 @@ class AuthController extends Notifier<AuthState> {
   Future<void> refreshUser({bool signOutOnFailure = false}) async {
     try {
       final user = await ref.read(authRepositoryProvider).fetchCurrentUser();
+      // Same user (AppUser has ==): keep the state so nothing that watches
+      // the user rebuilds or reloads.
+      final current = state;
+      if (current is AuthSignedIn && current.user == user) return;
       state = AuthSignedIn(user);
     } on ApiException catch (error) {
       // Network trouble: keep whatever we have. Session errors arrive via
       // [handleSessionExpired] from the interceptor.
-      if (signOutOnFailure || error.isUnauthorized) {
+      // A deactivated or deleted account is signed out as well.
+      final accountGone =
+          error.code == ApiErrorCodes.userInactive ||
+          error.code == ApiErrorCodes.userNotFound;
+      if (signOutOnFailure || error.isUnauthorized || accountGone) {
         await ref.read(authRepositoryProvider).clearLocalSession();
         if (state is! AuthSignedOut) state = const AuthSignedOut();
       }

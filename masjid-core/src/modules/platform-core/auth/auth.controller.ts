@@ -77,6 +77,11 @@ export class AuthController {
     description: 'Invalid credentials',
     schema: standardErrorSchema,
   })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Account is inactive or suspended (USER_INACTIVE)',
+    schema: standardErrorSchema,
+  })
   startLogin(@Body() loginStartDto: LoginStartDto) {
     return this.authService.startLogin(loginStartDto);
   }
@@ -106,6 +111,12 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Invalid credentials',
+    schema: standardErrorSchema,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      'Member account (PASSWORD_LOGIN_NOT_ALLOWED_FOR_MEMBER), or correct password for an inactive account (USER_INACTIVE)',
     schema: standardErrorSchema,
   })
   verifyPassword(@Body() loginPasswordDto: LoginPasswordDto) {
@@ -150,7 +161,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Rotate the refresh token and issue a new access token',
     description:
-      'Each refresh token works once. Reusing an old one signs the session out (errorCode SESSION_REVOKED).',
+      'Each refresh token works once. Reusing an old one signs the session out (errorCode SESSION_REVOKED). A deactivated or suspended account gets 403 USER_INACTIVE and its session is ended.',
   })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
@@ -174,20 +185,21 @@ export class AuthController {
   @Post('logout')
   @Throttle(RATE_LIMITS.refresh)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Invalidate a refresh token session' })
+  @ApiOperation({
+    summary: 'Invalidate a refresh token session',
+    description:
+      'Always succeeds with data null, also for an invalid or already ended refresh token.',
+  })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Logout successful',
     schema: {
-      allOf: [
-        { $ref: '#/components/schemas/SuccessResponseDto' },
-        {
-          properties: {
-            data: { type: 'object', example: { loggedOut: true } },
-          },
-        },
-      ],
+      example: {
+        success: true,
+        message: 'Logged out successfully',
+        data: null,
+      },
     },
   })
   logout(@Body() refreshTokenDto: RefreshTokenDto) {

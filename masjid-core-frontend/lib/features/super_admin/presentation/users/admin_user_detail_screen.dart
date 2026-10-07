@@ -39,14 +39,17 @@ class AdminUserDetailScreen extends ConsumerWidget {
           message: userMessage(error),
           onRetry: () => ref.invalidate(adminUserProvider(id)),
         ),
-        data: (user) => _UserDetails(
-          // The detail endpoint has no masjid; keep the list's value.
-          user: user.masjidName == null && initial != null
-              ? user.copyWith(
-                  masjidId: initial!.masjidId,
-                  masjidName: initial!.masjidName,
-                )
-              : user,
+        data: (user) => RefreshIndicator(
+          onRefresh: () => ref.read(adminUserProvider(id).notifier).refresh(),
+          child: _UserDetails(
+            // The detail endpoint has no masjid; keep the list's value.
+            user: user.masjidName == null && initial != null
+                ? user.copyWith(
+                    masjidId: initial!.masjidId,
+                    masjidName: initial!.masjidName,
+                  )
+                : user,
+          ),
         ),
       ),
     );
@@ -83,7 +86,10 @@ class _UserDetails extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final createdAt = user.createdAt;
+    final busy = ref.watch(adminBusyIdsProvider).contains(user.id);
+    final canAct = enabled && !busy;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         AdminStatusChip(user.status),
@@ -101,11 +107,11 @@ class _UserDetails extends ConsumerWidget {
           spacing: 12,
           children: <Widget>[
             FilledButton(
-              onPressed: enabled ? () => _changeStatus(context, ref) : null,
+              onPressed: canAct ? () => _changeStatus(context, ref) : null,
               child: const Text('Change Status'),
             ),
             FilledButton(
-              onPressed: enabled ? () => _assignRoles(context, ref) : null,
+              onPressed: canAct ? () => _assignRoles(context, ref) : null,
               child: const Text('Assign Roles'),
             ),
           ],

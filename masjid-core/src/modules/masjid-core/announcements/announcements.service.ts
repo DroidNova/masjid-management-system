@@ -1,14 +1,15 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
-import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { GetAnnouncementsQueryDto } from './dto/get-announcements-query.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
-import { PageMeta, pageMeta } from '../../../common/pagination';
+import { PageMeta, pageArgs, paged } from '../../../common/pagination';
+import { isPrismaError } from '../prisma-errors';
 
 const announcementSelect = {
   id: true,
@@ -18,11 +19,6 @@ const announcementSelect = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
-} as const satisfies Prisma.AnnouncementSelect;
-
-const announcementOwnershipSelect = {
-  id: true,
-  masjidId: true,
 } as const satisfies Prisma.AnnouncementSelect;
 
 type AnnouncementRecord = Prisma.AnnouncementGetPayload<{
@@ -45,35 +41,31 @@ export class AnnouncementsService {
     actor: AuthenticatedUser,
   ): Promise<AnnouncementListResponse> {
     const masjidId = requireMasjidId(actor);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const { page, limit, skip, take } = pageArgs(query);
     const where = this.buildAnnouncementWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
       this.prisma.announcement.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
         select: announcementSelect,
       }),
       this.prisma.announcement.count({ where }),
     ]);
 
-    return {
-      items,
-      meta: pageMeta(total, page, limit),
-    };
+    return paged(items, total, page, limit);
   }
 
   /** One announcement of the signed-in user's masjid (for edit screens). */
   async findOne(id: string, actor: AuthenticatedUser) {
-    const masjidId = requireMasjidId(actor);
-    await this.ensureAnnouncementBelongsToMasjid(id, masjidId);
-    return this.prisma.announcement.findUniqueOrThrow({
-      where: { id },
+    const announcement = await this.prisma.announcement.findFirst({
+      where: { id, masjidId: requireMasjidId(actor) },
       select: announcementSelect,
     });
+    if (!announcement) throw this.notFound();
+    return announcement;
   }
 
   async create(
@@ -105,8 +97,6 @@ export class AnnouncementsService {
     actor: AuthenticatedUser,
   ): Promise<AnnouncementRecord> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureAnnouncementBelongsToMasjid(id, masjidId);
-
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -117,11 +107,7 @@ export class AnnouncementsService {
       );
     }
 
-    const announcement = await this.prisma.announcement.update({
-      where: { id },
-      data,
-      select: announcementSelect,
-    });
+    const announcement = await this.updateScoped(id, masjidId, data);
     this.logger.log({
       message: 'Announcement updated',
       announcementId: announcement.id,
@@ -135,12 +121,8 @@ export class AnnouncementsService {
     actor: AuthenticatedUser,
   ): Promise<AnnouncementRecord> {
     const masjidId = requireMasjidId(actor);
-    await this.ensureAnnouncementBelongsToMasjid(id, masjidId);
-
-    const announcement = await this.prisma.announcement.update({
-      where: { id },
-      data: { isActive: false },
-      select: announcementSelect,
+    const announcement = await this.updateScoped(id, masjidId, {
+      isActive: false,
     });
     this.logger.warn({
       message: 'Announcement deactivated',
@@ -150,28 +132,32 @@ export class AnnouncementsService {
     return announcement;
   }
 
-  private async ensureAnnouncementBelongsToMasjid(
+  /**
+   * One UPDATE scoped to the masjid. A missing id or another masjid's id
+   * matches no row (Prisma P2025) and becomes ANNOUNCEMENT_NOT_FOUND.
+   */
+  private async updateScoped(
     id: string,
     masjidId: string,
-  ): Promise<void> {
-    const announcement = await this.prisma.announcement.findUnique({
-      where: { id },
-      select: announcementOwnershipSelect,
-    });
-
-    if (!announcement) {
-      throw new ApiException(
-        'Announcement not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.ANNOUNCEMENT_NOT_FOUND,
-      );
+    data: Prisma.AnnouncementUpdateInput,
+  ): Promise<AnnouncementRecord> {
+    try {
+      return await this.prisma.announcement.update({
+        where: { id, masjidId },
+        data,
+        select: announcementSelect,
+      });
+    } catch (error) {
+      if (isPrismaError(error, 'P2025')) throw this.notFound();
+      throw error;
     }
+  }
 
-    assertSameMasjid(
-      announcement.masjidId,
-      masjidId,
-      'You are not allowed to access this announcement',
-      ERROR_CODES.ANNOUNCEMENT_ACCESS_FORBIDDEN,
+  private notFound(): ApiException {
+    return new ApiException(
+      'Announcement not found',
+      HttpStatus.NOT_FOUND,
+      ERROR_CODES.ANNOUNCEMENT_NOT_FOUND,
     );
   }
 

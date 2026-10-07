@@ -6,8 +6,8 @@ import {
   AUDIT_ENTITY,
   AuditService,
 } from '../../../common/audit/audit.service';
-import { formatMoney, toAmount } from '../../../common/money';
-import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { formatMoney, nonNegative, toAmount } from '../../../common/money';
+import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { ProjectStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -15,7 +15,7 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateProjectDto } from './dto/create-project.dto';
 import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { PageMeta, pageMeta } from '../../../common/pagination';
+import { PageMeta, pageArgs, paged } from '../../../common/pagination';
 
 const projectSelect = {
   id: true,
@@ -45,10 +45,7 @@ type ProjectResponse = Omit<
   progressPercentage: number;
 };
 
-type ProjectsListResponse = {
-  items: ProjectResponse[];
-  meta: PageMeta;
-};
+type ProjectsListResponse = { items: ProjectResponse[]; meta: PageMeta };
 
 @Injectable()
 export class ProjectsService {
@@ -64,25 +61,26 @@ export class ProjectsService {
     actor: AuthenticatedUser,
   ): Promise<ProjectsListResponse> {
     const masjidId = requireMasjidId(actor);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const { page, limit, skip, take } = pageArgs(query);
     const where = this.buildProjectWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
         select: projectSelect,
       }),
       this.prisma.project.count({ where }),
     ]);
 
-    return {
-      items: items.map((project) => this.toProjectResponse(project)),
-      meta: pageMeta(total, page, limit),
-    };
+    return paged(
+      items.map((project) => this.toProjectResponse(project)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async create(
@@ -124,7 +122,7 @@ export class ProjectsService {
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
-    const project = await this.ensureProjectBelongsToMasjid(id, masjidId);
+    const project = await this.findScoped(this.prisma, id, masjidId);
 
     return this.toProjectResponse(project);
   }
@@ -135,8 +133,6 @@ export class ProjectsService {
     actor: AuthenticatedUser,
   ): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureProjectBelongsToMasjid(id, masjidId);
-
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -148,8 +144,9 @@ export class ProjectsService {
     }
 
     const project = await this.prisma.$transaction(async (tx) => {
+      const before = await this.findScoped(tx, id, masjidId);
       const updated = await tx.project.update({
-        where: { id },
+        where: { id: before.id },
         data,
         select: projectSelect,
       });
@@ -179,11 +176,11 @@ export class ProjectsService {
 
   async cancel(id: string, actor: AuthenticatedUser): Promise<ProjectResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureProjectBelongsToMasjid(id, masjidId);
 
     const project = await this.prisma.$transaction(async (tx) => {
+      const before = await this.findScoped(tx, id, masjidId);
       const cancelled = await tx.project.update({
-        where: { id },
+        where: { id: before.id },
         data: { status: ProjectStatus.CANCELLED },
         select: projectSelect,
       });
@@ -211,12 +208,14 @@ export class ProjectsService {
     return this.toProjectResponse(project);
   }
 
-  private async ensureProjectBelongsToMasjid(
+  /** The project with this id in this masjid; 404 otherwise (also for another masjid's id). */
+  private async findScoped(
+    db: PrismaService | Prisma.TransactionClient,
     id: string,
     masjidId: string,
   ): Promise<ProjectRecord> {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
+    const project = await db.project.findFirst({
+      where: { id, masjidId },
       select: projectSelect,
     });
 
@@ -227,13 +226,6 @@ export class ProjectsService {
         ERROR_CODES.PROJECT_NOT_FOUND,
       );
     }
-
-    assertSameMasjid(
-      project.masjidId,
-      masjidId,
-      'You are not allowed to access this project',
-      ERROR_CODES.PROJECT_ACCESS_FORBIDDEN,
-    );
 
     return project;
   }
@@ -270,9 +262,6 @@ export class ProjectsService {
 
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.targetAmount !== undefined) data.targetAmount = dto.targetAmount;
-    if (dto.collectedAmount !== undefined)
-      data.collectedAmount = dto.collectedAmount;
-    if (dto.spentAmount !== undefined) data.spentAmount = dto.spentAmount;
     if (dto.startDate !== undefined) data.startDate = new Date(dto.startDate);
     if (dto.endDate !== undefined && dto.endDate !== null) {
       data.endDate = new Date(dto.endDate);
@@ -287,9 +276,6 @@ export class ProjectsService {
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.targetAmount !== undefined) data.targetAmount = dto.targetAmount;
-    if (dto.collectedAmount !== undefined)
-      data.collectedAmount = dto.collectedAmount;
-    if (dto.spentAmount !== undefined) data.spentAmount = dto.spentAmount;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.startDate !== undefined) {
       data.startDate = dto.startDate === null ? null : new Date(dto.startDate);
@@ -309,8 +295,9 @@ export class ProjectsService {
     const targetAmount = toAmount(project.targetAmount);
     const collectedAmount = toAmount(project.collectedAmount);
     const spentAmount = toAmount(project.spentAmount);
+    // Collected can exceed the target; never report a negative remainder.
     const remainingAmount = toAmount(
-      project.targetAmount.minus(project.collectedAmount),
+      nonNegative(project.targetAmount.minus(project.collectedAmount)),
     );
     const progressPercentage =
       targetAmount === 0

@@ -25,6 +25,10 @@ class ApiErrorCodes {
   static const String announcementNotFound = 'ANNOUNCEMENT_NOT_FOUND';
   static const String imamSalaryNotFound = 'IMAM_SALARY_NOT_FOUND';
   static const String imamSalaryAlreadyExists = 'IMAM_SALARY_ALREADY_EXISTS';
+
+  /// The account behind the session was deactivated or deleted.
+  static const String userInactive = 'USER_INACTIVE';
+  static const String userNotFound = 'USER_NOT_FOUND';
 }
 
 /// A failed API call, built once from the backend's error envelope:

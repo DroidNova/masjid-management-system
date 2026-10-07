@@ -24,6 +24,9 @@ abstract class AppUser with _$AppUser {
     String? masjidId,
     @Default(false) bool isEmailVerified,
     @Default(false) bool isPhoneVerified,
+
+    /// Members only; missing in older stored sessions.
+    @Default(false) bool isFamilyHead,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _AppUser;

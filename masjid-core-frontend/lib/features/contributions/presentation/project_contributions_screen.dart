@@ -7,9 +7,8 @@ import 'package:masjid_core_frontend/features/contributions/presentation/widgets
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/paged_list_parts.dart';
 
-/// Contributions to one project. Loads by [projectId], so it works from a
-/// fresh URL; [projectTitle] (from route `extra`) is only shown until the
-/// real title loads.
+/// Contributions to one project, by [projectId] (works from a fresh URL).
+/// [projectTitle] comes from route `extra`; without it the title is loaded.
 class ProjectContributionsScreen extends ConsumerStatefulWidget {
   const ProjectContributionsScreen({
     super.key,
@@ -63,9 +62,11 @@ class _ProjectContributionsScreenState
     final canAdd = PermissionHelper.canRecordContributions(
       ref.watch(currentPermissionsProvider),
     );
+    // The title passed from the project screen is used as is; only a fresh
+    // URL loads it.
     final title =
-        ref.watch(projectTitleProvider(widget.projectId)).valueOrNull ??
         widget.projectTitle ??
+        ref.watch(projectTitleProvider(widget.projectId)).valueOrNull ??
         'Project';
     final provider = projectContributionsProvider(_query);
     final contributions = ref.watch(provider);

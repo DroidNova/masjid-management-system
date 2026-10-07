@@ -213,12 +213,17 @@ class _AssignmentsTab extends ConsumerStatefulWidget {
 }
 
 class _AssignmentsTabState extends ConsumerState<_AssignmentsTab>
-    with _LoadMoreOnScroll<_AssignmentsTab> {
+    with _LoadMoreOnScroll<_AssignmentsTab>, AutomaticKeepAliveClientMixin {
+  // Switching tabs keeps this list (and its scroll position) loaded.
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void onNearEnd() => ref.read(salaryAssignmentsProvider.notifier).loadMore();
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final status = ref.watch(
       salaryLedgerFilterProvider.select((filter) => filter.status),
     );
@@ -303,12 +308,17 @@ class _PaymentsTab extends ConsumerStatefulWidget {
 }
 
 class _PaymentsTabState extends ConsumerState<_PaymentsTab>
-    with _LoadMoreOnScroll<_PaymentsTab> {
+    with _LoadMoreOnScroll<_PaymentsTab>, AutomaticKeepAliveClientMixin {
+  // Switching tabs keeps this list (and its scroll position) loaded.
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void onNearEnd() => ref.read(salaryPaymentsProvider.notifier).loadMore();
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final mode = ref.watch(
       salaryLedgerFilterProvider.select((filter) => filter.paymentMode),
     );

@@ -7,6 +7,7 @@ part 'update_project_request.freezed.dart';
 part 'update_project_request.g.dart';
 
 /// Body of `PATCH /projects/{id}`. Null fields are left out (unchanged).
+/// Collected and spent amounts are computed by the server, never sent.
 @freezed
 abstract class UpdateProjectRequest with _$UpdateProjectRequest {
   @JsonSerializable(includeIfNull: false)
@@ -14,8 +15,6 @@ abstract class UpdateProjectRequest with _$UpdateProjectRequest {
     String? title,
     String? description,
     double? targetAmount,
-    double? collectedAmount,
-    double? spentAmount,
     String? status,
 
     /// `yyyy-MM-dd`.

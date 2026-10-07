@@ -246,8 +246,8 @@ class MySalaryHistoryController
   @override
   Future<List<MySalaryHistoryMonth>> build() {
     ref.watch(currentUserProvider.select((user) => user?.id));
+    // Salary payments mark DataScope.imamSalary (salaryChanges).
     ref.watch(dataVersionProvider(DataScope.imamSalary));
-    ref.watch(dataVersionProvider(DataScope.contributions));
     return ref.watch(imamSalaryRepositoryProvider).getMyHistory();
   }
 

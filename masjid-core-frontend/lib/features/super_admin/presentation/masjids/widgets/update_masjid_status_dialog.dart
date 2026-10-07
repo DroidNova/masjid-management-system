@@ -14,3 +14,7 @@ Future<String?> showUpdateMasjidStatusDialog(BuildContext c) =>
         ],
       ),
     );
+
+/// The server needs a reason for these masjid statuses.
+bool masjidStatusNeedsReason(String status) =>
+    status == 'REJECTED' || status == 'SUSPENDED';

@@ -10,31 +10,33 @@ import 'package:masjid_core_frontend/features/namaz_time/presentation/widgets/na
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-/// Edits a masjid's namaz times. [masjidId] defaults to the signed-in
-/// user's masjid.
+/// Edits the signed-in user's masjid's namaz times.
+///
+/// [initial] (the times the dashboard already shows) fills the form without
+/// another request; from a fresh URL the times are loaded.
 class UpdateNamazTimeScreen extends ConsumerWidget {
-  const UpdateNamazTimeScreen({super.key, this.masjidId});
+  const UpdateNamazTimeScreen({super.key, this.initial});
 
-  final String? masjidId;
+  final NamazTimeModel? initial;
 
   static const String _title = 'Update Namaz Time';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fromRoute = masjidId;
-    final resolvedMasjidId = fromRoute != null && fromRoute.isNotEmpty
-        ? fromRoute
-        : ref.watch(currentUserProvider.select((user) => user?.masjidId));
-
-    if (resolvedMasjidId == null || resolvedMasjidId.isEmpty) {
+    final masjidId = ref.watch(
+      currentUserProvider.select((user) => user?.masjidId),
+    );
+    if (masjidId == null || masjidId.isEmpty) {
       return const _NamazTimeErrorView(
         message: 'Masjid not found for this user.',
       );
     }
 
-    final provider = namazTimeControllerProvider(resolvedMasjidId);
+    final prefilled = initial;
+    if (prefilled != null) return _NamazTimeForm(initial: prefilled);
+
     return ref
-        .watch(provider)
+        .watch(myNamazTimeProvider)
         .when(
           // Keep the form (and what the user typed) while it reloads.
           skipLoadingOnReload: true,
@@ -44,18 +46,16 @@ class UpdateNamazTimeScreen extends ConsumerWidget {
           ),
           error: (error, _) => _NamazTimeErrorView(
             message: userMessage(error),
-            onRetry: () => ref.invalidate(provider),
+            onRetry: () => ref.invalidate(myNamazTimeProvider),
           ),
-          data: (namazTime) =>
-              _NamazTimeForm(masjidId: resolvedMasjidId, initial: namazTime),
+          data: (namazTime) => _NamazTimeForm(initial: namazTime),
         );
   }
 }
 
 class _NamazTimeForm extends ConsumerStatefulWidget {
-  const _NamazTimeForm({required this.masjidId, required this.initial});
+  const _NamazTimeForm({required this.initial});
 
-  final String masjidId;
   final NamazTimeModel initial;
 
   @override
@@ -91,8 +91,7 @@ class _NamazTimeFormState extends ConsumerState<_NamazTimeForm> {
     final saved = await ref
         .read(namazTimeSaveControllerProvider.notifier)
         .save(
-          masjidId: widget.masjidId,
-          request: UpdateNamazTimeRequest.fromForm(
+          UpdateNamazTimeRequest.fromForm(
             fajr: _fajrController.text,
             zuhr: _zuhrController.text,
             asr: _asrController.text,

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/core/refresh/data_scopes.dart';
 import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
 
 final leaveMasjidControllerProvider =
@@ -15,16 +14,15 @@ class LeaveMasjidController extends AutoDisposeNotifier<AsyncValue<void>> {
   /// True when the user left; on failure [state] holds the error.
   Future<bool> leave() async {
     if (state.isLoading) return false;
+    // Finish even if the screen closes meanwhile.
+    final keepAlive = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(communityRepositoryProvider).leaveMyMasjid(),
     );
-    if (state.hasError) return false;
-    ref.markChanged(const <DataScope>[
-      DataScope.masjid,
-      DataScope.members,
-      DataScope.dashboard,
-    ]);
-    return true;
+    keepAlive.close();
+    // No markChanged: the caller signs out next, and every screen reloads
+    // for the next user anyway.
+    return !state.hasError;
   }
 }

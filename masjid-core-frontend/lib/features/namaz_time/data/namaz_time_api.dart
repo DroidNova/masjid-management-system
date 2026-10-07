@@ -8,19 +8,19 @@ class NamazTimeApi {
 
   final ApiClient _apiClient;
 
-  Future<NamazTimeModel> getNamazTime(String masjidId) async {
+  /// The signed-in user's masjid (taken from the token).
+  Future<NamazTimeModel> getMyNamazTime() async {
     final data = await _apiClient.get<Map<String, dynamic>>(
-      '/namaz-times/$masjidId',
+      '/namaz-times/my-masjid',
     );
     return NamazTimeModel.fromJson(data);
   }
 
-  Future<NamazTimeModel> updateNamazTime({
-    required String masjidId,
-    required UpdateNamazTimeRequest request,
-  }) async {
+  Future<NamazTimeModel> updateMyNamazTime(
+    UpdateNamazTimeRequest request,
+  ) async {
     final data = await _apiClient.put<Map<String, dynamic>>(
-      '/namaz-times/$masjidId',
+      '/namaz-times/my-masjid',
       body: request.toJson(),
     );
     return NamazTimeModel.fromJson(data);

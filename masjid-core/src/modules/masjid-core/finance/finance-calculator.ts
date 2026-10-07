@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Money, money, toAmount } from '../../../common/money';
+import { Money, MoneyInput, money, toAmount } from '../../../common/money';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export type DateRange = { gte?: Date; lte?: Date };
@@ -35,50 +35,55 @@ export type FinanceTotals = {
 export class FinanceCalculator {
   constructor(private readonly prisma: PrismaService) {}
 
-  async totals(masjidId: string, period?: DateRange): Promise<FinanceTotals> {
-    const [collections, projects, salary, expenses] = await Promise.all([
-      this.prisma.collection.aggregate({
-        where: {
-          masjidId,
-          status: 'ACTIVE',
-          ...(period ? { collectedAt: period } : {}),
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.projectContribution.aggregate({
-        where: { masjidId, ...(period ? { paidAt: period } : {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.imamSalaryPayment.aggregate({
-        where: { masjidId, ...(period ? { paidAt: period } : {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.expense.aggregate({
-        where: {
-          masjidId,
-          status: 'ACTIVE',
-          ...(period ? { spentAt: period } : {}),
-        },
-        _sum: { amount: true },
-      }),
-    ]);
+  /** Totals for all time and for [period], from ONE SQL statement. */
+  async summary(
+    masjidId: string,
+    period: DateRange,
+  ): Promise<{ total: FinanceTotals; period: FinanceTotals }> {
+    // Open-ended periods use far-away bounds so the FILTER stays simple.
+    const from = period.gte ?? new Date(0);
+    const to = period.lte ?? new Date('9999-12-31T23:59:59.999Z');
 
-    const generalCollections = money(collections._sum.amount);
-    const projectContributions = money(projects._sum.amount);
-    const imamSalaryCollected = money(salary._sum.amount);
-    const income = generalCollections
-      .plus(projectContributions)
-      .plus(imamSalaryCollected);
-    const spent = money(expenses._sum.amount);
+    const [row] = await this.prisma.$queryRaw<SumsRow[]>`
+      SELECT c."all"  AS "collectionsAll",  c."period"  AS "collectionsPeriod",
+             pc."all" AS "projectsAll",     pc."period" AS "projectsPeriod",
+             sp."all" AS "salaryAll",       sp."period" AS "salaryPeriod",
+             e."all"  AS "expensesAll",     e."period"  AS "expensesPeriod"
+      FROM
+        (SELECT COALESCE(SUM("amount"), 0) AS "all",
+                COALESCE(SUM("amount") FILTER (WHERE "collectedAt" BETWEEN ${from} AND ${to}), 0) AS "period"
+           FROM "Collection" WHERE "masjidId" = ${masjidId}::uuid AND "status" = 'ACTIVE') c,
+        (SELECT COALESCE(SUM("amount"), 0) AS "all",
+                COALESCE(SUM("amount") FILTER (WHERE "paidAt" BETWEEN ${from} AND ${to}), 0) AS "period"
+           FROM "ProjectContribution" WHERE "masjidId" = ${masjidId}::uuid) pc,
+        (SELECT COALESCE(SUM("amount"), 0) AS "all",
+                COALESCE(SUM("amount") FILTER (WHERE "paidAt" BETWEEN ${from} AND ${to}), 0) AS "period"
+           FROM "ImamSalaryPayment" WHERE "masjidId" = ${masjidId}::uuid) sp,
+        (SELECT COALESCE(SUM("amount"), 0) AS "all",
+                COALESCE(SUM("amount") FILTER (WHERE "spentAt" BETWEEN ${from} AND ${to}), 0) AS "period"
+           FROM "Expense" WHERE "masjidId" = ${masjidId}::uuid AND "status" = 'ACTIVE') e
+    `;
 
     return {
-      generalCollections,
-      projectContributions,
-      imamSalaryCollected,
-      income,
-      expenses: spent,
-      balance: income.minus(spent),
+      total: build(
+        row.collectionsAll,
+        row.projectsAll,
+        row.salaryAll,
+        row.expensesAll,
+      ),
+      period: build(
+        row.collectionsPeriod,
+        row.projectsPeriod,
+        row.salaryPeriod,
+        row.expensesPeriod,
+      ),
     };
+  }
+
+  /** Totals for one period (or all time). Prefer [summary] when you need both. */
+  async totals(masjidId: string, period?: DateRange): Promise<FinanceTotals> {
+    const result = await this.summary(masjidId, period ?? {});
+    return period ? result.period : result.total;
   }
 
   /** The current calendar month in UTC. */
@@ -99,6 +104,41 @@ export class FinanceCalculator {
       ),
     };
   }
+}
+
+type SumsRow = Record<
+  | 'collectionsAll'
+  | 'collectionsPeriod'
+  | 'projectsAll'
+  | 'projectsPeriod'
+  | 'salaryAll'
+  | 'salaryPeriod'
+  | 'expensesAll'
+  | 'expensesPeriod',
+  MoneyInput
+>;
+
+function build(
+  collections: MoneyInput,
+  projects: MoneyInput,
+  salary: MoneyInput,
+  spentInput: MoneyInput,
+): FinanceTotals {
+  const generalCollections = money(collections);
+  const projectContributions = money(projects);
+  const imamSalaryCollected = money(salary);
+  const income = generalCollections
+    .plus(projectContributions)
+    .plus(imamSalaryCollected);
+  const expenses = money(spentInput);
+  return {
+    generalCollections,
+    projectContributions,
+    imamSalaryCollected,
+    income,
+    expenses,
+    balance: income.minus(expenses),
+  };
 }
 
 /** JSON shape of FinanceTotals for API responses. */

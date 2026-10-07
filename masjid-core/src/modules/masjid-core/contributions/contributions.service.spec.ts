@@ -2,7 +2,6 @@ import { ContributionsService } from './contributions.service';
 
 describe('ContributionsService', () => {
   const prisma = {
-    user: { findUnique: jest.fn() },
     imamSalaryAssignment: {
       findMany: jest.fn(),
       count: jest.fn(),
@@ -26,6 +25,8 @@ describe('ContributionsService', () => {
   const actor = {
     id: 'current-user',
     fullName: 'Saleem',
+    phone: '+919876543210',
+    isFamilyHead: true,
     masjidId: 'current-masjid',
   } as never;
 
@@ -36,13 +37,6 @@ describe('ContributionsService', () => {
     });
     prisma.collectionContribution.aggregate.mockResolvedValue({
       _sum: { amount: 0 },
-    });
-    prisma.user.findUnique.mockResolvedValue({
-      id: 'current-user',
-      fullName: 'Saleem',
-      phone: '+919876543210',
-      isFamilyHead: true,
-      masjidId: 'current-masjid',
     });
   });
 
@@ -118,19 +112,61 @@ describe('ContributionsService', () => {
     prisma.collectionContribution.aggregate.mockResolvedValue({
       _sum: { amount: 0 },
     });
-    prisma.user.findUnique.mockResolvedValue({
+    const withoutMasjid = {
       id: 'current-user',
       fullName: 'Saleem',
       phone: null,
       isFamilyHead: false,
       masjidId: null,
-    });
+    } as never;
 
-    await expect(service.getSummary(actor)).rejects.toMatchObject({
+    await expect(service.getSummary(withoutMasjid)).rejects.toMatchObject({
       response: expect.objectContaining({
         errorCode: 'USER_MASJID_NOT_ASSIGNED',
       }) as unknown,
     });
     expect(prisma.imamSalaryAssignment.findMany).not.toHaveBeenCalled();
+  });
+
+  it('lists only the latest monthsBack salary months', async () => {
+    prisma.imamSalaryAssignment.count.mockResolvedValue(10);
+    prisma.imamSalaryAssignment.findMany.mockResolvedValue([]);
+
+    const response = await service.getImamSalaryHistory(
+      { page: 2, limit: 4, monthsBack: 6 },
+      actor,
+    );
+
+    expect(prisma.imamSalaryAssignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 4, take: 2 }),
+    );
+    expect(response.data?.meta).toEqual({
+      total: 6,
+      page: 2,
+      limit: 4,
+      totalPages: 2,
+      hasNextPage: false,
+    });
+  });
+
+  it('treats toDate as the whole day', async () => {
+    prisma.projectContribution.findMany.mockResolvedValue([]);
+    prisma.projectContribution.count.mockResolvedValue(0);
+
+    await service.getMyProjectContributions(
+      { fromDate: '2026-06-01', toDate: '2026-06-30' },
+      actor,
+    );
+
+    expect(prisma.projectContribution.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          paidAt: {
+            gte: new Date('2026-06-01T00:00:00.000Z'),
+            lte: new Date('2026-06-30T23:59:59.999Z'),
+          },
+        }) as unknown,
+      }),
+    );
   });
 });

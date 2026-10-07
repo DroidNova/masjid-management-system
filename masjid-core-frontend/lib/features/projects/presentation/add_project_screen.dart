@@ -22,8 +22,6 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _targetAmountController = TextEditingController(text: '0');
-  final _collectedAmountController = TextEditingController(text: '0');
-  final _spentAmountController = TextEditingController(text: '0');
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
 
@@ -37,8 +35,6 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _targetAmountController.dispose();
-    _collectedAmountController.dispose();
-    _spentAmountController.dispose();
     _startDateController.dispose();
     _endDateController.dispose();
     super.dispose();
@@ -55,8 +51,6 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
             title: _titleController.text.trim(),
             description: _optional(_descriptionController.text),
             targetAmount: _amount(_targetAmountController),
-            collectedAmount: _amount(_collectedAmountController),
-            spentAmount: _amount(_spentAmountController),
             status: _status,
             startDate: _optional(_startDateController.text),
             endDate: _optional(_endDateController.text),
@@ -111,8 +105,6 @@ class _AddProjectScreenState extends ConsumerState<AddProjectScreen> {
         titleController: _titleController,
         descriptionController: _descriptionController,
         targetAmountController: _targetAmountController,
-        collectedAmountController: _collectedAmountController,
-        spentAmountController: _spentAmountController,
         startDateController: _startDateController,
         endDateController: _endDateController,
         status: _status,
@@ -134,8 +126,6 @@ class ProjectFormBody extends StatelessWidget {
     required this.titleController,
     required this.descriptionController,
     required this.targetAmountController,
-    required this.collectedAmountController,
-    required this.spentAmountController,
     required this.startDateController,
     required this.endDateController,
     required this.status,
@@ -152,8 +142,6 @@ class ProjectFormBody extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   final TextEditingController targetAmountController;
-  final TextEditingController collectedAmountController;
-  final TextEditingController spentAmountController;
   final TextEditingController startDateController;
   final TextEditingController endDateController;
   final String status;
@@ -198,22 +186,6 @@ class ProjectFormBody extends StatelessWidget {
                   AppTextField(
                     controller: targetAmountController,
                     label: 'Target Amount',
-                    keyboardType: TextInputType.number,
-                    validator: amountValidator,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: collectedAmountController,
-                    label: 'Collected Amount',
-                    keyboardType: TextInputType.number,
-                    validator: amountValidator,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: spentAmountController,
-                    label: 'Spent Amount',
                     keyboardType: TextInputType.number,
                     validator: amountValidator,
                     textInputAction: TextInputAction.next,

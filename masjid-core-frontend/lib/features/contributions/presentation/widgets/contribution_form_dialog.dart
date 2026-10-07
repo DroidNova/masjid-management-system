@@ -131,9 +131,11 @@ class _ContributionFormDialogState
 
   @override
   Widget build(BuildContext context) {
-    final members =
-        ref.watch(contributorOptionsProvider).valueOrNull ??
-        const <ContributorOption>[];
+    final options = ref.watch(contributorOptionsProvider);
+    final members = options.valueOrNull ?? const <ContributorOption>[];
+    final optionsError = options.hasError && !options.isLoading
+        ? options.error
+        : null;
 
     return AlertDialog(
       title: Text(
@@ -167,6 +169,25 @@ class _ContributionFormDialogState
                   ],
                   onChanged: (value) => _selectMember(members, value),
                 ),
+                if (optionsError != null)
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          'Members could not be loaded: '
+                          '${userMessage(optionsError)}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.invalidate(contributorOptionsProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(

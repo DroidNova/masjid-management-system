@@ -14,6 +14,7 @@ class CommunitySection extends StatelessWidget {
     this.currentUserPermissions = const <String>[],
     this.onEditUser,
     this.onChangeUserStatus,
+    this.busyUserIds = const <String>{},
   });
 
   final String title;
@@ -23,6 +24,9 @@ class CommunitySection extends StatelessWidget {
   final List<String> currentUserPermissions;
   final ValueChanged<CommunityUserModel>? onEditUser;
   final ValueChanged<CommunityUserModel>? onChangeUserStatus;
+
+  /// Users with a change in flight.
+  final Set<String> busyUserIds;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +57,7 @@ class CommunitySection extends StatelessWidget {
                 );
                 return CommunityUserCard(
                   user: user,
+                  busy: busyUserIds.contains(user.id),
                   onEdit: canManage ? () => onEditUser?.call(user) : null,
                   onChangeStatus: canManage
                       ? () => onChangeUserStatus?.call(user)

@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -30,6 +31,8 @@ import { GetMasjidRequestsQueryDto } from './dto/get-masjid-requests-query.dto';
 import { TrackMasjidRequestDto } from './dto/track-masjid-request.dto';
 import { UpdateMasjidRequestStatusDto } from './dto/update-masjid-request-status.dto';
 import { MasjidRequestsService } from './masjid-requests.service';
+
+const UUID_V4 = new ParseUUIDPipe({ version: '4' });
 
 type AuthenticatedRequest = {
   user: AuthenticatedUser;
@@ -70,12 +73,29 @@ export class MasjidRequestsController {
   @ApiOperation({
     summary: 'Track public masjid registration requests by requester phone',
     description:
-      'Public endpoint. No bearer token or tracking token is required.',
+      'Public endpoint. No bearer token or tracking token is required. Returns { items } with the 20 newest applications for the phone; this list is not paged (no meta).',
   })
   @ApiBody({ type: TrackMasjidRequestDto })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Applications fetched successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Applications fetched successfully',
+        data: {
+          items: [
+            {
+              masjidName: 'Jama Masjid',
+              status: 'PENDING',
+              imamName: 'Abdul Rahman',
+              requestedAt: '2026-06-19T00:00:00.000Z',
+              reviewedAt: null,
+            },
+          ],
+        },
+      },
+    },
   })
   track(@Body() dto: TrackMasjidRequestDto) {
     return this.masjidRequestsService.trackByRequesterPhone(dto.requesterPhone);
@@ -96,12 +116,40 @@ export class MasjidRequestsController {
     return this.masjidRequestsService.findAll(query);
   }
 
+  @Get(':id')
+  // Decorators apply bottom-up: JwtAuthGuard must run before the permission check.
+  @RequirePermissions(PERMISSIONS.PLATFORM_MASJID_REQUESTS_MANAGE)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Get one masjid request',
+    description: 'Same shape as an item of GET /masjid-requests.',
+  })
+  @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Masjid request retrieved successfully',
+  })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'MASJID_REQUEST_NOT_FOUND',
+    schema: standardErrorSchema,
+  })
+  findOne(@Param('id', UUID_V4) id: string) {
+    return this.masjidRequestsService.findOne(id);
+  }
+
   @Patch(':id/status')
   // Decorators apply bottom-up: JwtAuthGuard must run before the permission check.
   @RequirePermissions(PERMISSIONS.PLATFORM_MASJID_REQUESTS_MANAGE)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
-  @ApiOperation({ summary: 'Approve or reject a masjid request' })
+  @ApiOperation({
+    summary: 'Approve or reject a masjid request',
+    description:
+      'Only a PENDING request can change. Already decided: 409 MASJID_REQUEST_ALREADY_APPROVED / MASJID_REQUEST_ALREADY_REJECTED (also for the loser of two simultaneous decisions). Imam or committee member in another masjid: 409 USER_IN_ANOTHER_MASJID. New imam whose email belongs to another account: 409 EMAIL_ALREADY_EXISTS.',
+  })
   @ApiParam({ name: 'id', example: '4e0798d2-3fd3-4caa-9966-9f85c96f8b2f' })
   @ApiBody({ type: UpdateMasjidRequestStatusDto })
   @ApiResponse({
@@ -111,7 +159,7 @@ export class MasjidRequestsController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, schema: standardErrorSchema })
   updateStatus(
-    @Param('id') id: string,
+    @Param('id', UUID_V4) id: string,
     @Body() dto: UpdateMasjidRequestStatusDto,
     @Req() request: AuthenticatedRequest,
   ) {

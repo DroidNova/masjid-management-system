@@ -29,6 +29,12 @@ class FinanceScreen extends ConsumerStatefulWidget {
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   int _selectedTab = 0;
 
+  /// Expenses are loaded the first time that tab opens, then kept.
+  bool _expensesOpened = false;
+
+  /// The entry whose cancel is in flight (shows progress on its tile).
+  String? _cancellingId;
+
   bool get _showingCollections => _selectedTab == 0;
 
   Future<void> _refresh() async {
@@ -79,13 +85,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted || _cancellingId != null) return;
 
+    setState(() => _cancellingId = id);
     final controller = ref.read(financeEntryControllerProvider.notifier);
     final ok = isExpense
         ? await controller.cancelExpense(id)
         : await controller.cancelCollection(id);
     if (!mounted) return;
+    setState(() => _cancellingId = null);
     final error = ref.read(financeEntryControllerProvider).error;
     // Not ok and no error: another save was already running.
     if (!ok && error == null) return;
@@ -101,34 +109,49 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   Widget build(BuildContext context) {
     // Keeps the mutation controller alive while a cancel is in flight.
     ref.watch(financeEntryControllerProvider);
-    final summaryState = ref.watch(financeSummaryProvider);
+    // Both tabs keep their list and filter while this screen is open, so
+    // switching tabs neither reloads nor resets the filter.
+    ref.listen(collectionsFilterProvider, (_, _) {});
+    ref.listen(expensesFilterProvider, (_, _) {});
+    ref.listen(collectionsControllerProvider, (_, _) {});
+    if (_expensesOpened) ref.listen(expensesControllerProvider, (_, _) {});
 
-    return summaryState.when(
-      skipLoadingOnReload: true,
-      loading: () => const LoadingView(),
-      error: (error, _) {
-        final noMasjid =
-            error is ApiException &&
-            error.code == ApiErrorCodes.userMasjidNotAssigned;
-        if (noMasjid) {
-          return _FinanceErrorView(
-            message: 'You are not assigned to any masjid yet.',
-            buttonLabel: 'Logout / Back to Login',
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).signOut(),
-          );
-        }
-        return _FinanceErrorView(
-          message: 'Unable to load finance data.',
-          detail: userMessage(error),
-          onPressed: () => ref.invalidate(financeSummaryProvider),
-        );
-      },
-      data: _buildContent,
-    );
+    final summaryState = ref.watch(financeSummaryProvider);
+    final error = summaryState.hasError && !summaryState.isLoading
+        ? summaryState.error
+        : null;
+    if (error is ApiException &&
+        error.code == ApiErrorCodes.userMasjidNotAssigned) {
+      return _FinanceErrorView(
+        message: 'You are not assigned to any masjid yet.',
+        buttonLabel: 'Logout / Back to Login',
+        onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+      );
+    }
+    return _buildContent(summaryState);
   }
 
-  Widget _buildContent(FinanceSummaryModel summary) {
+  /// The totals card; a failed summary does not hide the lists below it.
+  Widget _summary(AsyncValue<FinanceSummaryModel> summaryState) =>
+      summaryState.when(
+        skipLoadingOnReload: true,
+        loading: () => const Card(
+          child: Padding(padding: EdgeInsets.all(24), child: LoadingView()),
+        ),
+        error: (error, _) => Card(
+          child: ListTile(
+            title: const Text('Unable to load finance data.'),
+            subtitle: Text(userMessage(error)),
+            trailing: TextButton(
+              onPressed: () => ref.invalidate(financeSummaryProvider),
+              child: const Text('Retry'),
+            ),
+          ),
+        ),
+        data: (summary) => FinanceSummaryCard(summary: summary),
+      );
+
+  Widget _buildContent(AsyncValue<FinanceSummaryModel> summaryState) {
     final permissions = ref.watch(currentPermissionsProvider);
 
     return SafeArea(
@@ -145,7 +168,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    FinanceSummaryCard(summary: summary),
+                    _summary(summaryState),
                     const SizedBox(height: 12),
                     _ImamSalaryNavigationCard(
                       subtitle:
@@ -177,7 +200,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                       ],
                       selected: <int>{_selectedTab},
                       onSelectionChanged: (selection) {
-                        setState(() => _selectedTab = selection.first);
+                        setState(() {
+                          _selectedTab = selection.first;
+                          if (_selectedTab == 1) _expensesOpened = true;
+                        });
                       },
                     ),
                     const SizedBox(height: 12),
@@ -226,6 +252,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
           date: entry.collectedAt ?? entry.createdAt,
           status: entry.status,
           isExpense: false,
+          cancelling: _cancellingId == entry.id,
           onCancel: canManage && !entry.isCancelled
               ? () => _confirmCancel(isExpense: false, id: entry.id)
               : null,
@@ -265,6 +292,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
           date: entry.spentAt ?? entry.createdAt,
           status: entry.status,
           isExpense: true,
+          cancelling: _cancellingId == entry.id,
           onCancel: canManage && !entry.isCancelled
               ? () => _confirmCancel(isExpense: true, id: entry.id)
               : null,
@@ -410,18 +438,15 @@ class _FinanceErrorView extends StatelessWidget {
   const _FinanceErrorView({
     required this.message,
     required this.onPressed,
-    this.detail,
     this.buttonLabel = 'Retry',
   });
 
   final String message;
-  final String? detail;
   final String buttonLabel;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final detailText = detail;
     return SafeArea(
       child: Center(
         child: Padding(
@@ -445,10 +470,6 @@ class _FinanceErrorView extends StatelessWidget {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                if (detailText != null) ...<Widget>[
-                  const SizedBox(height: 8),
-                  Text(detailText, textAlign: TextAlign.center),
-                ],
                 const SizedBox(height: 20),
                 AppButton(label: buttonLabel, onPressed: onPressed),
               ],

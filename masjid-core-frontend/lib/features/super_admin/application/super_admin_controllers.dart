@@ -9,8 +9,9 @@ import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masj
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
 
-// Every admin screen watches DataScope.admin; SuperAdminActions marks it
-// after each change, so lists, details and the summary reload together.
+// Each admin area watches its own scope (adminUsers, adminMasjids,
+// adminRequests); SuperAdminActions marks only the areas a change affects,
+// plus adminSummary for the dashboard counts.
 
 // ---------------------------------------------------------------- dashboard
 
@@ -24,7 +25,7 @@ class AdminDashboardController
     extends AutoDisposeAsyncNotifier<AdminDashboardSummary> {
   @override
   Future<AdminDashboardSummary> build() {
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminSummary));
     return ref.watch(superAdminRepositoryProvider).getDashboardSummary();
   }
 
@@ -50,7 +51,7 @@ class AdminUsersController extends PagedController<AdminUserModel> {
   @override
   Future<PagedState<AdminUserModel>> build() {
     ref.watch(adminUsersFilterProvider);
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminUsers));
     return super.build();
   }
 
@@ -58,6 +59,28 @@ class AdminUsersController extends PagedController<AdminUserModel> {
   Future<PageResult<AdminUserModel>> fetchPage(int page) => ref
       .read(superAdminRepositoryProvider)
       .getUsers(ref.read(adminUsersFilterProvider), page: page);
+
+  /// Swaps in a user the server returned after a change (no reload). Keeps
+  /// the list's masjid, which the change response does not include.
+  void replace(AdminUserModel updated) {
+    final current = state.valueOrNull;
+    if (current == null || state.isLoading) return;
+    state = AsyncData(
+      current.copyWith(
+        items: <AdminUserModel>[
+          for (final user in current.items)
+            if (user.id == updated.id)
+              updated.copyWith(
+                masjidId: updated.masjidId ?? user.masjidId,
+                masjidName: updated.masjidName ?? user.masjidName,
+              )
+            else
+              user,
+        ],
+        loadMoreError: current.loadMoreError,
+      ),
+    );
+  }
 }
 
 final adminUserProvider = AsyncNotifierProvider.autoDispose
@@ -69,8 +92,16 @@ class AdminUserController
     extends AutoDisposeFamilyAsyncNotifier<AdminUserModel, String> {
   @override
   Future<AdminUserModel> build(String id) {
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminUsers));
     return ref.watch(superAdminRepositoryProvider).getUser(id);
+  }
+
+  /// Shows a user the server returned after a change (no reload).
+  void show(AdminUserModel updated) => state = AsyncData(updated);
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
   }
 }
 
@@ -90,7 +121,7 @@ class AdminMasjidsController extends PagedController<AdminMasjidModel> {
   @override
   Future<PagedState<AdminMasjidModel>> build() {
     ref.watch(adminMasjidsFilterProvider);
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminMasjids));
     return super.build();
   }
 
@@ -109,8 +140,13 @@ class AdminMasjidController
     extends AutoDisposeFamilyAsyncNotifier<AdminMasjidModel, String> {
   @override
   Future<AdminMasjidModel> build(String id) {
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminMasjids));
     return ref.watch(superAdminRepositoryProvider).getMasjid(id);
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
   }
 }
 
@@ -130,7 +166,7 @@ class AdminRequestsController extends PagedController<AdminMasjidRequestModel> {
   @override
   Future<PagedState<AdminMasjidRequestModel>> build() {
     ref.watch(adminRequestsFilterProvider);
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminRequests));
     return super.build();
   }
 
@@ -149,7 +185,12 @@ class AdminRequestController
     extends AutoDisposeFamilyAsyncNotifier<AdminMasjidRequestModel, String> {
   @override
   Future<AdminMasjidRequestModel> build(String id) {
-    ref.watch(dataVersionProvider(DataScope.admin));
+    ref.watch(dataVersionProvider(DataScope.adminRequests));
     return ref.watch(superAdminRepositoryProvider).getMasjidRequest(id);
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
   }
 }

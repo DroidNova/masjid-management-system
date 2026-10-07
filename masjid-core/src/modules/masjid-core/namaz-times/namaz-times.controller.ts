@@ -43,6 +43,37 @@ const standardErrorSchema = {
 export class NamazTimesController {
   constructor(private readonly namazTimesService: NamazTimesService) {}
 
+  // The my-masjid routes must stay above the :masjidId routes.
+  @Get('my-masjid')
+  @RequirePermissions(PERMISSIONS.NAMAZ_TIMES_READ)
+  @ApiOperation({ summary: "Get the current user's masjid namaz times" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Namaz times retrieved successfully',
+  })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
+  findMyMasjid(@Req() request: AuthenticatedRequest) {
+    return this.namazTimesService.findMyMasjid(request.user);
+  }
+
+  @Put('my-masjid')
+  @RequirePermissions(PERMISSIONS.NAMAZ_TIMES_UPDATE)
+  @ApiOperation({
+    summary: "Insert or update the current user's masjid namaz times",
+  })
+  @ApiBody({ type: UpsertNamazTimeDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Namaz times saved successfully',
+  })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, schema: standardErrorSchema })
+  upsertMyMasjid(
+    @Body() dto: UpsertNamazTimeDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.namazTimesService.upsertMyMasjid(dto, request.user);
+  }
+
   @Get(':masjidId')
   @RequirePermissions(PERMISSIONS.NAMAZ_TIMES_READ)
   @ApiOperation({ summary: 'Get namaz times by masjid id' })

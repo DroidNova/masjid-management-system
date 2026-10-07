@@ -76,14 +76,9 @@ void main() {
     expect(_fieldText(tester, 'Message *'), 'Server message');
   });
 
-  testWidgets('shows the preview instantly, then the real data', (
+  testWidgets('opened from the list: uses that announcement, no request', (
     tester,
   ) async {
-    final response = Completer<AnnouncementModel>();
-    when(
-      () => repository.getAnnouncement('a1'),
-    ).thenAnswer((_) => response.future);
-
     await _pump(
       tester,
       repository,
@@ -93,12 +88,10 @@ void main() {
         message: 'Old message',
       ),
     );
-    await tester.pump();
-    expect(_fieldText(tester, 'Title *'), 'Old title');
-
-    response.complete(_server);
     await tester.pumpAndSettle();
-    expect(_fieldText(tester, 'Title *'), 'Server title');
+    expect(_fieldText(tester, 'Title *'), 'Old title');
+    expect(_fieldText(tester, 'Message *'), 'Old message');
+    verifyNever(() => repository.getAnnouncement(any()));
   });
 
   testWidgets('shows the error when the announcement cannot be loaded', (

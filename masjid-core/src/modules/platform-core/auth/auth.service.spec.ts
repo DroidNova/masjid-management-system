@@ -19,6 +19,7 @@ type UserRow = {
   masjidId: string | null;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  isFamilyHead: boolean;
   createdAt: Date;
   updatedAt: Date;
   passwordHash: string;
@@ -100,8 +101,15 @@ function createFakePrisma() {
     data: Partial<T>,
   ) => {
     const hits = rows.filter((row) => matches(row, where));
-    hits.forEach((row) => Object.assign(row, data));
-    return { count: hits.length };
+    hits.forEach((row) => {
+      for (const [key, value] of Object.entries(data)) {
+        (row as Record<string, unknown>)[key] =
+          value && typeof value === 'object' && 'increment' in value
+            ? (row[key] as number) + (value as { increment: number }).increment
+            : value;
+      }
+    });
+    return { count: hits.length, hits };
   };
 
   const prisma = {
@@ -126,8 +134,15 @@ function createFakePrisma() {
         sessions.push({ ...data });
         return data;
       },
-      findFirst: async ({ where }: { where: Where }) =>
-        sessions.find((s) => matches(s, where)) ?? null,
+      findFirst: async ({ where }: { where: Where }) => {
+        const session = sessions.find((s) => matches(s, where));
+        return session
+          ? {
+              ...session,
+              user: withAccess(users.find((u) => u.id === session.userId)),
+            }
+          : null;
+      },
       updateMany: async ({
         where,
         data,
@@ -150,16 +165,14 @@ function createFakePrisma() {
       },
       findUnique: async ({ where }: { where: Where }) =>
         otps.find((o) => o.id === where.id) ?? null,
-      update: async ({
+      // Each call is applied in one synchronous step, like one SQL UPDATE.
+      updateManyAndReturn: async ({
         where,
         data,
       }: {
         where: Where;
-        data: Partial<OtpRow>;
-      }) => {
-        updateWhere(otps, where, data);
-        return otps.find((o) => o.id === where.id);
-      },
+        data: Record<string, unknown>;
+      }) => updateWhere(otps, where, data).hits.map((row) => ({ ...row })),
       updateMany: async ({
         where,
         data,
@@ -213,6 +226,7 @@ async function setup(overrides: Record<string, string> = {}) {
     masjidId: 'masjid-1',
     isEmailVerified: false,
     isPhoneVerified: false,
+    isFamilyHead: false,
     createdAt: now,
     updatedAt: now,
     passwordHash,
@@ -259,7 +273,8 @@ async function loginImam(service: AuthService) {
 }
 
 function actorFor(userId: string, sessionId: string): AuthenticatedUser {
-  return { id: userId, sessionId } as AuthenticatedUser;
+  const roles = userId === 'imam-1' ? ['IMAM'] : ['MEMBER'];
+  return { id: userId, sessionId, roles } as AuthenticatedUser;
 }
 
 async function sessionIdOf(
@@ -600,6 +615,77 @@ describe('AuthService', () => {
 
       expect(await service.deleteExpiredSessions()).toBe(1);
       expect(await otpService.deleteStale()).toBe(1);
+    });
+  });
+
+  describe('OTP attempt limit under concurrency', () => {
+    it('never counts more than the maximum attempts for parallel guesses', async () => {
+      const { service, otps } = await setup();
+      const start = await service.startLogin({ phone: MEMBER_PHONE });
+      const guess = (otp: string) =>
+        service
+          .verifyOtp({
+            phone: MEMBER_PHONE,
+            challengeId: start.challengeId!,
+            otp,
+          })
+          .then(
+            () => 'OK',
+            (error: { response: { errorCode: string } }) =>
+              error.response.errorCode,
+          );
+
+      // 20 wrong guesses fired at once, then the right code.
+      const results = await Promise.all(
+        Array.from({ length: 20 }, (_, i) => guess(String(2000 + i))),
+      );
+
+      expect(otps[0].attempts).toBe(5);
+      expect(results.filter((code) => code === 'OTP_INVALID')).toHaveLength(4);
+      expect(results.filter((code) => code === 'OTP_EXPIRED')).toHaveLength(16);
+      expect(await guess('1111')).toBe('OTP_EXPIRED');
+    });
+  });
+
+  describe('account state', () => {
+    it('answers an unknown phone like a wrong password', async () => {
+      const { service } = await setup();
+      await expectCode(
+        service.verifyPassword({ phone: '+919999999999', password: PASSWORD }),
+        'INVALID_CREDENTIALS',
+      );
+    });
+
+    it('reports an inactive account only after a correct password', async () => {
+      const { service, users } = await setup();
+      users.find((u) => u.id === 'imam-1')!.status = 'SUSPENDED';
+
+      await expectCode(
+        service.verifyPassword({ phone: IMAM_PHONE, password: 'wrong' }),
+        'INVALID_CREDENTIALS',
+      );
+      await expectCode(
+        service.verifyPassword({ phone: IMAM_PHONE, password: PASSWORD }),
+        'USER_INACTIVE',
+      );
+    });
+
+    it('ends the session when an inactive user refreshes', async () => {
+      const { service, users, sessions } = await setup();
+      const login = await loginMember(service);
+      users.find((u) => u.id === 'member-1')!.status = 'INACTIVE';
+
+      await expectCode(
+        service.refreshToken({ refreshToken: login.tokens.refreshToken }),
+        'USER_INACTIVE',
+      );
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('returns isFamilyHead with the signed-in user', async () => {
+      const { service } = await setup();
+      const login = await loginMember(service);
+      expect(login.user.isFamilyHead).toBe(false);
     });
   });
 });

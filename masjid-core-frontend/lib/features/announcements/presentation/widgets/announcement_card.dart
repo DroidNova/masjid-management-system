@@ -8,11 +8,15 @@ class AnnouncementCard extends StatelessWidget {
     required this.announcement,
     this.onEdit,
     this.onDelete,
+    this.deleting = false,
   });
 
   final AnnouncementModel announcement;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+
+  /// A delete is in flight: the buttons are off and Delete shows progress.
+  final bool deleting;
 
   @override
   Widget build(BuildContext context) {
@@ -52,14 +56,19 @@ class AnnouncementCard extends StatelessWidget {
                 children: <Widget>[
                   if (onEdit != null)
                     TextButton.icon(
-                      onPressed: onEdit,
+                      onPressed: deleting ? null : onEdit,
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Edit'),
                     ),
                   if (onDelete != null)
                     TextButton.icon(
-                      onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline),
+                      onPressed: deleting ? null : onDelete,
+                      icon: deleting
+                          ? const SizedBox.square(
+                              dimension: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.delete_outline),
                       label: const Text('Delete'),
                     ),
                 ],

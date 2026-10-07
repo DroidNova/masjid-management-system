@@ -1,15 +1,10 @@
 import { Prisma } from '../../../generated/prisma/client';
 
-const basicUserSelect = {
+/** The imam as shown on the masjid profile. */
+const imamUserSelect = {
   id: true,
   fullName: true,
-  email: true,
   phone: true,
-  fatherName: true,
-  age: true,
-  gender: true,
-  isFamilyHead: true,
-  familyMemberCount: true,
 } as const satisfies Prisma.UserSelect;
 
 export const masjidProfileSelect = {
@@ -26,7 +21,7 @@ export const masjidProfileSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
-  imamUser: { select: basicUserSelect },
+  imamUser: { select: imamUserSelect },
   namazTime: {
     select: {
       id: true,

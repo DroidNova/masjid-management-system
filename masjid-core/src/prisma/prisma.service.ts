@@ -16,7 +16,10 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(config: AppConfig) {
-    const adapter = new PrismaPg({ connectionString: config.databaseUrl });
+    const adapter = new PrismaPg({
+      connectionString: config.databaseUrl,
+      max: config.dbPoolMax,
+    });
     const log: Prisma.LogLevel[] = config.prismaLogQueries
       ? ['query', 'warn', 'error']
       : ['warn', 'error'];

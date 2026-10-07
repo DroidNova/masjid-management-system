@@ -6,9 +6,9 @@ Update the checkboxes and the status table as work lands.
 
 ## Checkpoint (read this first in a new session)
 
-Last updated 2026-10-07.
+Last updated 2026-10-08.
 
-- **Done:** M0 to M5. Both apps lint, build, and test clean (backend 88 tests, app 173). CI runs on every push to `main`.
+- **Done:** M0 to M5, plus an API audit and optimization pass (2026-10-08): fewer queries per request, race-safe money/OTP/approval writes, Prisma errors mapped to API errors, query-tuning indexes. Both apps lint, build, and test clean. CI runs on every push to `main`.
 - **Next:** the owner's list of fixes and features for the existing app (2026-10-08). Deployment (M6) waits until the product is finished; then the owner decides domain and SMS provider. The VPS will be a small one.
 - **App rules:** auth state lives only in `AuthController`; widgets read `currentUserProvider`/`currentPermissionsProvider`, never secure storage. Network calls go through `ApiClient` (`apiClientProvider`) and fail with `ApiException` (switch on `code`). Logging out = `authControllerProvider.notifier.signOut()`; the router redirect does the navigation.
 - **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
@@ -17,6 +17,7 @@ Last updated 2026-10-07.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
+- **Query rules:** the JWT strategy loads session + user + roles in one SQL statement; services use `req.user` (masjidId, isFamilyHead, roles) instead of re-reading the user. Scope reads/writes by `{ id, masjidId }` in one query (another masjid's id is a 404, not a 403). Finance totals come from `FinanceCalculator.summary()` (one SQL statement for all-time + period). Prisma `relationJoins` is on, so nested selects are one query. Concurrent writes use conditional `updateMany` instead of read-then-write or Serializable transactions. Pool size: `DB_POOL_MAX` (default 10).
 - **Known debt carried forward:** None in the app structure; see M7 for strings and UI.
 
 ## 1. What the app is

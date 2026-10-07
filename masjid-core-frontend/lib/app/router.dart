@@ -18,6 +18,7 @@ import 'package:masjid_core_frontend/features/contributions/presentation/collect
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/home_dashboard_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/add_collection_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/add_expense_screen.dart';
@@ -27,6 +28,7 @@ import 'package:masjid_core_frontend/features/main_shell/presentation/main_shell
 import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid_request_form_screen.dart';
 import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid_request_submitted_screen.dart';
 import 'package:masjid_core_frontend/features/masjid_request/presentation/track_masjid_application_screen.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/update_namaz_time_screen.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/add_project_screen.dart';
@@ -215,8 +217,8 @@ final List<RouteBase> _routes = <RouteBase>[
     path: '/projects/:id/contributions',
     builder: (context, state) => ProjectContributionsScreen(
       projectId: state.pathParameters['id'] ?? '',
-      // Title is loaded by id; extra only shows it instantly.
-      projectTitle: state.extra as String?,
+      // The project screen passes the title; a fresh URL loads it by id.
+      projectTitle: state.extra is String ? state.extra! as String : null,
     ),
   ),
   GoRoute(
@@ -273,14 +275,22 @@ final List<RouteBase> _routes = <RouteBase>[
   GoRoute(
     path: '/namaz-time/update',
     builder: (context, state) {
+      // The dashboard passes the times it shows; a fresh URL loads them.
       final extra = state.extra;
-      String? masjidId;
-      if (extra is Map<String, dynamic>) {
-        masjidId = extra['masjidId']?.toString();
-      }
+      final initial = extra is NamazTimeSummary
+          ? NamazTimeModel(
+              fajr: extra.fajr,
+              zuhr: extra.zuhr,
+              asr: extra.asr,
+              maghrib: extra.maghrib,
+              isha: extra.isha,
+              jumma: extra.jumma,
+              note: extra.note,
+            )
+          : null;
       return PermissionGate(
         isAllowed: PermissionHelper.canUpdateNamazTime,
-        child: UpdateNamazTimeScreen(masjidId: masjidId),
+        child: UpdateNamazTimeScreen(initial: initial),
       );
     },
   ),

@@ -36,7 +36,11 @@ class AdminMasjidDetailScreen extends ConsumerWidget {
               message: userMessage(error),
               onRetry: () => ref.invalidate(adminMasjidProvider(id)),
             ),
-            data: (masjid) => _MasjidDetails(masjid: masjid),
+            data: (masjid) => RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(adminMasjidProvider(id).notifier).refresh(),
+              child: _MasjidDetails(masjid: masjid),
+            ),
           ),
     );
   }
@@ -52,6 +56,7 @@ class _MasjidDetails extends StatelessWidget {
     final m = masjid;
     final createdAt = m.createdAt;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         AdminStatusChip(m.status),

@@ -54,20 +54,6 @@ export class UpdateProjectDto {
   @Min(0, { message: 'Target amount must be zero or greater' })
   targetAmount?: number;
 
-  @ApiPropertyOptional({ example: 120000, minimum: 0 })
-  @Transform(toOptionalNumber)
-  @IsOptional()
-  @IsNumber({}, { message: 'Collected amount must be a number' })
-  @Min(0, { message: 'Collected amount must be zero or greater' })
-  collectedAmount?: number;
-
-  @ApiPropertyOptional({ example: 50000, minimum: 0 })
-  @Transform(toOptionalNumber)
-  @IsOptional()
-  @IsNumber({}, { message: 'Spent amount must be a number' })
-  @Min(0, { message: 'Spent amount must be zero or greater' })
-  spentAmount?: number;
-
   @ApiPropertyOptional({ enum: ProjectStatusDto })
   @IsOptional()
   @IsEnum(ProjectStatusDto)

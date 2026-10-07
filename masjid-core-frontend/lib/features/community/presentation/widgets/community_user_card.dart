@@ -7,11 +7,15 @@ class CommunityUserCard extends StatelessWidget {
     required this.user,
     this.onEdit,
     this.onChangeStatus,
+    this.busy = false,
   });
 
   final CommunityUserModel user;
   final VoidCallback? onEdit;
   final VoidCallback? onChangeStatus;
+
+  /// A change to this user is in flight: the buttons are off.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +46,13 @@ class CommunityUserCard extends StatelessWidget {
                 children: <Widget>[
                   if (onEdit != null)
                     OutlinedButton.icon(
-                      onPressed: onEdit,
+                      onPressed: busy ? null : onEdit,
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Edit'),
                     ),
                   if (onChangeStatus != null)
                     OutlinedButton.icon(
-                      onPressed: onChangeStatus,
+                      onPressed: busy ? null : onChangeStatus,
                       icon: const Icon(Icons.toggle_on_outlined),
                       label: const Text('Status'),
                     ),

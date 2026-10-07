@@ -109,6 +109,14 @@ Future<void> _pump(
   await tester.pump();
 }
 
+/// Taps the card's Approve, then confirms in the dialog.
+Future<void> _approveAndConfirm(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(TextButton, 'Approve'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(FilledButton, 'Approve'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late _MockRepository repository;
 
@@ -243,8 +251,7 @@ void main() {
       await _pump(tester, repository, const AdminMasjidRequestsScreen());
       expect(find.text('Noor Masjid'), findsOneWidget);
 
-      await tester.tap(find.text('Approve'));
-      await tester.pumpAndSettle();
+      await _approveAndConfirm(tester);
 
       expect(find.text('Cannot approve'), findsOneWidget);
       expect(find.text(message), findsOneWidget);
@@ -260,8 +267,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       await _pump(tester, repository, const AdminMasjidRequestsScreen());
-      await tester.tap(find.text('Approve'));
-      await tester.pumpAndSettle();
+      await _approveAndConfirm(tester);
 
       verify(() => repository.approveMasjidRequest('r1')).called(1);
       verify(

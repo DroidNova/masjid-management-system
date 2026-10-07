@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$AppUser {
 
  String get id; String get fullName; List<String> get roles;/// Permission names from `masjid-core/src/access/permissions.ts`.
- List<String> get permissions; String? get email; String? get phone; String? get status; String? get masjidId; bool get isEmailVerified; bool get isPhoneVerified; DateTime? get createdAt; DateTime? get updatedAt;
+ List<String> get permissions; String? get email; String? get phone; String? get status; String? get masjidId; bool get isEmailVerified; bool get isPhoneVerified;/// Members only; missing in older stored sessions.
+ bool get isFamilyHead; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +30,16 @@ $AppUserCopyWith<AppUser> get copyWith => _$AppUserCopyWithImpl<AppUser>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.status, status) || other.status == status)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.isEmailVerified, isEmailVerified) || other.isEmailVerified == isEmailVerified)&&(identical(other.isPhoneVerified, isPhoneVerified) || other.isPhoneVerified == isPhoneVerified)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.status, status) || other.status == status)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.isEmailVerified, isEmailVerified) || other.isEmailVerified == isEmailVerified)&&(identical(other.isPhoneVerified, isPhoneVerified) || other.isPhoneVerified == isPhoneVerified)&&(identical(other.isFamilyHead, isFamilyHead) || other.isFamilyHead == isFamilyHead)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),email,phone,status,masjidId,isEmailVerified,isPhoneVerified,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,fullName,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),email,phone,status,masjidId,isEmailVerified,isPhoneVerified,isFamilyHead,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'AppUser(id: $id, fullName: $fullName, roles: $roles, permissions: $permissions, email: $email, phone: $phone, status: $status, masjidId: $masjidId, isEmailVerified: $isEmailVerified, isPhoneVerified: $isPhoneVerified, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'AppUser(id: $id, fullName: $fullName, roles: $roles, permissions: $permissions, email: $email, phone: $phone, status: $status, masjidId: $masjidId, isEmailVerified: $isEmailVerified, isPhoneVerified: $isPhoneVerified, isFamilyHead: $isFamilyHead, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -49,7 +50,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String id, String fullName, List<String> roles, List<String> permissions, String? email, String? phone, String? status, String? masjidId, bool isEmailVerified, bool isPhoneVerified, DateTime? createdAt, DateTime? updatedAt
+ String id, String fullName, List<String> roles, List<String> permissions, String? email, String? phone, String? status, String? masjidId, bool isEmailVerified, bool isPhoneVerified, bool isFamilyHead, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -66,7 +67,7 @@ class _$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? roles = null,Object? permissions = null,Object? email = freezed,Object? phone = freezed,Object? status = freezed,Object? masjidId = freezed,Object? isEmailVerified = null,Object? isPhoneVerified = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? roles = null,Object? permissions = null,Object? email = freezed,Object? phone = freezed,Object? status = freezed,Object? masjidId = freezed,Object? isEmailVerified = null,Object? isPhoneVerified = null,Object? isFamilyHead = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -78,6 +79,7 @@ as String?,status: freezed == status ? _self.status : status // ignore: cast_nul
 as String?,masjidId: freezed == masjidId ? _self.masjidId : masjidId // ignore: cast_nullable_to_non_nullable
 as String?,isEmailVerified: null == isEmailVerified ? _self.isEmailVerified : isEmailVerified // ignore: cast_nullable_to_non_nullable
 as bool,isPhoneVerified: null == isPhoneVerified ? _self.isPhoneVerified : isPhoneVerified // ignore: cast_nullable_to_non_nullable
+as bool,isFamilyHead: null == isFamilyHead ? _self.isFamilyHead : isFamilyHead // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -165,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  bool isFamilyHead,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.isFamilyHead,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -186,10 +188,10 @@ return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.emai
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  bool isFamilyHead,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
-return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.isFamilyHead,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +208,10 @@ return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.emai
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  List<String> roles,  List<String> permissions,  String? email,  String? phone,  String? status,  String? masjidId,  bool isEmailVerified,  bool isPhoneVerified,  bool isFamilyHead,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.email,_that.phone,_that.status,_that.masjidId,_that.isEmailVerified,_that.isPhoneVerified,_that.isFamilyHead,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -221,7 +223,7 @@ return $default(_that.id,_that.fullName,_that.roles,_that.permissions,_that.emai
 @JsonSerializable()
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.id, required this.fullName, final  List<String> roles = const <String>[], final  List<String> permissions = const <String>[], this.email, this.phone, this.status, this.masjidId, this.isEmailVerified = false, this.isPhoneVerified = false, this.createdAt, this.updatedAt}): _roles = roles,_permissions = permissions;
+  const _AppUser({required this.id, required this.fullName, final  List<String> roles = const <String>[], final  List<String> permissions = const <String>[], this.email, this.phone, this.status, this.masjidId, this.isEmailVerified = false, this.isPhoneVerified = false, this.isFamilyHead = false, this.createdAt, this.updatedAt}): _roles = roles,_permissions = permissions;
   factory _AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 
 @override final  String id;
@@ -248,6 +250,8 @@ class _AppUser implements AppUser {
 @override final  String? masjidId;
 @override@JsonKey() final  bool isEmailVerified;
 @override@JsonKey() final  bool isPhoneVerified;
+/// Members only; missing in older stored sessions.
+@override@JsonKey() final  bool isFamilyHead;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -264,16 +268,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.status, status) || other.status == status)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.isEmailVerified, isEmailVerified) || other.isEmailVerified == isEmailVerified)&&(identical(other.isPhoneVerified, isPhoneVerified) || other.isPhoneVerified == isPhoneVerified)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.status, status) || other.status == status)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.isEmailVerified, isEmailVerified) || other.isEmailVerified == isEmailVerified)&&(identical(other.isPhoneVerified, isPhoneVerified) || other.isPhoneVerified == isPhoneVerified)&&(identical(other.isFamilyHead, isFamilyHead) || other.isFamilyHead == isFamilyHead)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),email,phone,status,masjidId,isEmailVerified,isPhoneVerified,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,fullName,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),email,phone,status,masjidId,isEmailVerified,isPhoneVerified,isFamilyHead,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'AppUser(id: $id, fullName: $fullName, roles: $roles, permissions: $permissions, email: $email, phone: $phone, status: $status, masjidId: $masjidId, isEmailVerified: $isEmailVerified, isPhoneVerified: $isPhoneVerified, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'AppUser(id: $id, fullName: $fullName, roles: $roles, permissions: $permissions, email: $email, phone: $phone, status: $status, masjidId: $masjidId, isEmailVerified: $isEmailVerified, isPhoneVerified: $isPhoneVerified, isFamilyHead: $isFamilyHead, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -284,7 +288,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String fullName, List<String> roles, List<String> permissions, String? email, String? phone, String? status, String? masjidId, bool isEmailVerified, bool isPhoneVerified, DateTime? createdAt, DateTime? updatedAt
+ String id, String fullName, List<String> roles, List<String> permissions, String? email, String? phone, String? status, String? masjidId, bool isEmailVerified, bool isPhoneVerified, bool isFamilyHead, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -301,7 +305,7 @@ class __$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? roles = null,Object? permissions = null,Object? email = freezed,Object? phone = freezed,Object? status = freezed,Object? masjidId = freezed,Object? isEmailVerified = null,Object? isPhoneVerified = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? roles = null,Object? permissions = null,Object? email = freezed,Object? phone = freezed,Object? status = freezed,Object? masjidId = freezed,Object? isEmailVerified = null,Object? isPhoneVerified = null,Object? isFamilyHead = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_AppUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -313,6 +317,7 @@ as String?,status: freezed == status ? _self.status : status // ignore: cast_nul
 as String?,masjidId: freezed == masjidId ? _self.masjidId : masjidId // ignore: cast_nullable_to_non_nullable
 as String?,isEmailVerified: null == isEmailVerified ? _self.isEmailVerified : isEmailVerified // ignore: cast_nullable_to_non_nullable
 as bool,isPhoneVerified: null == isPhoneVerified ? _self.isPhoneVerified : isPhoneVerified // ignore: cast_nullable_to_non_nullable
+as bool,isFamilyHead: null == isFamilyHead ? _self.isFamilyHead : isFamilyHead // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

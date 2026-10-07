@@ -7,7 +7,7 @@ import {
   AuditService,
 } from '../../../common/audit/audit.service';
 import { formatMoney, toAmount } from '../../../common/money';
-import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { FinanceEntryStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -15,7 +15,8 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { GetCollectionsQueryDto } from './dto/get-collections-query.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
-import { pageMeta } from '../../../common/pagination';
+import { pageArgs, paged } from '../../../common/pagination';
+import { dateRange } from '../shared-date';
 
 const collectionSelect = {
   id: true,
@@ -37,6 +38,8 @@ type CollectionRecord = Prisma.CollectionGetPayload<{
 
 type CollectionResponse = Omit<CollectionRecord, 'amount'> & { amount: number };
 
+type Db = PrismaService | Prisma.TransactionClient;
+
 @Injectable()
 export class CollectionsService {
   private readonly logger = new Logger(CollectionsService.name);
@@ -51,25 +54,26 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ) {
     const masjidId = requireMasjidId(actor);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const { page, limit, skip, take } = pageArgs(query);
     const where = this.buildWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
       this.prisma.collection.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { collectedAt: 'desc' },
         select: collectionSelect,
       }),
       this.prisma.collection.count({ where }),
     ]);
 
-    return {
-      items: items.map((item) => this.toResponse(item)),
-      meta: pageMeta(total, page, limit),
-    };
+    return paged(
+      items.map((item) => this.toResponse(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async create(
@@ -122,7 +126,7 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    const collection = await this.ensureCollectionBelongsToMasjid(id, masjidId);
+    const collection = await this.findScoped(this.prisma, id, masjidId);
     return this.toResponse(collection);
   }
 
@@ -132,7 +136,6 @@ export class CollectionsService {
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureCollectionBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -144,8 +147,9 @@ export class CollectionsService {
     }
 
     const collection = await this.prisma.$transaction(async (tx) => {
+      const before = await this.findScoped(tx, id, masjidId);
       const updated = await tx.collection.update({
-        where: { id },
+        where: { id: before.id },
         data,
         select: collectionSelect,
       });
@@ -172,47 +176,64 @@ export class CollectionsService {
     return this.toResponse(collection);
   }
 
+  /**
+   * Cancels (soft-deletes) a collection. Cancelling an already cancelled
+   * entry returns it unchanged and writes no audit entry.
+   *
+   * A collection created for a collection contribution can be cancelled too;
+   * the CollectionContribution row is kept as the historical record of the
+   * payment (it is not deleted).
+   */
   async cancel(
     id: string,
     actor: AuthenticatedUser,
   ): Promise<CollectionResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureCollectionBelongsToMasjid(id, masjidId);
-    const collection = await this.prisma.$transaction(async (tx) => {
-      const cancelled = await tx.collection.update({
-        where: { id },
-        data: { status: FinanceEntryStatus.CANCELLED },
-        select: collectionSelect,
+    const { collection, changed } = await this.prisma.$transaction(
+      async (tx) => {
+        const before = await this.findScoped(tx, id, masjidId);
+        if (before.status === FinanceEntryStatus.CANCELLED) {
+          return { collection: before, changed: false };
+        }
+        const cancelled = await tx.collection.update({
+          where: { id: before.id },
+          data: { status: FinanceEntryStatus.CANCELLED },
+          select: collectionSelect,
+        });
+        await this.audit.record(
+          {
+            masjidId,
+            actor,
+            action: AUDIT_ACTION.CANCEL,
+            entity: AUDIT_ENTITY.COLLECTION,
+            entityId: cancelled.id,
+            summary: `${this.auditSummary(cancelled)} cancelled`,
+            before,
+            after: cancelled,
+          },
+          tx,
+        );
+        return { collection: cancelled, changed: true };
+      },
+    );
+    if (changed) {
+      this.logger.warn({
+        message: 'Collection cancelled',
+        collectionId: collection.id,
+        masjidId,
       });
-      await this.audit.record(
-        {
-          masjidId,
-          actor,
-          action: AUDIT_ACTION.CANCEL,
-          entity: AUDIT_ENTITY.COLLECTION,
-          entityId: cancelled.id,
-          summary: `${this.auditSummary(cancelled)} cancelled`,
-          before,
-          after: cancelled,
-        },
-        tx,
-      );
-      return cancelled;
-    });
-    this.logger.warn({
-      message: 'Collection cancelled',
-      collectionId: collection.id,
-      masjidId,
-    });
+    }
     return this.toResponse(collection);
   }
 
-  private async ensureCollectionBelongsToMasjid(
+  /** The collection with this id in this masjid; 404 otherwise (also for another masjid's id). */
+  private async findScoped(
+    db: Db,
     id: string,
     masjidId: string,
   ): Promise<CollectionRecord> {
-    const collection = await this.prisma.collection.findUnique({
-      where: { id },
+    const collection = await db.collection.findFirst({
+      where: { id, masjidId },
       select: collectionSelect,
     });
 
@@ -224,13 +245,6 @@ export class CollectionsService {
       );
     }
 
-    assertSameMasjid(
-      collection.masjidId,
-      masjidId,
-      'You are not allowed to access this finance entry',
-      ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
-    );
-
     return collection;
   }
 
@@ -241,12 +255,8 @@ export class CollectionsService {
     const where: Prisma.CollectionWhereInput = { masjidId };
     if (query.type !== undefined) where.type = query.type;
     if (query.status !== undefined) where.status = query.status;
-    if (query.fromDate || query.toDate) {
-      const collectedAt: Prisma.DateTimeFilter<'Collection'> = {};
-      if (query.fromDate) collectedAt.gte = new Date(query.fromDate);
-      if (query.toDate) collectedAt.lte = new Date(query.toDate);
-      where.collectedAt = collectedAt;
-    }
+    const collectedAt = dateRange(query.fromDate, query.toDate);
+    if (collectedAt) where.collectedAt = collectedAt;
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },
@@ -266,7 +276,6 @@ export class CollectionsService {
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.collectedAt !== undefined)
       data.collectedAt = new Date(dto.collectedAt);
-    if (dto.status !== undefined) data.status = dto.status;
     return data;
   }
 

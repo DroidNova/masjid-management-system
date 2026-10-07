@@ -1,4 +1,6 @@
+import * as bcrypt from 'bcrypt';
 import { AppConfig } from '../../../config/app-config';
+import { Prisma } from '../../../generated/prisma/client';
 import { permissionsForRoles } from '../../../access/permissions';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import {
@@ -6,6 +8,10 @@ import {
   CreateMasjidUserRoleDto,
 } from './dto/create-masjid-user.dto';
 import { MasjidsService } from './masjids.service';
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(() => Promise.resolve('hashed')),
+}));
 
 const MASJID_A = '00000000-0000-4000-8000-00000000000a';
 const MASJID_B = '00000000-0000-4000-8000-00000000000b';
@@ -26,30 +32,35 @@ function actor(role: string, masjidId: string | null = MASJID_A) {
   } as AuthenticatedUser;
 }
 
+const userRow = {
+  id: 'existing-1',
+  fullName: 'Rafiq',
+  email: null,
+  phone: '+919000000001',
+  status: 'ACTIVE',
+  masjidId: MASJID_A,
+  fatherName: null,
+  age: null,
+  gender: null,
+  isFamilyHead: true,
+  familyMemberCount: 4,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  userRoles: [{ role: { name: 'MEMBER' } }],
+};
+
 function createService() {
   const tx = {
     user: {
-      create: jest.fn(),
-      update: jest.fn(),
-      findUnique: jest.fn().mockResolvedValue({
-        id: 'existing-1',
-        fullName: 'Rafiq',
-        email: null,
-        phone: '+919000000001',
-        status: 'ACTIVE',
-        masjidId: MASJID_A,
-        fatherName: null,
-        age: null,
-        gender: null,
-        isFamilyHead: true,
-        familyMemberCount: 4,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userRoles: [{ role: { name: 'MEMBER' } }],
-      }),
+      create: jest.fn().mockResolvedValue({ ...userRow, id: 'new-1' }),
+      update: jest.fn().mockResolvedValue(userRow),
+      findFirst: jest.fn().mockResolvedValue(userRow),
     },
-    userRole: { deleteMany: jest.fn(), create: jest.fn() },
-    masjid: { update: jest.fn(), updateMany: jest.fn() },
+    masjid: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
   };
   const prisma = {
     masjid: {
@@ -58,16 +69,12 @@ function createService() {
         .mockResolvedValue({ id: MASJID_A, status: 'APPROVED' }),
       updateMany: jest.fn(),
     },
-    user: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
-    role: {
-      findUnique: jest
-        .fn()
-        .mockImplementation(({ where }: { where: { name: string } }) => ({
-          id: `role-${where.name}`,
-          name: where.name,
-        })),
+    user: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
     },
-    userRole: { deleteMany: jest.fn(), create: jest.fn() },
     $transaction: jest.fn((arg: unknown) =>
       typeof arg === 'function'
         ? (arg as (t: typeof tx) => unknown)(tx)
@@ -148,13 +155,19 @@ describe('MasjidsService: one masjid per phone number', () => {
     expect(tx.user.create).not.toHaveBeenCalled();
     expect(tx.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'existing-1' },
-        data: expect.objectContaining({ masjidId: MASJID_A }),
+        // Only matches while they still have no masjid.
+        where: { id: 'existing-1', masjidId: null },
+        data: expect.objectContaining({
+          masjidId: MASJID_A,
+          userRoles: {
+            deleteMany: {},
+            create: { role: { connect: { name: 'MEMBER' } } },
+          },
+        }) as unknown,
       }),
     );
-    expect(tx.userRole.create).toHaveBeenCalledWith({
-      data: { userId: 'existing-1', roleId: 'role-MEMBER' },
-    });
+    // A linked member keeps their password: no hashing.
+    expect(bcrypt.hash).not.toHaveBeenCalled();
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({
         entity: 'MEMBER',
@@ -190,13 +203,14 @@ describe('MasjidsService: leave masjid', () => {
 
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: imam.id },
-      data: { masjidId: null },
-    });
-    expect(tx.userRole.deleteMany).toHaveBeenCalledWith({
-      where: { userId: imam.id },
-    });
-    expect(tx.userRole.create).toHaveBeenCalledWith({
-      data: { userId: imam.id, roleId: 'role-MEMBER' },
+      data: {
+        masjidId: null,
+        userRoles: {
+          deleteMany: {},
+          create: { role: { connect: { name: 'MEMBER' } } },
+        },
+      },
+      select: { id: true },
     });
     expect(tx.masjid.updateMany).toHaveBeenCalledWith({
       where: { id: MASJID_A, imamUserId: imam.id },
@@ -268,4 +282,92 @@ describe('MasjidsService: member list privacy', () => {
       expect(list.every((m) => m.phone)).toBe(true);
     },
   );
+});
+
+describe('MasjidsService: create user', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('creates the user, role link and response row in one call', async () => {
+    const { service, prisma, tx } = createService();
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    const result = await service.createMyMasjidUser(
+      actor('COMMITTEE_MEMBER'),
+      newMember,
+    );
+
+    expect(result.id).toBe('new-1');
+    expect(tx.user.create).toHaveBeenCalledTimes(1);
+    expect(tx.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          masjidId: MASJID_A,
+          userRoles: { create: { role: { connect: { name: 'MEMBER' } } } },
+        }) as unknown,
+      }),
+    );
+  });
+
+  it('lets a super admin choose the masjid in the body', async () => {
+    const { service, prisma, tx } = createService();
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.masjid.findUnique.mockResolvedValue({
+      id: MASJID_B,
+      status: 'APPROVED',
+    });
+
+    await service.createMyMasjidUser(actor('SUPER_ADMIN', MASJID_A), {
+      ...newMember,
+      masjidId: MASJID_B,
+    } as CreateMasjidUserDto);
+
+    expect(prisma.masjid.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: MASJID_B } }),
+    );
+    expect(tx.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ masjidId: MASJID_B }) as unknown,
+      }),
+    );
+  });
+
+  it('refuses a duplicate email of a new user', async () => {
+    const { service, prisma, tx } = createService();
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.findUnique.mockResolvedValue({ id: 'someone' });
+
+    await expectCode(
+      service.createMyMasjidUser(actor('COMMITTEE_MEMBER'), {
+        ...newMember,
+        email: 'taken@example.com',
+      } as CreateMasjidUserDto),
+      'EMAIL_ALREADY_EXISTS',
+    );
+    expect(tx.user.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('MasjidsService: welcome message', () => {
+  it('returns MASJID_NOT_FOUND only when the masjid is gone', async () => {
+    const { service, prisma } = createService();
+    (prisma.$transaction as jest.Mock).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      }),
+    );
+    await expectCode(
+      service.updateWelcomeMessage({ welcomeMsg: 'Hi' }, actor('IMAM')),
+      'MASJID_NOT_FOUND',
+    );
+  });
+
+  it('lets other errors through unchanged', async () => {
+    const { service, prisma } = createService();
+    const failure = new Error('database down');
+    (prisma.$transaction as jest.Mock).mockRejectedValueOnce(failure);
+    await expect(
+      service.updateWelcomeMessage({ welcomeMsg: 'Hi' }, actor('IMAM')),
+    ).rejects.toBe(failure);
+  });
 });

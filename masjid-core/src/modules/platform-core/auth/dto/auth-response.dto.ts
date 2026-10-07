@@ -28,6 +28,12 @@ export class AuthUserDto {
   @ApiProperty({ example: true })
   isPhoneVerified!: boolean;
 
+  @ApiProperty({
+    example: false,
+    description: 'Head of a family: owes the monthly imam salary share',
+  })
+  isFamilyHead!: boolean;
+
   @ApiProperty({ example: '2026-06-19T00:00:00.000Z' })
   createdAt!: Date;
 

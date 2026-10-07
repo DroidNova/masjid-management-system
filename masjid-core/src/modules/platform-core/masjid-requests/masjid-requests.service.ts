@@ -1,5 +1,6 @@
 import { Logger, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { successResponse } from '../../../common/helpers/api-response.helper';
@@ -26,6 +27,7 @@ import { AppConfig } from '../../../config/app-config';
 import { BCRYPT_ROUNDS } from '../auth/auth.service';
 import { initialPasswordFor } from '../auth/initial-password';
 import { AuthenticatedUser } from '../auth/types/jwt-payload.type';
+import { RolesService } from '../roles/roles.service';
 import {
   CommitteeMemberDto,
   CreateMasjidRequestDto,
@@ -43,7 +45,7 @@ import {
   RequestUser,
   requestUserSelect,
 } from './masjid-requests.selects';
-import { pageMeta } from '../../../common/pagination';
+import { pageArgs, paged } from '../../../common/pagination';
 
 /** Committee member as stored in the request's committeeMembers JSON. */
 type CommitteeMember = {
@@ -56,6 +58,28 @@ type CommitteeMember = {
 
 /** Either the PrismaService or the client of an open transaction. */
 type Db = Prisma.TransactionClient;
+
+/** A user to create on approval; the id is chosen up front. */
+type NewUser = {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  fatherName: string | null;
+  age: number | null;
+  gender: Gender | null;
+};
+
+/** Who gets which role in the approved masjid. */
+type ApprovalPlan = {
+  imamUserId: string;
+  newUsers: NewUser[];
+  /** Every linked user (new and existing) with the role they receive. */
+  links: Array<{ userId: string; role: RoleName }>;
+};
+
+/** At most this many applications are returned by the public lookup. */
+const TRACK_LIMIT = 20;
 
 const insensitiveContains = (value: string) => ({
   contains: value,
@@ -70,6 +94,7 @@ export class MasjidRequestsService {
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
     private readonly audit: AuditService,
+    private readonly roles: RolesService,
   ) {}
 
   async create(dto: CreateMasjidRequestDto): Promise<MasjidRequestRecord> {
@@ -91,16 +116,17 @@ export class MasjidRequestsService {
       committeeMembers,
     );
 
+    const masjidName = dto.masjidName.trim();
     this.logger.debug({
       message: 'Masjid request submission started',
-      masjidName: dto.masjidName,
+      masjidName,
     });
     const request = await this.prisma.masjidRegistrationRequest.create({
       data: {
         requesterName: dto.requesterName.trim(),
         requesterPhone: normalizePhone(dto.requesterPhone),
         requesterEmail: this.nullableEmail(dto.requesterEmail),
-        masjidName: dto.masjidName,
+        masjidName,
         country: dto.country.trim(),
         locality: dto.locality.trim(),
         district: this.isIndia(dto.country)
@@ -132,26 +158,28 @@ export class MasjidRequestsService {
   }
 
   async findAll(query: GetMasjidRequestsQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const { page, limit, skip, take } = pageArgs(query);
     const where = this.buildWhere(query);
     const [items, total] = await Promise.all([
       this.prisma.masjidRegistrationRequest.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
         select: masjidRequestSelect,
       }),
       this.prisma.masjidRegistrationRequest.count({ where }),
     ]);
 
-    return {
-      items,
-      meta: pageMeta(total, page, limit),
-    };
+    return paged(items, total, page, limit);
   }
 
+  /** One request, same shape as a list item. */
+  findOne(id: string): Promise<MasjidRequestRecord> {
+    return this.findByIdOrThrow(id, this.prisma);
+  }
+
+  /** Newest TRACK_LIMIT applications for the phone; not paged. */
   async trackByRequesterPhone(requesterPhone: string) {
     const normalizedPhone = normalizePhone(requesterPhone);
 
@@ -168,6 +196,7 @@ export class MasjidRequestsService {
         requesterPhone: { in: getPhoneSearchVariants(normalizedPhone) },
       },
       orderBy: { createdAt: 'desc' },
+      take: TRACK_LIMIT,
       select: masjidRequestTrackingSelect,
     });
 
@@ -211,9 +240,13 @@ export class MasjidRequestsService {
   }
 
   /**
-   * Creates the masjid, then finds or creates the imam and committee members
-   * (one query each), links them to the masjid and gives them their role.
-   * Everything happens in one transaction.
+   * Creates the masjid, finds or creates the imam and committee members,
+   * links them to the masjid and gives them their role.
+   *
+   * Users are looked up with one query and passwords hashed before the
+   * transaction; inside it the request is first moved PENDING -> APPROVED
+   * with a conditional update, so two parallel approvals cannot both run.
+   * The number of queries does not grow with the committee size.
    */
   private async approve(
     id: string,
@@ -224,11 +257,42 @@ export class MasjidRequestsService {
       masjidRequestId: id,
       actorId: actor.id,
     });
-    const approvedRequest = await this.prisma.$transaction(async (tx) => {
-      const request = await this.findByIdOrThrow(id, tx);
-      this.assertCanApprove(request);
+    const request = await this.findByIdOrThrow(id, this.prisma);
+    this.assertPending(request, 'approve');
 
-      const imamUser = await this.createOrFindImamUser(request, tx);
+    const plan = await this.planApproval(request);
+    const [roleIds, passwordHashes] = await Promise.all([
+      this.roles.validateRoleNames([RoleName.IMAM, RoleName.COMMITTEE_MEMBER]),
+      this.hashInitialPasswords(plan.newUsers.length),
+    ]);
+    const roleIdByName = new Map(roleIds.map((role) => [role.name, role.id]));
+
+    const approvedRequest = await this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+      await this.claimPending(
+        tx,
+        id,
+        {
+          status: MasjidRegistrationStatus.APPROVED,
+          reviewedById: actor.id,
+          reviewedAt: now,
+          rejectionReason: null,
+        },
+        'approve',
+      );
+
+      if (plan.newUsers.length) {
+        await tx.user.createMany({
+          data: plan.newUsers.map((user, index) => ({
+            ...user,
+            isFamilyHead: false,
+            familyMemberCount: null,
+            passwordHash: passwordHashes[index],
+            status: UserStatus.ACTIVE,
+          })),
+        });
+      }
+
       const masjid = await tx.masjid.create({
         data: {
           name: request.masjidName,
@@ -248,29 +312,41 @@ export class MasjidRequestsService {
           imamEmail: request.imamEmail,
           imamAddress: request.imamAddress,
           createdById: actor.id,
-          imamUserId: imamUser.id,
+          imamUserId: plan.imamUserId,
           status: MasjidStatus.APPROVED,
           approvedById: actor.id,
-          approvedAt: new Date(),
+          approvedAt: now,
           rejectionReason: null,
         },
         select: createdMasjidSelect,
       });
 
-      await this.linkUserToMasjid(imamUser.id, masjid.id, tx);
-      await this.assignRoleToUser(imamUser.id, RoleName.IMAM, tx);
+      // Guarded on masjidId: null so a user who joined another masjid after
+      // the lookup above is not moved silently.
+      const userIds = Array.from(new Set(plan.links.map((l) => l.userId)));
+      const linked = await tx.user.updateMany({
+        where: { id: { in: userIds }, masjidId: null },
+        data: { masjidId: masjid.id },
+      });
+      if (linked.count !== userIds.length) {
+        throw new ApiException(
+          'The imam or a committee member joined another masjid meanwhile. Ask them to leave that masjid from the app first, or change the request.',
+          HttpStatus.CONFLICT,
+          ERROR_CODES.USER_IN_ANOTHER_MASJID,
+        );
+      }
 
-      await this.createOrLinkCommitteeMembers(request, masjid.id, tx);
+      await tx.userRole.createMany({
+        data: plan.links.map((link) => ({
+          userId: link.userId,
+          roleId: roleIdByName.get(link.role)!,
+        })),
+        skipDuplicates: true,
+      });
 
       const updated = await tx.masjidRegistrationRequest.update({
-        where: { id: request.id },
-        data: {
-          status: MasjidRegistrationStatus.APPROVED,
-          reviewedById: actor.id,
-          reviewedAt: new Date(),
-          createdMasjidId: masjid.id,
-          rejectionReason: null,
-        },
+        where: { id },
+        data: { createdMasjidId: masjid.id },
         select: masjidRequestSelect,
       });
       await this.audit.record(
@@ -292,6 +368,8 @@ export class MasjidRequestsService {
       message: 'Masjid request approved',
       masjidRequestId: approvedRequest.id,
       masjidId: approvedRequest.createdMasjidId,
+      newUsers: plan.newUsers.length,
+      linkedUsers: plan.links.length,
     });
     return approvedRequest;
   }
@@ -302,34 +380,21 @@ export class MasjidRequestsService {
     actor: AuthenticatedUser,
   ): Promise<MasjidRequestRecord> {
     const request = await this.findByIdOrThrow(id, this.prisma);
-
-    if (request.status === MasjidRegistrationStatus.APPROVED) {
-      throw new ApiException(
-        'Approved masjid request cannot be rejected',
-        HttpStatus.CONFLICT,
-        ERROR_CODES.MASJID_REQUEST_ALREADY_APPROVED,
-      );
-    }
-
-    if (request.status === MasjidRegistrationStatus.REJECTED) {
-      throw new ApiException(
-        'Masjid request is already rejected',
-        HttpStatus.CONFLICT,
-        ERROR_CODES.MASJID_REQUEST_ALREADY_REJECTED,
-      );
-    }
+    this.assertPending(request, 'reject');
 
     const rejectedRequest = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.masjidRegistrationRequest.update({
-        where: { id: request.id },
-        data: {
+      await this.claimPending(
+        tx,
+        id,
+        {
           status: MasjidRegistrationStatus.REJECTED,
           reviewedById: actor.id,
           reviewedAt: new Date(),
           rejectionReason: this.nullableString(dto.reason),
         },
-        select: masjidRequestSelect,
-      });
+        'reject',
+      );
+      const updated = await this.findByIdOrThrow(id, tx);
       await this.audit.record(
         {
           masjidId: null,
@@ -350,6 +415,202 @@ export class MasjidRequestsService {
       masjidRequestId: rejectedRequest.id,
     });
     return rejectedRequest;
+  }
+
+  /**
+   * Moves the request out of PENDING. Only one caller can win; the others
+   * get the same conflict they would have got had they come later.
+   */
+  private async claimPending(
+    tx: Db,
+    id: string,
+    data: Prisma.MasjidRegistrationRequestUncheckedUpdateManyInput,
+    action: 'approve' | 'reject',
+  ): Promise<void> {
+    const claimed = await tx.masjidRegistrationRequest.updateMany({
+      where: { id, status: MasjidRegistrationStatus.PENDING },
+      data,
+    });
+    if (claimed.count === 1) return;
+
+    const current = await tx.masjidRegistrationRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    if (!current) throw this.requestNotFound();
+    this.assertPending(current, action);
+    // Still PENDING means the row changed under us; report it as a conflict.
+    throw new ApiException(
+      'Masjid request was changed by someone else. Please reload it.',
+      HttpStatus.CONFLICT,
+      ERROR_CODES.CONFLICT,
+    );
+  }
+
+  private assertPending(
+    request: { status: MasjidRegistrationStatus },
+    action: 'approve' | 'reject',
+  ): void {
+    if (request.status === MasjidRegistrationStatus.APPROVED) {
+      throw new ApiException(
+        action === 'approve'
+          ? 'Masjid request is already approved'
+          : 'Approved masjid request cannot be rejected',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.MASJID_REQUEST_ALREADY_APPROVED,
+      );
+    }
+
+    if (request.status === MasjidRegistrationStatus.REJECTED) {
+      throw new ApiException(
+        action === 'approve'
+          ? 'Rejected masjid request cannot be approved'
+          : 'Masjid request is already rejected',
+        HttpStatus.CONFLICT,
+        ERROR_CODES.MASJID_REQUEST_ALREADY_REJECTED,
+      );
+    }
+  }
+
+  /**
+   * Decides, with one query, which people already have an account (matched
+   * by phone only, never by email) and which must be created.
+   */
+  private async planApproval(
+    request: MasjidRequestRecord,
+  ): Promise<ApprovalPlan> {
+    const imamName = this.nullableString(request.imamName);
+    const imamPhone = this.normalizeNullablePhone(request.imamPhone);
+    const imamEmail = this.nullableEmail(request.imamEmail);
+
+    if (!imamName || !imamPhone) {
+      throw new ApiException(
+        'Imam name and phone are required to approve this masjid request',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+
+    const committeeMembers = this.parseCommitteeMembers(
+      request.committeeMembers,
+    );
+    if (!committeeMembers.length) {
+      throw new ApiException(
+        'At least one committee member is required',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+
+    const phones = [
+      imamPhone,
+      ...committeeMembers.flatMap((member) =>
+        member.phone ? [member.phone] : [],
+      ),
+    ];
+    const existingUsers = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { phone: { in: phones.flatMap(getPhoneSearchVariants) } },
+          ...(imamEmail ? [{ email: imamEmail }] : []),
+        ],
+      },
+      select: requestUserSelect,
+    });
+    const userByPhone = new Map<string, RequestUser>();
+    for (const user of existingUsers) {
+      if (user.phone) userByPhone.set(normalizePhone(user.phone), user);
+    }
+
+    const newUsers: NewUser[] = [];
+    const newUserByPhone = new Map<string, NewUser>();
+    const links: ApprovalPlan['links'] = [];
+
+    const resolve = (
+      person: Omit<NewUser, 'id'>,
+      label: string,
+    ): string | null => {
+      const existing = person.phone ? userByPhone.get(person.phone) : null;
+      if (existing) {
+        this.assertHasNoMasjid(existing, label, person.phone ?? '');
+        return existing.id;
+      }
+      const queued = person.phone ? newUserByPhone.get(person.phone) : null;
+      if (queued) return queued.id;
+      if (!person.fullName) return null;
+
+      const created = { ...person, id: randomUUID() };
+      newUsers.push(created);
+      if (person.phone) newUserByPhone.set(person.phone, created);
+      return created.id;
+    };
+
+    const imamIsNew = !userByPhone.has(imamPhone);
+    if (imamIsNew && imamEmail) {
+      const emailOwner = existingUsers.find((user) => user.email === imamEmail);
+      if (emailOwner) {
+        throw new ApiException(
+          `Imam email ${imamEmail} already belongs to another account with a different phone number. Change the email on the request or the phone of that account.`,
+          HttpStatus.CONFLICT,
+          ERROR_CODES.EMAIL_ALREADY_EXISTS,
+        );
+      }
+    }
+
+    const imamUserId = resolve(
+      {
+        fullName: imamName,
+        email: imamIsNew ? imamEmail : null,
+        phone: imamPhone,
+        fatherName: request.imamFatherName,
+        age: request.imamAge,
+        gender: request.imamGender,
+      },
+      'Imam',
+    )!;
+    links.push({ userId: imamUserId, role: RoleName.IMAM });
+
+    for (const member of committeeMembers) {
+      const fullName = this.nullableString(member.name);
+      const phone = member.phone ?? null;
+      if (!fullName && !phone) continue;
+
+      const userId = resolve(
+        {
+          fullName: fullName ?? '',
+          email: null,
+          phone,
+          fatherName: member.fatherName ?? null,
+          age: member.age ?? null,
+          gender: member.gender ?? null,
+        },
+        'Committee member',
+      );
+      if (userId) links.push({ userId, role: RoleName.COMMITTEE_MEMBER });
+    }
+
+    return { imamUserId, newUsers, links };
+  }
+
+  /**
+   * Dev mode: one hash of AUTH_DEV_PASSWORD shared by everyone. Otherwise a
+   * random secret per user; they set a real password through the OTP reset
+   * flow (milestone M6).
+   */
+  private async hashInitialPasswords(count: number): Promise<string[]> {
+    if (!count) return [];
+    if (this.config.auth.devMode) {
+      const hash = await bcrypt.hash(
+        initialPasswordFor(this.config).password,
+        BCRYPT_ROUNDS,
+      );
+      return Array.from({ length: count }, () => hash);
+    }
+    return Promise.all(
+      Array.from({ length: count }, () =>
+        bcrypt.hash(initialPasswordFor(this.config).password, BCRYPT_ROUNDS),
+      ),
+    );
   }
 
   /** Empty filters are ignored (Prisma skips undefined conditions). */
@@ -393,127 +654,22 @@ export class MasjidRequestsService {
       select: masjidRequestSelect,
     });
 
-    if (!request) {
-      throw new ApiException(
-        'Masjid request not found',
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.MASJID_REQUEST_NOT_FOUND,
-      );
-    }
-
+    if (!request) throw this.requestNotFound();
     return request;
   }
 
-  private assertCanApprove(request: MasjidRequestRecord): void {
-    if (request.status === MasjidRegistrationStatus.APPROVED) {
-      throw new ApiException(
-        'Masjid request is already approved',
-        HttpStatus.CONFLICT,
-        ERROR_CODES.MASJID_REQUEST_ALREADY_APPROVED,
-      );
-    }
-
-    if (request.status === MasjidRegistrationStatus.REJECTED) {
-      throw new ApiException(
-        'Rejected masjid request cannot be approved',
-        HttpStatus.CONFLICT,
-        ERROR_CODES.MASJID_REQUEST_ALREADY_REJECTED,
-      );
-    }
-  }
-
-  private async createOrFindImamUser(
-    request: MasjidRequestRecord,
-    db: Db,
-  ): Promise<RequestUser> {
-    const fullName = this.nullableString(request.imamName);
-    const email = this.nullableEmail(request.imamEmail);
-    const phone = this.nullableString(request.imamPhone);
-
-    if (!fullName || !phone) {
-      throw new ApiException(
-        'Imam name and phone are required to approve this masjid request',
-        HttpStatus.BAD_REQUEST,
-        ERROR_CODES.BAD_REQUEST,
-      );
-    }
-
-    const existingUser = await this.findUserByPhoneOrEmail(phone, email, db);
-    if (existingUser) {
-      this.assertHasNoMasjid(existingUser, 'Imam', phone);
-      return existingUser;
-    }
-
-    return this.createTemporaryUser(
-      {
-        fullName,
-        email,
-        phone,
-        fatherName: request.imamFatherName,
-        age: request.imamAge,
-        gender: request.imamGender,
-      },
-      db,
+  private requestNotFound(): ApiException {
+    return new ApiException(
+      'Masjid request not found',
+      HttpStatus.NOT_FOUND,
+      ERROR_CODES.MASJID_REQUEST_NOT_FOUND,
     );
-  }
-
-  private async createOrLinkCommitteeMembers(
-    request: MasjidRequestRecord,
-    masjidId: string,
-    db: Db,
-  ): Promise<void> {
-    const committeeMembers = this.parseCommitteeMembers(
-      request.committeeMembers,
-    );
-
-    if (!committeeMembers.length) {
-      throw new ApiException(
-        'At least one committee member is required',
-        HttpStatus.BAD_REQUEST,
-        ERROR_CODES.BAD_REQUEST,
-      );
-    }
-
-    for (const member of committeeMembers) {
-      const fullName = this.nullableString(member.name);
-      const phone = this.nullableString(member.phone);
-
-      if (!fullName && !phone) {
-        continue;
-      }
-
-      let user = phone
-        ? await this.findUserByPhoneOrEmail(phone, null, db)
-        : null;
-
-      if (!user && fullName) {
-        user = await this.createTemporaryUser(
-          {
-            fullName,
-            email: null,
-            phone,
-            fatherName: member.fatherName ?? null,
-            age: member.age ?? null,
-            gender: member.gender ?? null,
-          },
-          db,
-        );
-      }
-
-      if (!user) {
-        continue;
-      }
-
-      this.assertHasNoMasjid(user, 'Committee member', phone ?? fullName ?? '');
-      await this.linkUserToMasjid(user.id, masjidId, db);
-      await this.assignRoleToUser(user.id, RoleName.COMMITTEE_MEMBER, db);
-    }
   }
 
   /**
-   * One phone number belongs to one masjid at a time. Approval stops (and the
-   * whole transaction rolls back) if the imam or a committee member already
-   * belongs to a masjid, so the super admin can ask them to leave it first.
+   * One phone number belongs to one masjid at a time. Approval stops if the
+   * imam or a committee member already belongs to a masjid, so the super
+   * admin can ask them to leave it first.
    */
   private assertHasNoMasjid(
     user: { masjidId: string | null },
@@ -527,112 +683,6 @@ export class MasjidRequestsService {
         ERROR_CODES.USER_IN_ANOTHER_MASJID,
       );
     }
-  }
-
-  private async findUserByPhoneOrEmail(
-    phone: string | null,
-    email: string | null,
-    db: Db,
-  ): Promise<RequestUser | null> {
-    if (phone) {
-      const user = await db.user.findFirst({
-        where: { phone: { in: getPhoneSearchVariants(phone) } },
-        select: requestUserSelect,
-      });
-
-      if (user) {
-        return user;
-      }
-    }
-
-    if (email) {
-      return db.user.findFirst({
-        where: { email },
-        select: requestUserSelect,
-      });
-    }
-
-    return null;
-  }
-
-  private async createTemporaryUser(
-    data: {
-      fullName: string;
-      email: string | null;
-      phone: string | null;
-      fatherName?: string | null;
-      age?: number | null;
-      gender?: Gender | null;
-    },
-    db: Db,
-  ): Promise<RequestUser> {
-    // Dev mode: AUTH_DEV_PASSWORD. Otherwise a random secret; the user sets a
-    // real password through the OTP reset flow (milestone M6).
-    const passwordHash = await bcrypt.hash(
-      initialPasswordFor(this.config).password,
-      BCRYPT_ROUNDS,
-    );
-
-    return db.user.create({
-      data: {
-        fullName: data.fullName,
-        email: data.email,
-        phone: data.phone,
-        fatherName: data.fatherName ?? null,
-        age: data.age ?? null,
-        gender: data.gender ?? null,
-        isFamilyHead: false,
-        familyMemberCount: null,
-        passwordHash,
-        status: UserStatus.ACTIVE,
-      },
-      select: requestUserSelect,
-    });
-  }
-
-  private async linkUserToMasjid(
-    userId: string,
-    masjidId: string,
-    db: Db,
-  ): Promise<RequestUser> {
-    return db.user.update({
-      where: { id: userId },
-      data: { masjidId },
-      select: requestUserSelect,
-    });
-  }
-
-  private async assignRoleToUser(
-    userId: string,
-    roleName: RoleName,
-    db: Db,
-  ): Promise<void> {
-    const role = await db.role.findFirst({
-      where: { name: roleName },
-      select: { id: true },
-    });
-
-    if (!role) {
-      throw new ApiException(
-        `${roleName} role was not found`,
-        HttpStatus.NOT_FOUND,
-        ERROR_CODES.ROLE_NOT_FOUND,
-      );
-    }
-
-    const existingUserRole = await db.userRole.findFirst({
-      where: { userId, roleId: role.id },
-      select: { id: true },
-    });
-
-    if (existingUserRole) {
-      return;
-    }
-
-    await db.userRole.create({
-      data: { userId, roleId: role.id },
-      select: { id: true },
-    });
   }
 
   private isIndia(country: string): boolean {
@@ -682,10 +732,7 @@ export class MasjidRequestsService {
     }
   }
 
-  /**
-   * Reads name and phone back from the stored JSON. Father name, age and
-   * gender are not read, so committee members created on approval get none.
-   */
+  /** Reads committee members back from the stored JSON. */
   private parseCommitteeMembers(value: unknown): CommitteeMember[] {
     if (!Array.isArray(value)) {
       return [];
@@ -704,7 +751,6 @@ export class MasjidRequestsService {
           typeof member.phone === 'string'
             ? (this.normalizeNullablePhone(member.phone) ?? undefined)
             : undefined,
-        // Profile details entered on the request form (previously dropped).
         fatherName:
           typeof member.fatherName === 'string'
             ? (this.nullableString(member.fatherName) ?? undefined)

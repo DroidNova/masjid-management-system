@@ -41,8 +41,10 @@ export class AuthCleanupService
 
   async runOnce(): Promise<void> {
     try {
-      const sessions = await this.authService.deleteExpiredSessions();
-      const otps = await this.otpService.deleteStale();
+      const [sessions, otps] = await Promise.all([
+        this.authService.deleteExpiredSessions(),
+        this.otpService.deleteStale(),
+      ]);
       if (sessions || otps) {
         this.logger.log({
           message: 'Auth cleanup finished',

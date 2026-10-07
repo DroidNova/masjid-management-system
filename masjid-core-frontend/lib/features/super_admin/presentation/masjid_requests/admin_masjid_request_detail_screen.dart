@@ -40,7 +40,11 @@ class AdminMasjidRequestDetailScreen extends ConsumerWidget {
               message: userMessage(error),
               onRetry: () => ref.invalidate(adminRequestProvider(id)),
             ),
-            data: (request) => _RequestDetails(request: request),
+            data: (request) => RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(adminRequestProvider(id).notifier).refresh(),
+              child: _RequestDetails(request: request),
+            ),
           ),
     );
   }
@@ -57,6 +61,7 @@ class _RequestDetails extends StatelessWidget {
     final createdAt = r.createdAt;
     final titleStyle = Theme.of(context).textTheme.titleLarge;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         AdminStatusChip(r.status),

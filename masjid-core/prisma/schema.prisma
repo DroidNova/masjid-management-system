@@ -1,8 +1,9 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
-  runtime      = "nodejs"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+  runtime         = "nodejs"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -133,6 +134,8 @@ model User {
   createdExpenses                  Expense[]                   @relation("ExpenseCreatedBy")
 
   @@index([masjidId])
+  @@index([createdAt])
+  @@index([status])
 }
 
 model Role {
@@ -179,8 +182,8 @@ model UserRole {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
+  // [userId, roleId] also serves lookups by userId.
   @@unique([userId, roleId])
-  @@index([userId])
   @@index([roleId])
 }
 
@@ -264,7 +267,7 @@ model Masjid {
 
   @@index([createdById])
   @@index([imamUserId])
-  @@index([status])
+  @@index([status, createdAt])
   @@index([approvedById])
 }
 
@@ -314,7 +317,8 @@ model MasjidRegistrationRequest {
 
   @@index([requestedById])
   @@index([reviewedById])
-  @@index([status])
+  @@index([status, createdAt])
+  @@index([createdAt])
   @@index([createdMasjidId])
   @@index([requesterPhone])
 }
@@ -417,9 +421,9 @@ model ImamSalaryPayment {
   collectedBy     User                 @relation("SalaryPaymentCollector", fields: [collectedById], references: [id])
 
   @@index([masjidId, paymentForYear, paymentForMonth])
+  @@index([masjidId, paidAt])
   @@index([memberId])
   @@index([paidAt])
-  @@index([paymentMode])
   @@index([collectedById])
 }
 
@@ -440,8 +444,7 @@ model Project {
   masjid        Masjid                @relation(fields: [masjidId], references: [id], onDelete: Cascade)
   contributions ProjectContribution[]
 
-  @@index([masjidId])
-  @@index([status])
+  @@index([masjidId, status, createdAt])
 }
 
 model ProjectContribution {
@@ -465,17 +468,20 @@ model ProjectContribution {
   member      User?   @relation("ProjectContributionMember", fields: [memberId], references: [id])
   collectedBy User    @relation("ProjectContributionCollector", fields: [collectedById], references: [id])
 
-  @@index([masjidId])
-  @@index([projectId])
+  @@index([masjidId, paidAt])
   @@index([memberId])
   @@index([paidAt])
-  @@index([paymentMode])
   @@index([projectId, paidAt])
 }
 
+/// A collection received from a person. Creating one also creates the
+/// Collection (finance entry) that counts the money; `collectionId` links
+/// them. Cancelling that Collection does not delete this row: it stays as the
+/// historical record of the payment. Older rows have no link (null).
 model CollectionContribution {
   id               String         @id @default(uuid()) @db.Uuid
   masjidId         String         @db.Uuid
+  collectionId     String?        @unique @db.Uuid
   memberId         String?        @db.Uuid
   contributorName  String
   contributorPhone String?
@@ -489,15 +495,15 @@ model CollectionContribution {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  masjid      Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
-  member      User?  @relation("CollectionContributionMember", fields: [memberId], references: [id])
-  collectedBy User   @relation("CollectionContributionCollector", fields: [collectedById], references: [id])
+  masjid      Masjid      @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  collection  Collection? @relation(fields: [collectionId], references: [id])
+  member      User?       @relation("CollectionContributionMember", fields: [memberId], references: [id])
+  collectedBy User        @relation("CollectionContributionCollector", fields: [collectedById], references: [id])
 
   @@index([masjidId])
   @@index([memberId])
   @@index([paidAt])
   @@index([collectionType])
-  @@index([paymentMode])
   @@index([masjidId, paidAt])
 }
 
@@ -512,9 +518,8 @@ model Announcement {
 
   masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
 
-  @@index([masjidId])
-  @@index([isActive])
   @@index([masjidId, isActive, createdAt])
+  @@index([masjidId, createdAt])
 }
 
 model Collection {
@@ -530,15 +535,15 @@ model Collection {
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
-  masjid    Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
-  createdBy User?  @relation("CollectionCreatedBy", fields: [createdById], references: [id])
+  masjid       Masjid                  @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  createdBy    User?                   @relation("CollectionCreatedBy", fields: [createdById], references: [id])
+  /// Set when this entry was created for a collection contribution.
+  contribution CollectionContribution?
 
-  @@index([masjidId])
-  @@index([type])
-  @@index([status])
   @@index([collectedAt])
   @@index([createdById])
   @@index([masjidId, status, collectedAt])
+  @@index([masjidId, collectedAt])
 }
 
 model Expense {
@@ -557,12 +562,10 @@ model Expense {
   masjid    Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
   createdBy User?  @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
 
-  @@index([masjidId])
-  @@index([type])
-  @@index([status])
   @@index([spentAt])
   @@index([createdById])
   @@index([masjidId, status, spentAt])
+  @@index([masjidId, spentAt])
 }
 
 /// Who changed what. Written for every create, update and cancel of money
@@ -586,5 +589,6 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([masjidId, createdAt])
+  @@index([masjidId, entity, createdAt])
   @@index([entity, entityId])
 }

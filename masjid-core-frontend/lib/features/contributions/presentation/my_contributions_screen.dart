@@ -22,23 +22,8 @@ class MyContributionsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    listenNearEnd(_scrollController, () {
-      ref.read(myImamSalaryMonthsProvider.notifier).loadMore();
-      ref.read(myProjectContributionsProvider.notifier).loadMore();
-      ref.read(myCollectionContributionsProvider.notifier).loadMore();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+  // Each section loads its next page only when its own end scrolls into
+  // view (pagedSection loadMoreNearEnd), not all three at once.
 
   Future<void> _refresh() async {
     ref
@@ -68,7 +53,6 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
           : RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
-                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: <Widget>[
@@ -116,6 +100,7 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
                     onLoadMore: () => ref
                         .read(myImamSalaryMonthsProvider.notifier)
                         .loadMore(),
+                    loadMoreNearEnd: true,
                     itemBuilder: (item) => ImamSalaryMonthCard(
                       item: item,
                       onViewPayments: () => context.push(
@@ -139,6 +124,7 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
                     onLoadMore: () => ref
                         .read(myProjectContributionsProvider.notifier)
                         .loadMore(),
+                    loadMoreNearEnd: true,
                     itemBuilder: (item) => ContributionTransactionCard(
                       title: item.projectTitle ?? item.contributorName,
                       subtitle: item.note,
@@ -164,6 +150,7 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
                     onLoadMore: () => ref
                         .read(myCollectionContributionsProvider.notifier)
                         .loadMore(),
+                    loadMoreNearEnd: true,
                     itemBuilder: (item) => ContributionTransactionCard(
                       title: item.collectionType.replaceAll('_', ' '),
                       subtitle: item.note,

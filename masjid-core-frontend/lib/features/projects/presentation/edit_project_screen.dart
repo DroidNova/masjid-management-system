@@ -32,8 +32,6 @@ class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _targetAmountController = TextEditingController();
-  final _collectedAmountController = TextEditingController();
-  final _spentAmountController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
 
@@ -74,8 +72,6 @@ class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _targetAmountController.dispose();
-    _collectedAmountController.dispose();
-    _spentAmountController.dispose();
     _startDateController.dispose();
     _endDateController.dispose();
     super.dispose();
@@ -85,8 +81,6 @@ class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
     _titleController.text = project.title;
     _descriptionController.text = project.description ?? '';
     _targetAmountController.text = _amountText(project.targetAmount);
-    _collectedAmountController.text = _amountText(project.collectedAmount);
-    _spentAmountController.text = _amountText(project.spentAmount);
     _startDateController.text = formatApiDate(project.startDate) ?? '';
     _endDateController.text = formatApiDate(project.endDate) ?? '';
     _status = project.status;
@@ -111,8 +105,6 @@ class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
             title: _optional(_titleController.text),
             description: _optional(_descriptionController.text),
             targetAmount: _amount(_targetAmountController),
-            collectedAmount: _amount(_collectedAmountController),
-            spentAmount: _amount(_spentAmountController),
             status: _status,
             startDate: _optional(_startDateController.text),
             endDate: _optional(_endDateController.text),
@@ -193,8 +185,6 @@ class _EditProjectScreenState extends ConsumerState<EditProjectScreen> {
           titleController: _titleController,
           descriptionController: _descriptionController,
           targetAmountController: _targetAmountController,
-          collectedAmountController: _collectedAmountController,
-          spentAmountController: _spentAmountController,
           startDateController: _startDateController,
           endDateController: _endDateController,
           status: _status,

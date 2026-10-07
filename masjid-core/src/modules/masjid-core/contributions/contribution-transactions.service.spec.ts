@@ -2,7 +2,7 @@ import { ContributionTransactionsService } from './contribution-transactions.ser
 
 describe('ContributionTransactionsService', () => {
   const tx = {
-    project: { findFirst: jest.fn(), update: jest.fn() },
+    project: { updateMany: jest.fn() },
     user: { findFirst: jest.fn() },
     projectContribution: { create: jest.fn() },
     collectionContribution: { create: jest.fn() },
@@ -26,7 +26,8 @@ describe('ContributionTransactionsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    tx.project.findFirst.mockResolvedValue({ id: 'project-1' });
+    tx.project.updateMany.mockResolvedValue({ count: 1 });
+    tx.collection.create.mockResolvedValue({ id: 'collection-1' });
     tx.user.findFirst.mockResolvedValue({ id: 'member-1' });
   });
 
@@ -55,8 +56,8 @@ describe('ContributionTransactionsService', () => {
         }) as unknown,
       }),
     );
-    expect(tx.project.update).toHaveBeenCalledWith({
-      where: { id: 'project-1' },
+    expect(tx.project.updateMany).toHaveBeenCalledWith({
+      where: { id: 'project-1', masjidId: 'masjid-1' },
       data: { collectedAmount: { increment: 500 } },
     });
     expect(audit.record).toHaveBeenCalledWith(
@@ -84,14 +85,22 @@ describe('ContributionTransactionsService', () => {
       },
       actor,
     );
-    expect(tx.collectionContribution.create).toHaveBeenCalled();
     expect(tx.collection.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         masjidId: 'masjid-1',
         type: 'DONATION_BOX',
         amount: 100,
       }) as unknown,
+      select: { id: true },
     });
+    // The contribution points at the finance entry made for it.
+    expect(tx.collectionContribution.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          collectionId: 'collection-1',
+        }) as unknown,
+      }),
+    );
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({
         entity: 'COLLECTION_CONTRIBUTION',
@@ -99,5 +108,27 @@ describe('ContributionTransactionsService', () => {
       }),
       tx,
     );
+  });
+
+  it('returns 404 for a project of another masjid without writing anything', async () => {
+    tx.project.updateMany.mockResolvedValue({ count: 0 });
+    await expect(
+      service.createProjectContribution(
+        'other-project',
+        {
+          contributorName: 'Saleem',
+          amount: 500,
+          paymentMode: 'CASH' as never,
+          paidAt: '2026-07-25',
+        },
+        actor,
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        errorCode: 'PROJECT_NOT_FOUND',
+      }) as unknown,
+    });
+    expect(tx.projectContribution.create).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
   });
 });

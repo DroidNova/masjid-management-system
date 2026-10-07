@@ -178,4 +178,51 @@ void main() {
     verify(() => repository.logout()).called(1);
     expect(container.read(currentUserProvider), isNull);
   });
+
+  test('an unchanged user from /auth/me emits no new state', () async {
+    when(
+      () => repository.fetchCurrentUser(),
+    ).thenAnswer((_) async => _stored.copyWith());
+    final container = _container(
+      tokens: _Tokens(access: 'a', refresh: 'r'),
+      sessions: _Sessions(_stored),
+      repository: repository,
+    );
+    final states = <AuthState>[];
+    container.listen(
+      authControllerProvider,
+      (_, next) => states.add(next),
+      fireImmediately: true,
+    );
+    await _settle();
+    await _settle();
+
+    // Unknown, then signed in once; the equal refreshed user is dropped.
+    expect(states, hasLength(2));
+    expect(states.last, isA<AuthSignedIn>());
+
+    await container.read(authControllerProvider.notifier).refreshUser();
+    expect(states, hasLength(2));
+  });
+
+  test('a deactivated account is signed out on refresh', () async {
+    when(() => repository.fetchCurrentUser()).thenThrow(
+      const ApiException(
+        message: 'User is inactive',
+        code: ApiErrorCodes.userInactive,
+        statusCode: 403,
+      ),
+    );
+    final container = _container(
+      tokens: _Tokens(access: 'a', refresh: 'r'),
+      sessions: _Sessions(_stored),
+      repository: repository,
+    );
+    container.read(authControllerProvider);
+    await _settle();
+    await _settle();
+
+    expect(container.read(authControllerProvider), isA<AuthSignedOut>());
+    verify(() => repository.clearLocalSession()).called(1);
+  });
 }

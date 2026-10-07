@@ -21,14 +21,23 @@ class AddCommunityUserController
   /// Returns the created user, or null when it failed (see [state]).
   Future<CommunityUserModel?> submit(CreateCommunityUserRequest request) async {
     if (state.isLoading) return null;
-    state = const AsyncLoading();
-    final result = await AsyncValue.guard(
-      () => ref.read(communityRepositoryProvider).createMasjidUser(request),
-    );
-    state = result;
-    if (result.hasError) return null;
-    ref.markChanged(const <DataScope>[DataScope.members, DataScope.dashboard]);
-    return result.value;
+    // Finish (and mark changes) even if the screen closes meanwhile.
+    final keepAlive = ref.keepAlive();
+    try {
+      state = const AsyncLoading();
+      final result = await AsyncValue.guard(
+        () => ref.read(communityRepositoryProvider).createMasjidUser(request),
+      );
+      state = result;
+      if (result.hasError) return null;
+      ref.markChanged(const <DataScope>[
+        DataScope.members,
+        DataScope.dashboard,
+      ]);
+      return result.value;
+    } finally {
+      keepAlive.close();
+    }
   }
 }
 

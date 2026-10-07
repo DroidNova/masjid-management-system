@@ -26,7 +26,13 @@ class SuperAdminApi {
   Future<PageResult<AdminUserModel>> getUsers(
     AdminListFilter filter,
     int page,
-  ) => _getPage('/admin/users', filter, page, AdminUserModel.fromJson);
+  ) => _getPage(
+    '/admin/users',
+    filter,
+    page,
+    AdminUserModel.fromJson,
+    withRole: true,
+  );
 
   Future<AdminUserModel> getUser(String id) async {
     final data = await _apiClient.get<Map<String, dynamic>>('/admin/users/$id');
@@ -86,18 +92,11 @@ class SuperAdminApi {
     AdminMasjidRequestModel.fromJson,
   );
 
-  /// There is no `GET /masjid-requests/:id`; the list filters by `id`.
-  Future<PageResult<AdminMasjidRequestModel>> findMasjidRequestById(
-    String id,
-  ) async {
+  Future<AdminMasjidRequestModel> getMasjidRequest(String id) async {
     final data = await _apiClient.get<Map<String, dynamic>>(
-      '/masjid-requests',
-      query: <String, dynamic>{'id': id, 'limit': 1},
+      '/masjid-requests/$id',
     );
-    return PageResult<AdminMasjidRequestModel>.fromJson(
-      data,
-      AdminMasjidRequestModel.fromJson,
-    );
+    return AdminMasjidRequestModel.fromJson(data);
   }
 
   /// `status` is `APPROVED` or `REJECTED`. Approving fails with
@@ -118,8 +117,9 @@ class SuperAdminApi {
     String path,
     AdminListFilter filter,
     int page,
-    T Function(Map<String, dynamic> json) parseItem,
-  ) async {
+    T Function(Map<String, dynamic> json) parseItem, {
+    bool withRole = false,
+  }) async {
     final search = filter.search.trim();
     final data = await _apiClient.get<Map<String, dynamic>>(
       path,
@@ -128,7 +128,8 @@ class SuperAdminApi {
         'limit': pageSize,
         if (search.isNotEmpty) 'search': search,
         'status': ?filter.status,
-        'role': ?filter.role,
+        // Only the users list filters by role.
+        if (withRole) 'role': ?filter.role,
       },
     );
     return PageResult<T>.fromJson(data, parseItem);

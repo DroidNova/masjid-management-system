@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpdateProjectRequest {
 
- String? get title; String? get description; double? get targetAmount; double? get collectedAmount; double? get spentAmount; String? get status;/// `yyyy-MM-dd`.
+ String? get title; String? get description; double? get targetAmount; String? get status;/// `yyyy-MM-dd`.
  String? get startDate;/// `yyyy-MM-dd`.
  String? get endDate;
 /// Create a copy of UpdateProjectRequest
@@ -30,16 +30,16 @@ $UpdateProjectRequestCopyWith<UpdateProjectRequest> get copyWith => _$UpdateProj
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateProjectRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.spentAmount, spentAmount) || other.spentAmount == spentAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateProjectRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,description,targetAmount,collectedAmount,spentAmount,status,startDate,endDate);
+int get hashCode => Object.hash(runtimeType,title,description,targetAmount,status,startDate,endDate);
 
 @override
 String toString() {
-  return 'UpdateProjectRequest(title: $title, description: $description, targetAmount: $targetAmount, collectedAmount: $collectedAmount, spentAmount: $spentAmount, status: $status, startDate: $startDate, endDate: $endDate)';
+  return 'UpdateProjectRequest(title: $title, description: $description, targetAmount: $targetAmount, status: $status, startDate: $startDate, endDate: $endDate)';
 }
 
 
@@ -50,7 +50,7 @@ abstract mixin class $UpdateProjectRequestCopyWith<$Res>  {
   factory $UpdateProjectRequestCopyWith(UpdateProjectRequest value, $Res Function(UpdateProjectRequest) _then) = _$UpdateProjectRequestCopyWithImpl;
 @useResult
 $Res call({
- String? title, String? description, double? targetAmount, double? collectedAmount, double? spentAmount, String? status, String? startDate, String? endDate
+ String? title, String? description, double? targetAmount, String? status, String? startDate, String? endDate
 });
 
 
@@ -67,13 +67,11 @@ class _$UpdateProjectRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateProjectRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = freezed,Object? description = freezed,Object? targetAmount = freezed,Object? collectedAmount = freezed,Object? spentAmount = freezed,Object? status = freezed,Object? startDate = freezed,Object? endDate = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = freezed,Object? description = freezed,Object? targetAmount = freezed,Object? status = freezed,Object? startDate = freezed,Object? endDate = freezed,}) {
   return _then(_self.copyWith(
 title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,targetAmount: freezed == targetAmount ? _self.targetAmount : targetAmount // ignore: cast_nullable_to_non_nullable
-as double?,collectedAmount: freezed == collectedAmount ? _self.collectedAmount : collectedAmount // ignore: cast_nullable_to_non_nullable
-as double?,spentAmount: freezed == spentAmount ? _self.spentAmount : spentAmount // ignore: cast_nullable_to_non_nullable
 as double?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String?,startDate: freezed == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as String?,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
@@ -162,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? title,  String? description,  double? targetAmount,  double? collectedAmount,  double? spentAmount,  String? status,  String? startDate,  String? endDate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? title,  String? description,  double? targetAmount,  String? status,  String? startDate,  String? endDate)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpdateProjectRequest() when $default != null:
-return $default(_that.title,_that.description,_that.targetAmount,_that.collectedAmount,_that.spentAmount,_that.status,_that.startDate,_that.endDate);case _:
+return $default(_that.title,_that.description,_that.targetAmount,_that.status,_that.startDate,_that.endDate);case _:
   return orElse();
 
 }
@@ -183,10 +181,10 @@ return $default(_that.title,_that.description,_that.targetAmount,_that.collected
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? title,  String? description,  double? targetAmount,  double? collectedAmount,  double? spentAmount,  String? status,  String? startDate,  String? endDate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? title,  String? description,  double? targetAmount,  String? status,  String? startDate,  String? endDate)  $default,) {final _that = this;
 switch (_that) {
 case _UpdateProjectRequest():
-return $default(_that.title,_that.description,_that.targetAmount,_that.collectedAmount,_that.spentAmount,_that.status,_that.startDate,_that.endDate);case _:
+return $default(_that.title,_that.description,_that.targetAmount,_that.status,_that.startDate,_that.endDate);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +201,10 @@ return $default(_that.title,_that.description,_that.targetAmount,_that.collected
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? title,  String? description,  double? targetAmount,  double? collectedAmount,  double? spentAmount,  String? status,  String? startDate,  String? endDate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? title,  String? description,  double? targetAmount,  String? status,  String? startDate,  String? endDate)?  $default,) {final _that = this;
 switch (_that) {
 case _UpdateProjectRequest() when $default != null:
-return $default(_that.title,_that.description,_that.targetAmount,_that.collectedAmount,_that.spentAmount,_that.status,_that.startDate,_that.endDate);case _:
+return $default(_that.title,_that.description,_that.targetAmount,_that.status,_that.startDate,_that.endDate);case _:
   return null;
 
 }
@@ -218,14 +216,12 @@ return $default(_that.title,_that.description,_that.targetAmount,_that.collected
 
 @JsonSerializable(includeIfNull: false)
 class _UpdateProjectRequest implements UpdateProjectRequest {
-  const _UpdateProjectRequest({this.title, this.description, this.targetAmount, this.collectedAmount, this.spentAmount, this.status, this.startDate, this.endDate});
+  const _UpdateProjectRequest({this.title, this.description, this.targetAmount, this.status, this.startDate, this.endDate});
   factory _UpdateProjectRequest.fromJson(Map<String, dynamic> json) => _$UpdateProjectRequestFromJson(json);
 
 @override final  String? title;
 @override final  String? description;
 @override final  double? targetAmount;
-@override final  double? collectedAmount;
-@override final  double? spentAmount;
 @override final  String? status;
 /// `yyyy-MM-dd`.
 @override final  String? startDate;
@@ -245,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateProjectRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.spentAmount, spentAmount) || other.spentAmount == spentAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateProjectRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,description,targetAmount,collectedAmount,spentAmount,status,startDate,endDate);
+int get hashCode => Object.hash(runtimeType,title,description,targetAmount,status,startDate,endDate);
 
 @override
 String toString() {
-  return 'UpdateProjectRequest(title: $title, description: $description, targetAmount: $targetAmount, collectedAmount: $collectedAmount, spentAmount: $spentAmount, status: $status, startDate: $startDate, endDate: $endDate)';
+  return 'UpdateProjectRequest(title: $title, description: $description, targetAmount: $targetAmount, status: $status, startDate: $startDate, endDate: $endDate)';
 }
 
 
@@ -265,7 +261,7 @@ abstract mixin class _$UpdateProjectRequestCopyWith<$Res> implements $UpdateProj
   factory _$UpdateProjectRequestCopyWith(_UpdateProjectRequest value, $Res Function(_UpdateProjectRequest) _then) = __$UpdateProjectRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String? title, String? description, double? targetAmount, double? collectedAmount, double? spentAmount, String? status, String? startDate, String? endDate
+ String? title, String? description, double? targetAmount, String? status, String? startDate, String? endDate
 });
 
 
@@ -282,13 +278,11 @@ class __$UpdateProjectRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateProjectRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = freezed,Object? description = freezed,Object? targetAmount = freezed,Object? collectedAmount = freezed,Object? spentAmount = freezed,Object? status = freezed,Object? startDate = freezed,Object? endDate = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = freezed,Object? description = freezed,Object? targetAmount = freezed,Object? status = freezed,Object? startDate = freezed,Object? endDate = freezed,}) {
   return _then(_UpdateProjectRequest(
 title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,targetAmount: freezed == targetAmount ? _self.targetAmount : targetAmount // ignore: cast_nullable_to_non_nullable
-as double?,collectedAmount: freezed == collectedAmount ? _self.collectedAmount : collectedAmount // ignore: cast_nullable_to_non_nullable
-as double?,spentAmount: freezed == spentAmount ? _self.spentAmount : spentAmount // ignore: cast_nullable_to_non_nullable
 as double?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String?,startDate: freezed == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as String?,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable

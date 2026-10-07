@@ -6,6 +6,7 @@ import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/announcement_preview_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/finance_summary_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/imam_salary_card.dart';
@@ -92,9 +93,9 @@ class _DashboardContent extends ConsumerWidget {
                       onPressed: () async {
                         await context.push(
                           '/namaz-time/update',
-                          extra: <String, dynamic>{
-                            'masjidId': dashboard.masjid?.id,
-                          },
+                          // Prefills the form; no second request.
+                          extra:
+                              dashboard.namazTime ?? const NamazTimeSummary(),
                         );
                       },
                     ),

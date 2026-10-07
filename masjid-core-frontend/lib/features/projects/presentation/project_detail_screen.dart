@@ -40,7 +40,11 @@ class ProjectDetailScreen extends ConsumerWidget {
       final project = projectState.valueOrNull ?? preview;
       body = project == null
           ? const LoadingView()
-          : _ProjectDetailBody(project: project);
+          : RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(projectDetailProvider(projectId).notifier).refresh(),
+              child: _ProjectDetailBody(project: project),
+            );
     }
 
     return Scaffold(
@@ -104,6 +108,7 @@ class _ProjectDetailBody extends ConsumerWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Center(
           child: ConstrainedBox(

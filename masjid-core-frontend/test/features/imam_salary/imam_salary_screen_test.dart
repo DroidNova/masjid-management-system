@@ -148,6 +148,34 @@ void main() {
       expect(find.text('Add Payment'), findsOneWidget);
     });
 
+    testWidgets('switching tabs does not reload either list', (tester) async {
+      await _pump(tester, repository, permissions);
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text('Transactions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Assignments'));
+        await tester.pumpAndSettle();
+      }
+
+      verify(
+        () => repository.getAssignments(
+          any(),
+          status: any(named: 'status'),
+          search: any(named: 'search'),
+          page: any(named: 'page'),
+        ),
+      ).called(1);
+      verify(
+        () => repository.getPayments(
+          month: any(named: 'month'),
+          year: any(named: 'year'),
+          paymentMode: any(named: 'paymentMode'),
+          search: any(named: 'search'),
+          page: any(named: 'page'),
+        ),
+      ).called(1);
+    });
+
     testWidgets('offers "Start Salary Month" when the month is missing', (
       tester,
     ) async {

@@ -13,6 +13,7 @@ class FinanceEntryTile extends StatelessWidget {
     this.date,
     this.status,
     this.onCancel,
+    this.cancelling = false,
   });
 
   final String type;
@@ -26,6 +27,9 @@ class FinanceEntryTile extends StatelessWidget {
   /// Long-press action, set only for users who may cancel this entry.
   final VoidCallback? onCancel;
 
+  /// A cancel of this entry is in flight: shows progress.
+  final bool cancelling;
+
   @override
   Widget build(BuildContext context) {
     final entryTitle = title?.trim();
@@ -38,7 +42,7 @@ class FinanceEntryTile extends StatelessWidget {
 
     return Card(
       child: ListTile(
-        onLongPress: onCancel,
+        onLongPress: cancelling ? null : onCancel,
         title: Text(
           displayTitle,
           style: const TextStyle(fontWeight: FontWeight.w700),
@@ -50,6 +54,10 @@ class FinanceEntryTile extends StatelessWidget {
             if (entryDescription != null && entryDescription.isNotEmpty)
               Text(entryDescription),
             if (showStatus) Text('Status: $status'),
+            if (cancelling) ...const <Widget>[
+              SizedBox(height: 6),
+              LinearProgressIndicator(),
+            ],
           ],
         ),
         trailing: Text(

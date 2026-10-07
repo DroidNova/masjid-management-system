@@ -16,10 +16,16 @@ class AdminMasjidRequestsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AdminMasjidRequestModel item,
-  ) => runAdminAction(
-    context,
-    () => ref.read(superAdminActionsProvider).approveMasjidRequest(item.id),
-  );
+  ) async {
+    if (!await showApproveRequestDialog(context, item.masjidName) ||
+        !context.mounted) {
+      return;
+    }
+    await runAdminAction(
+      context,
+      () => ref.read(superAdminActionsProvider).approveMasjidRequest(item.id),
+    );
+  }
 
   Future<void> _reject(
     BuildContext context,
@@ -39,6 +45,7 @@ class AdminMasjidRequestsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(adminRequestsFilterProvider);
+    final busyIds = ref.watch(adminBusyIdsProvider);
     final filterController = ref.read(adminRequestsFilterProvider.notifier);
 
     Widget statusChip(String label, String? status) => FilterChip(
@@ -80,6 +87,7 @@ class AdminMasjidRequestsScreen extends ConsumerWidget {
               item: item,
               onApprove: () => _approve(context, ref, item),
               onReject: () => _reject(context, ref, item),
+              busy: busyIds.contains(item.id),
             ),
           ),
         ),

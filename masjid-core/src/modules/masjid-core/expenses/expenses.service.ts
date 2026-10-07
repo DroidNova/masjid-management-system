@@ -7,7 +7,7 @@ import {
   AuditService,
 } from '../../../common/audit/audit.service';
 import { formatMoney, toAmount } from '../../../common/money';
-import { assertSameMasjid, requireMasjidId } from '../../../common/tenant';
+import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { FinanceEntryStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -15,7 +15,8 @@ import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.ty
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { GetExpensesQueryDto } from './dto/get-expenses-query.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { pageMeta } from '../../../common/pagination';
+import { pageArgs, paged } from '../../../common/pagination';
+import { dateRange } from '../shared-date';
 
 const expenseSelect = {
   id: true,
@@ -31,9 +32,13 @@ const expenseSelect = {
   updatedAt: true,
 } as const satisfies Prisma.ExpenseSelect;
 
-type ExpenseRecord = Prisma.ExpenseGetPayload<{ select: typeof expenseSelect }>;
+type ExpenseRecord = Prisma.ExpenseGetPayload<{
+  select: typeof expenseSelect;
+}>;
 
 type ExpenseResponse = Omit<ExpenseRecord, 'amount'> & { amount: number };
+
+type Db = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class ExpensesService {
@@ -49,25 +54,26 @@ export class ExpensesService {
     actor: AuthenticatedUser,
   ) {
     const masjidId = requireMasjidId(actor);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const { page, limit, skip, take } = pageArgs(query);
     const where = this.buildWhere(masjidId, query);
 
     const [items, total] = await Promise.all([
       this.prisma.expense.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { spentAt: 'desc' },
         select: expenseSelect,
       }),
       this.prisma.expense.count({ where }),
     ]);
 
-    return {
-      items: items.map((item) => this.toResponse(item)),
-      meta: pageMeta(total, page, limit),
-    };
+    return paged(
+      items.map((item) => this.toResponse(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async create(
@@ -118,7 +124,7 @@ export class ExpensesService {
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    const expense = await this.ensureExpenseBelongsToMasjid(id, masjidId);
+    const expense = await this.findScoped(this.prisma, id, masjidId);
     return this.toResponse(expense);
   }
 
@@ -128,7 +134,6 @@ export class ExpensesService {
     actor: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureExpenseBelongsToMasjid(id, masjidId);
     const data = this.buildUpdateData(dto);
 
     if (Object.keys(data).length === 0) {
@@ -140,8 +145,9 @@ export class ExpensesService {
     }
 
     const expense = await this.prisma.$transaction(async (tx) => {
+      const before = await this.findScoped(tx, id, masjidId);
       const updated = await tx.expense.update({
-        where: { id },
+        where: { id: before.id },
         data,
         select: expenseSelect,
       });
@@ -168,12 +174,19 @@ export class ExpensesService {
     return this.toResponse(expense);
   }
 
+  /**
+   * Cancels (soft-deletes) an expense. Cancelling an already cancelled
+   * entry returns it unchanged and writes no audit entry.
+   */
   async cancel(id: string, actor: AuthenticatedUser): Promise<ExpenseResponse> {
     const masjidId = requireMasjidId(actor);
-    const before = await this.ensureExpenseBelongsToMasjid(id, masjidId);
-    const expense = await this.prisma.$transaction(async (tx) => {
+    const { expense, changed } = await this.prisma.$transaction(async (tx) => {
+      const before = await this.findScoped(tx, id, masjidId);
+      if (before.status === FinanceEntryStatus.CANCELLED) {
+        return { expense: before, changed: false };
+      }
       const cancelled = await tx.expense.update({
-        where: { id },
+        where: { id: before.id },
         data: { status: FinanceEntryStatus.CANCELLED },
         select: expenseSelect,
       });
@@ -190,22 +203,26 @@ export class ExpensesService {
         },
         tx,
       );
-      return cancelled;
+      return { expense: cancelled, changed: true };
     });
-    this.logger.warn({
-      message: 'Expense cancelled',
-      expenseId: expense.id,
-      masjidId,
-    });
+    if (changed) {
+      this.logger.warn({
+        message: 'Expense cancelled',
+        expenseId: expense.id,
+        masjidId,
+      });
+    }
     return this.toResponse(expense);
   }
 
-  private async ensureExpenseBelongsToMasjid(
+  /** The expense with this id in this masjid; 404 otherwise (also for another masjid's id). */
+  private async findScoped(
+    db: Db,
     id: string,
     masjidId: string,
   ): Promise<ExpenseRecord> {
-    const expense = await this.prisma.expense.findUnique({
-      where: { id },
+    const expense = await db.expense.findFirst({
+      where: { id, masjidId },
       select: expenseSelect,
     });
 
@@ -217,13 +234,6 @@ export class ExpensesService {
       );
     }
 
-    assertSameMasjid(
-      expense.masjidId,
-      masjidId,
-      'You are not allowed to access this finance entry',
-      ERROR_CODES.FINANCE_ACCESS_FORBIDDEN,
-    );
-
     return expense;
   }
 
@@ -234,12 +244,8 @@ export class ExpensesService {
     const where: Prisma.ExpenseWhereInput = { masjidId };
     if (query.type !== undefined) where.type = query.type;
     if (query.status !== undefined) where.status = query.status;
-    if (query.fromDate || query.toDate) {
-      const spentAt: Prisma.DateTimeFilter<'Expense'> = {};
-      if (query.fromDate) spentAt.gte = new Date(query.fromDate);
-      if (query.toDate) spentAt.lte = new Date(query.toDate);
-      where.spentAt = spentAt;
-    }
+    const spentAt = dateRange(query.fromDate, query.toDate);
+    if (spentAt) where.spentAt = spentAt;
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },
@@ -256,7 +262,6 @@ export class ExpensesService {
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.spentAt !== undefined) data.spentAt = new Date(dto.spentAt);
-    if (dto.status !== undefined) data.status = dto.status;
     return data;
   }
 

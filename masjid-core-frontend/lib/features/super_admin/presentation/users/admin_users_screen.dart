@@ -37,6 +37,7 @@ class AdminUsersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(adminUsersFilterProvider);
+    final busyIds = ref.watch(adminBusyIdsProvider);
     final filterController = ref.read(adminUsersFilterProvider.notifier);
 
     Widget statusChip(String label, String? status) => FilterChip(
@@ -90,6 +91,7 @@ class AdminUsersScreen extends ConsumerWidget {
             itemBuilder: (context, item) => AdminUserCard(
               item: item,
               onStatus: () => _changeStatus(context, ref, item),
+              busy: busyIds.contains(item.id),
             ),
           ),
         ),

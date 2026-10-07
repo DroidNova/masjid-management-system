@@ -78,10 +78,16 @@ class AnnouncementFormController extends AutoDisposeAsyncNotifier<void> {
 
   Future<bool> _save(Future<Object?> Function() action) async {
     if (state.isLoading) return false;
-    state = const AsyncLoading<void>();
-    state = await AsyncValue.guard<void>(action);
-    if (state.hasError) return false;
-    ref.markChanged(announcementChanges);
-    return true;
+    // Finish (and mark changes) even if the screen closes meanwhile.
+    final keepAlive = ref.keepAlive();
+    try {
+      state = const AsyncLoading<void>();
+      state = await AsyncValue.guard<void>(action);
+      if (state.hasError) return false;
+      ref.markChanged(announcementChanges);
+      return true;
+    } finally {
+      keepAlive.close();
+    }
   }
 }

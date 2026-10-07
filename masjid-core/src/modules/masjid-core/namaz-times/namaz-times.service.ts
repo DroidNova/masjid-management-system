@@ -46,12 +46,41 @@ export class NamazTimesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Times of the signed-in user's masjid (masjid from the token; one query). */
+  findMyMasjid(
+    actor: AuthenticatedUser,
+  ): Promise<NamazTimeRecord | EmptyNamazTime> {
+    return this.read(requireMasjidId(actor));
+  }
+
+  /** Saves the signed-in user's masjid times (masjid from the token; one query). */
+  upsertMyMasjid(
+    dto: UpsertNamazTimeDto,
+    actor: AuthenticatedUser,
+  ): Promise<NamazTimeRecord> {
+    return this.write(requireMasjidId(actor), dto);
+  }
+
   async findByMasjidId(
     masjidId: string,
     actor: AuthenticatedUser,
   ): Promise<NamazTimeRecord | EmptyNamazTime> {
     await this.ensureCanAccessMasjid(masjidId, actor);
+    return this.read(masjidId);
+  }
 
+  async upsert(
+    masjidId: string,
+    dto: UpsertNamazTimeDto,
+    actor: AuthenticatedUser,
+  ): Promise<NamazTimeRecord> {
+    await this.ensureCanAccessMasjid(masjidId, actor);
+    return this.write(masjidId, dto);
+  }
+
+  private async read(
+    masjidId: string,
+  ): Promise<NamazTimeRecord | EmptyNamazTime> {
     const namazTime = await this.prisma.namazTime.findUnique({
       where: { masjidId },
       select: namazTimeSelect,
@@ -71,12 +100,10 @@ export class NamazTimesService {
     );
   }
 
-  async upsert(
+  private async write(
     masjidId: string,
     dto: UpsertNamazTimeDto,
-    actor: AuthenticatedUser,
   ): Promise<NamazTimeRecord> {
-    await this.ensureCanAccessMasjid(masjidId, actor);
     const data = this.toNamazTimeWriteData(dto);
 
     const namazTime = await this.prisma.namazTime.upsert({
@@ -89,10 +116,24 @@ export class NamazTimesService {
     return namazTime;
   }
 
+  /**
+   * Super admin: any existing masjid. Everyone else: only their own masjid,
+   * checked against the token first (no query); their masjid exists (FK).
+   */
   private async ensureCanAccessMasjid(
     masjidId: string,
     actor: AuthenticatedUser,
   ): Promise<void> {
+    if (!hasPermission(actor, PERMISSIONS.PLATFORM_MASJIDS_MANAGE)) {
+      assertSameMasjid(
+        masjidId,
+        requireMasjidId(actor),
+        'You are not allowed to access this masjid',
+        ERROR_CODES.MASJID_ACCESS_FORBIDDEN,
+      );
+      return;
+    }
+
     const masjid = await this.prisma.masjid.findUnique({
       where: { id: masjidId },
       select: { id: true },
@@ -105,18 +146,6 @@ export class NamazTimesService {
         ERROR_CODES.MASJID_NOT_FOUND,
       );
     }
-
-    // Super admin may read or set times for any masjid.
-    if (hasPermission(actor, PERMISSIONS.PLATFORM_MASJIDS_MANAGE)) {
-      return;
-    }
-
-    assertSameMasjid(
-      masjidId,
-      requireMasjidId(actor),
-      'You are not allowed to access this masjid',
-      ERROR_CODES.MASJID_ACCESS_FORBIDDEN,
-    );
   }
 
   private toNamazTimeWriteData(dto: UpsertNamazTimeDto): NamazTimeWriteData {

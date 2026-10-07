@@ -11,7 +11,6 @@ import {
 import { Transform } from 'class-transformer';
 import {
   CollectionTypeDto,
-  FinanceEntryStatusDto,
   toOptionalDate,
   toOptionalNumber,
   trimString,
@@ -52,9 +51,4 @@ export class UpdateCollectionDto {
     { message: 'Collected date must be a valid ISO date string' },
   )
   collectedAt?: string;
-
-  @ApiPropertyOptional({ enum: FinanceEntryStatusDto })
-  @IsOptional()
-  @IsEnum(FinanceEntryStatusDto)
-  status?: FinanceEntryStatusDto;
 }

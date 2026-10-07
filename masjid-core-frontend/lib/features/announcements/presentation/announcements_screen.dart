@@ -13,6 +13,11 @@ import 'package:masjid_core_frontend/features/auth/application/auth_controller.d
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
+/// Announcements being deleted (their buttons are off meanwhile).
+final _deletingIdsProvider = StateProvider<Set<String>>(
+  (ref) => const <String>{},
+);
+
 class AnnouncementsScreen extends ConsumerWidget {
   const AnnouncementsScreen({super.key});
 
@@ -82,6 +87,9 @@ class _AnnouncementsList extends ConsumerWidget {
     if (shouldDelete != true || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    final deleting = ref.read(_deletingIdsProvider.notifier);
+    if (deleting.state.contains(announcement.id)) return;
+    deleting.state = <String>{...deleting.state, announcement.id};
     try {
       await ref
           .read(announcementsControllerProvider.notifier)
@@ -89,8 +97,12 @@ class _AnnouncementsList extends ConsumerWidget {
       messenger.showSnackBar(
         const SnackBar(content: Text('Announcement deleted successfully.')),
       );
+      // Stay busy until the reloaded list replaces this item.
+      await ref.read(announcementsControllerProvider.future);
     } catch (error) {
       messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
+    } finally {
+      deleting.state = <String>{...deleting.state}..remove(announcement.id);
     }
   }
 
@@ -109,6 +121,7 @@ class _AnnouncementsList extends ConsumerWidget {
     );
     final announcements = state.items;
     final controller = ref.read(announcementsControllerProvider.notifier);
+    final deletingIds = ref.watch(_deletingIdsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Announcements')),
@@ -150,6 +163,7 @@ class _AnnouncementsList extends ConsumerWidget {
                           ...announcements.map(
                             (announcement) => AnnouncementCard(
                               announcement: announcement,
+                              deleting: deletingIds.contains(announcement.id),
                               onEdit: canManageAnnouncements
                                   ? () => context.push(
                                       '/announcements/${announcement.id}/edit',

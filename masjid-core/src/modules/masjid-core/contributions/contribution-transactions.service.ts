@@ -20,7 +20,8 @@ import {
   CreateCollectionContributionDto,
   CreateContributionDto,
 } from './dto/create-contribution.dto';
-import { paged } from '../../../common/pagination';
+import { pageArgs, paged } from '../../../common/pagination';
+import { dateRange } from '../shared-date';
 
 const contributionSelect = {
   id: true,
@@ -66,11 +67,13 @@ export class ContributionTransactionsService {
   ) {
     const masjidId = requireMasjidId(actor);
     return this.prisma.$transaction(async (tx) => {
-      const project = await tx.project.findFirst({
+      // Scoped atomic increment: doubles as the "project exists in this
+      // masjid" check and locks the row until the transaction ends.
+      const { count } = await tx.project.updateMany({
         where: { id: projectId, masjidId },
-        select: { id: true },
+        data: { collectedAmount: { increment: dto.amount } },
       });
-      if (!project)
+      if (count === 0)
         this.notFound('Project not found', ERROR_CODES.PROJECT_NOT_FOUND);
       await this.validateMember(tx, dto.memberId, masjidId);
       const contribution = await tx.projectContribution.create({
@@ -80,10 +83,6 @@ export class ContributionTransactionsService {
           ...this.baseData(dto, actor),
         },
         select: contributionSelect,
-      });
-      await tx.project.update({
-        where: { id: projectId },
-        data: { collectedAmount: { increment: dto.amount } },
       });
       await this.audit.record(
         {
@@ -110,28 +109,29 @@ export class ContributionTransactionsService {
     actor: AuthenticatedUser,
   ) {
     const masjidId = requireMasjidId(actor);
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, masjidId },
-      select: { id: true },
-    });
-    if (!project)
-      this.notFound('Project not found', ERROR_CODES.PROJECT_NOT_FOUND);
     const where: Prisma.ProjectContributionWhereInput = {
       projectId,
       masjidId,
       ...this.filters(query),
     };
-    const { page, limit, skip } = this.pageArgs(query);
-    const [items, total] = await Promise.all([
+    const { page, limit, skip, take } = pageArgs(query);
+    // The rows are scoped by masjidId, so the project check can run in parallel.
+    const [project, items, total] = await Promise.all([
+      this.prisma.project.findFirst({
+        where: { id: projectId, masjidId },
+        select: { id: true },
+      }),
       this.prisma.projectContribution.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: contributionOrderBy,
         select: contributionSelect,
       }),
       this.prisma.projectContribution.count({ where }),
     ]);
+    if (!project)
+      this.notFound('Project not found', ERROR_CODES.PROJECT_NOT_FOUND);
     return successResponse(
       'Project contributions fetched successfully',
       paged(
@@ -150,15 +150,10 @@ export class ContributionTransactionsService {
     const masjidId = requireMasjidId(actor);
     return this.prisma.$transaction(async (tx) => {
       await this.validateMember(tx, dto.memberId, masjidId);
-      const contribution = await tx.collectionContribution.create({
-        data: {
-          masjidId,
-          collectionType: dto.collectionType,
-          ...this.baseData(dto, actor),
-        },
-        select: collectionContributionSelect,
-      });
-      await tx.collection.create({
+      // The finance entry that counts this money in the masjid totals. If it
+      // is cancelled later, the contribution row stays as the historical
+      // record of the payment (it is linked, not cascade-deleted).
+      const collection = await tx.collection.create({
         data: {
           masjidId,
           type: dto.collectionType,
@@ -168,6 +163,16 @@ export class ContributionTransactionsService {
           collectedAt: new Date(dto.paidAt),
           createdById: actor.id,
         },
+        select: { id: true },
+      });
+      const contribution = await tx.collectionContribution.create({
+        data: {
+          masjidId,
+          collectionId: collection.id,
+          collectionType: dto.collectionType,
+          ...this.baseData(dto, actor),
+        },
+        select: collectionContributionSelect,
       });
       await this.audit.record(
         {
@@ -177,7 +182,7 @@ export class ContributionTransactionsService {
           entity: AUDIT_ENTITY.COLLECTION_CONTRIBUTION,
           entityId: contribution.id,
           summary: `Collection contribution ${contribution.collectionType} ${formatMoney(contribution.amount)} ${contribution.paymentMode} from ${contribution.contributorName}`,
-          after: { ...contribution, masjidId },
+          after: { ...contribution, masjidId, collectionId: collection.id },
         },
         tx,
       );
@@ -197,12 +202,12 @@ export class ContributionTransactionsService {
       ...(query.collectionType ? { collectionType: query.collectionType } : {}),
       ...this.filters(query),
     };
-    const { page, limit, skip } = this.pageArgs(query);
+    const { page, limit, skip, take } = pageArgs(query);
     const [items, total] = await Promise.all([
       this.prisma.collectionContribution.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: contributionOrderBy,
         select: collectionContributionSelect,
       }),
@@ -255,6 +260,7 @@ export class ContributionTransactionsService {
   /** Filters shared by the project and collection contribution lists. */
   private filters(query: ContributionListQueryDto) {
     const search = query.search?.trim();
+    const paidAt = dateRange(query.fromDate, query.toDate);
     return {
       ...(query.paymentMode ? { paymentMode: query.paymentMode } : {}),
       ...(search
@@ -270,21 +276,8 @@ export class ContributionTransactionsService {
             ],
           }
         : {}),
-      ...(query.fromDate || query.toDate
-        ? {
-            paidAt: {
-              ...(query.fromDate ? { gte: new Date(query.fromDate) } : {}),
-              ...(query.toDate ? { lte: this.endOfDay(query.toDate) } : {}),
-            },
-          }
-        : {}),
+      ...(paidAt ? { paidAt } : {}),
     };
-  }
-
-  private pageArgs(query: { page?: number; limit?: number }) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    return { page, limit, skip: (page - 1) * limit };
   }
 
   private serialize<T extends { amount: Prisma.Decimal }>(item: T) {
@@ -296,11 +289,5 @@ export class ContributionTransactionsService {
     code: typeof ERROR_CODES.PROJECT_NOT_FOUND,
   ): never {
     throw new ApiException(message, HttpStatus.NOT_FOUND, code);
-  }
-
-  private endOfDay(value: string): Date {
-    const date = new Date(value);
-    date.setUTCHours(23, 59, 59, 999);
-    return date;
   }
 }

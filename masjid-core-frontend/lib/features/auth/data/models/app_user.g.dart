@@ -23,6 +23,7 @@ _AppUser _$AppUserFromJson(Map<String, dynamic> json) => _AppUser(
   masjidId: json['masjidId'] as String?,
   isEmailVerified: json['isEmailVerified'] as bool? ?? false,
   isPhoneVerified: json['isPhoneVerified'] as bool? ?? false,
+  isFamilyHead: json['isFamilyHead'] as bool? ?? false,
   createdAt: json['createdAt'] == null
       ? null
       : DateTime.parse(json['createdAt'] as String),
@@ -42,6 +43,7 @@ Map<String, dynamic> _$AppUserToJson(_AppUser instance) => <String, dynamic>{
   'masjidId': instance.masjidId,
   'isEmailVerified': instance.isEmailVerified,
   'isPhoneVerified': instance.isPhoneVerified,
+  'isFamilyHead': instance.isFamilyHead,
   'createdAt': instance.createdAt?.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),
 };

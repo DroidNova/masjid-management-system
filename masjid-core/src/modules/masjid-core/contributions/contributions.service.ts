@@ -3,15 +3,16 @@ import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { money, sumMoney, toAmount } from '../../../common/money';
+import { pageArgs, paged } from '../../../common/pagination';
 import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { ImamSalaryAssignmentStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
+import { dateRange } from '../shared-date';
 import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
 import { MyPaymentsQueryDto } from './dto/my-payments-query.dto';
-import { pageMeta } from '../../../common/pagination';
 
 const contributionOrderBy = [
   { paidAt: 'desc' },
@@ -25,34 +26,39 @@ const salaryMonthOrderBy = [
   { imamSalaryMonth: { month: 'desc' } },
 ] satisfies Prisma.ImamSalaryAssignmentOrderByWithRelationInput[];
 
+/**
+ * The signed-in user's own contributions. Everything is scoped to the user
+ * id and masjid in the access token (no extra user lookup per request).
+ */
 @Injectable()
 export class ContributionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getSummary(actor: AuthenticatedUser) {
-    const { user, masjidId } = await this.getCurrentUser(actor);
-    const assignments = await this.prisma.imamSalaryAssignment.findMany({
-      where: { memberId: actor.id, masjidId },
-      take: 6,
-      orderBy: salaryMonthOrderBy,
-      select: {
-        expectedAmount: true,
-        paidAmount: true,
-        dueAmount: true,
-        status: true,
-      },
-    });
-
-    const [projectAggregate, collectionAggregate] = await Promise.all([
-      this.prisma.projectContribution.aggregate({
-        where: { memberId: actor.id, masjidId },
-        _sum: { amount: true },
-      }),
-      this.prisma.collectionContribution.aggregate({
-        where: { memberId: actor.id, masjidId },
-        _sum: { amount: true },
-      }),
-    ]);
+    const masjidId = requireMasjidId(actor);
+    const mine = { memberId: actor.id, masjidId };
+    const [assignments, projectAggregate, collectionAggregate] =
+      await Promise.all([
+        this.prisma.imamSalaryAssignment.findMany({
+          where: mine,
+          take: 6,
+          orderBy: salaryMonthOrderBy,
+          select: {
+            expectedAmount: true,
+            paidAmount: true,
+            dueAmount: true,
+            status: true,
+          },
+        }),
+        this.prisma.projectContribution.aggregate({
+          where: mine,
+          _sum: { amount: true },
+        }),
+        this.prisma.collectionContribution.aggregate({
+          where: mine,
+          _sum: { amount: true },
+        }),
+      ]);
     const projectContributionTotal = money(projectAggregate._sum.amount);
     const collectionContributionTotal = money(collectionAggregate._sum.amount);
 
@@ -63,10 +69,10 @@ export class ContributionsService {
 
     return successResponse('Contribution summary fetched successfully', {
       user: {
-        id: user.id,
-        fullName: user.fullName,
-        phone: user.phone,
-        isFamilyHead: user.isFamilyHead,
+        id: actor.id,
+        fullName: actor.fullName,
+        phone: actor.phone,
+        isFamilyHead: actor.isFamilyHead,
       },
       projectContributionTotal: toAmount(projectContributionTotal),
       collectionContributionTotal: toAmount(collectionContributionTotal),
@@ -91,18 +97,17 @@ export class ContributionsService {
     query: MyContributionListQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const { masjidId } = await this.getCurrentUser(actor);
     const where: Prisma.ProjectContributionWhereInput = {
       memberId: actor.id,
-      masjidId,
-      ...this.dateFilter(query),
+      masjidId: requireMasjidId(actor),
+      ...this.paidAtFilter(query),
     };
-    const { page, limit, skip } = this.pageArgs(query);
+    const { page, limit, skip, take } = pageArgs(query);
     const [items, total] = await Promise.all([
       this.prisma.projectContribution.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: contributionOrderBy,
         select: {
           id: true,
@@ -119,28 +124,32 @@ export class ContributionsService {
       }),
       this.prisma.projectContribution.count({ where }),
     ]);
-    return successResponse('Project contributions fetched successfully', {
-      items: items.map((item) => this.withAmount(item)),
-      meta: pageMeta(total, page, limit),
-    });
+    return successResponse(
+      'Project contributions fetched successfully',
+      paged(
+        items.map((item) => this.withAmount(item)),
+        total,
+        page,
+        limit,
+      ),
+    );
   }
 
   async getMyCollectionContributions(
     query: MyContributionListQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const { masjidId } = await this.getCurrentUser(actor);
     const where: Prisma.CollectionContributionWhereInput = {
       memberId: actor.id,
-      masjidId,
-      ...this.dateFilter(query),
+      masjidId: requireMasjidId(actor),
+      ...this.paidAtFilter(query),
     };
-    const { page, limit, skip } = this.pageArgs(query);
+    const { page, limit, skip, take } = pageArgs(query);
     const [items, total] = await Promise.all([
       this.prisma.collectionContribution.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: contributionOrderBy,
         select: {
           id: true,
@@ -156,37 +165,38 @@ export class ContributionsService {
       }),
       this.prisma.collectionContribution.count({ where }),
     ]);
-    return successResponse('Collection contributions fetched successfully', {
-      items: items.map((item) => this.withAmount(item)),
-      meta: pageMeta(total, page, limit),
-    });
+    return successResponse(
+      'Collection contributions fetched successfully',
+      paged(
+        items.map((item) => this.withAmount(item)),
+        total,
+        page,
+        limit,
+      ),
+    );
   }
 
+  /** Only the latest `monthsBack` months are listed (and counted). */
   async getImamSalaryHistory(
     query: MyContributionQueryDto,
     actor: AuthenticatedUser,
   ) {
-    const { masjidId } = await this.getCurrentUser(actor);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const monthsBack = query.monthsBack ?? 6;
     const where: Prisma.ImamSalaryAssignmentWhereInput = {
       memberId: actor.id,
-      masjidId,
+      masjidId: requireMasjidId(actor),
     };
-    const totalAvailable = await this.prisma.imamSalaryAssignment.count({
-      where,
-    });
-    const total = Math.min(totalAvailable, monthsBack);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = pageArgs(query);
+    const monthsBack = query.monthsBack ?? 6;
+    const take = Math.min(limit, monthsBack - skip);
 
-    const assignments =
-      skip >= total
-        ? []
-        : await this.prisma.imamSalaryAssignment.findMany({
+    const [totalAvailable, assignments] = await Promise.all([
+      this.prisma.imamSalaryAssignment.count({ where }),
+      take <= 0
+        ? Promise.resolve([])
+        : this.prisma.imamSalaryAssignment.findMany({
             where,
             skip,
-            take: Math.min(limit, total - skip),
+            take,
             orderBy: salaryMonthOrderBy,
             select: {
               expectedAmount: true,
@@ -201,21 +211,27 @@ export class ContributionsService {
                 select: { paidAt: true },
               },
             },
-          });
+          }),
+    ]);
 
-    return successResponse('Imam salary contributions fetched successfully', {
-      meta: pageMeta(total, page, limit),
-      items: assignments.map((assignment) => ({
-        month: assignment.imamSalaryMonth.month,
-        year: assignment.imamSalaryMonth.year,
-        expectedAmount: toAmount(assignment.expectedAmount),
-        paidAmount: toAmount(assignment.paidAmount),
-        dueAmount: toAmount(assignment.dueAmount),
-        status: assignment.status,
-        paymentsCount: assignment._count.payments,
-        lastPaidAt: assignment.payments[0]?.paidAt ?? null,
-      })),
-    });
+    return successResponse(
+      'Imam salary contributions fetched successfully',
+      paged(
+        assignments.map((assignment) => ({
+          month: assignment.imamSalaryMonth.month,
+          year: assignment.imamSalaryMonth.year,
+          expectedAmount: toAmount(assignment.expectedAmount),
+          paidAmount: toAmount(assignment.paidAmount),
+          dueAmount: toAmount(assignment.dueAmount),
+          status: assignment.status,
+          paymentsCount: assignment._count.payments,
+          lastPaidAt: assignment.payments[0]?.paidAt ?? null,
+        })),
+        Math.min(totalAvailable, monthsBack),
+        page,
+        limit,
+      ),
+    );
   }
 
   async getImamSalaryPayments(
@@ -225,19 +241,18 @@ export class ContributionsService {
     actor: AuthenticatedUser,
   ) {
     this.validateMonthYear(month, year);
-    const { masjidId } = await this.getCurrentUser(actor);
-    const { page, limit, skip } = this.pageArgs(query);
     const where: Prisma.ImamSalaryPaymentWhereInput = {
       memberId: actor.id,
-      masjidId,
+      masjidId: requireMasjidId(actor),
       paymentForMonth: month,
       paymentForYear: year,
     };
+    const { page, limit, skip, take } = pageArgs(query);
     const [payments, total] = await Promise.all([
       this.prisma.imamSalaryPayment.findMany({
         where,
         skip,
-        take: limit,
+        take,
         orderBy: contributionOrderBy,
         select: {
           id: true,
@@ -251,52 +266,24 @@ export class ContributionsService {
       this.prisma.imamSalaryPayment.count({ where }),
     ]);
 
-    return successResponse('Imam salary payments fetched successfully', {
-      meta: pageMeta(total, page, limit),
-      items: payments.map((payment) => this.withAmount(payment)),
-    });
+    return successResponse(
+      'Imam salary payments fetched successfully',
+      paged(
+        payments.map((payment) => this.withAmount(payment)),
+        total,
+        page,
+        limit,
+      ),
+    );
   }
 
-  /** Loads the signed-in user; the masjid is read from the database, not the token. */
-  private async getCurrentUser(actor: AuthenticatedUser) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: actor.id },
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        isFamilyHead: true,
-        masjidId: true,
-      },
-    });
-    const masjidId = requireMasjidId(user ?? { masjidId: null });
-    return { user: user!, masjidId };
-  }
-
-  private dateFilter(query: MyContributionListQueryDto) {
-    if (!query.fromDate && !query.toDate) return {};
-    return {
-      paidAt: {
-        ...(query.fromDate ? { gte: new Date(query.fromDate) } : {}),
-        ...(query.toDate ? { lte: this.endOfDay(query.toDate) } : {}),
-      },
-    };
-  }
-
-  private endOfDay(value: string): Date {
-    const date = new Date(value);
-    date.setUTCHours(23, 59, 59, 999);
-    return date;
+  private paidAtFilter(query: MyContributionListQueryDto) {
+    const paidAt = dateRange(query.fromDate, query.toDate);
+    return paidAt ? { paidAt } : {};
   }
 
   private withAmount<T extends { amount: Prisma.Decimal }>(item: T) {
     return { ...item, amount: toAmount(item.amount) };
-  }
-
-  private pageArgs(query: { page?: number; limit?: number }) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    return { page, limit, skip: (page - 1) * limit };
   }
 
   private validateMonthYear(month: number, year: number): void {
