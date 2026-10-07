@@ -9,7 +9,7 @@ Update the checkboxes and the status table as work lands.
 Last updated 2026-10-07.
 
 - **Done:** M0 to M5. Both apps lint, build, and test clean (backend 88 tests, app 173). CI runs on every push to `main`.
-- **Next:** M6 Deployment (VPS with Caddy, backups, CI deploy, staging, real OTP + SMS, Play Store internal track). Several owner decisions are needed first: VPS provider, domain, SMS provider (see section 5).
+- **Next:** the owner's list of fixes and features for the existing app (2026-10-08). Deployment (M6) waits until the product is finished; then the owner decides domain and SMS provider. The VPS will be a small one.
 - **App rules:** auth state lives only in `AuthController`; widgets read `currentUserProvider`/`currentPermissionsProvider`, never secure storage. Network calls go through `ApiClient` (`apiClientProvider`) and fail with `ApiException` (switch on `code`). Logging out = `authControllerProvider.notifier.signOut()`; the router redirect does the navigation.
 - **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
 - **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
@@ -309,5 +309,5 @@ Still open:
 | M3 Backend structure | done 2026-10-08 | pagination envelope and salary error codes deferred to M4/M5 |
 | M4 Flutter foundation | done 2026-10-08 | typed routes and per-feature error cleanup move to M5 |
 | M5 Flutter features | done 2026-10-08 | ARB string extraction moved to M7 |
-| M6 Deployment | next | |
+| M6 Deployment | deferred | after the product is finished; small VPS; domain and SMS provider decided then |
 | M7 Polish | not started | |
