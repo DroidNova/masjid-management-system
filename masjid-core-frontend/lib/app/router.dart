@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/session/session_expired_handler.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/announcements_screen.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/edit_announcement_screen.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_landing_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/login_password_screen.dart';
@@ -38,284 +38,410 @@ import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_mo
 import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_request_detail_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_requests_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjid_detail_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjids_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_dashboard_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_shell_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_user_detail_screen.dart';
-import 'package:masjid_core_frontend/shared/widgets/not_allowed_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
+import 'package:masjid_core_frontend/shared/widgets/permission_gate.dart';
 
-final GoRouter appRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
-  initialLocation: '/splash',
-  routes: <RouteBase>[
-    GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
-    GoRoute(
-      path: '/auth',
-      builder: (context, state) => const AuthLandingScreen(),
-    ),
-    GoRoute(
-      path: '/login-phone',
-      builder: (context, state) => const LoginPhoneScreen(),
-    ),
-    GoRoute(
-      path: '/login-password',
-      builder: (context, state) {
-        final extra = _readExtraMap(state.extra);
-        final phone = extra?['phone'];
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-        if (phone == null || phone.isEmpty) {
-          return const _MissingLoginDataScreen();
-        }
+/// Pages anyone can open without logging in.
+const Set<String> publicLocations = <String>{
+  '/auth',
+  '/login-phone',
+  '/login-password',
+  '/login-otp',
+  '/masjid-request',
+  '/masjid-request/submitted',
+  '/masjid-request/track',
+};
 
-        return LoginPasswordScreen(phone: phone);
-      },
-    ),
-    GoRoute(
-      path: '/login-otp',
-      builder: (context, state) {
-        final extra = _readExtraMap(state.extra);
-        final phone = extra?['phone'];
-        final challengeId = extra?['challengeId'];
+/// Login pages: a signed-in user is sent home from these.
+const Set<String> _loginLocations = <String>{
+  '/auth',
+  '/login-phone',
+  '/login-password',
+  '/login-otp',
+};
 
-        if (phone == null ||
-            phone.isEmpty ||
-            challengeId == null ||
-            challengeId.isEmpty) {
-          return const _MissingLoginDataScreen();
-        }
+/// Decides where to send the user for [uri] given the auth [state].
+/// Returns null to stay. Kept free of Flutter so it is easy to test.
+String? authRedirect(AuthState state, Uri uri) {
+  final path = uri.path;
 
-        return OtpScreen(
-          phone: phone,
-          challengeId: challengeId,
-          otpLength:
-              int.tryParse(extra?['otpLength'] ?? '') ??
-              LoginStartResponse.defaultOtpLength,
-        );
-      },
-    ),
-    GoRoute(
-      path: '/masjid-request',
-      builder: (context, state) => const MasjidRequestFormScreen(),
-    ),
-    GoRoute(
-      path: '/masjid-request/submitted',
-      builder: (context, state) => const MasjidRequestSubmittedScreen(),
-    ),
-    GoRoute(
-      path: '/masjid-request/track',
-      builder: (context, state) => const TrackMasjidApplicationScreen(),
-    ),
-    GoRoute(
-      path: '/community/add-user',
-      builder: (context, state) => const _RoleGuard(
-        isAllowed: PermissionHelper.canAddCommunityUser,
-        child: AddCommunityUserScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/finance/add-collection',
-      builder: (context, state) => const _RoleGuard(
-        isAllowed: PermissionHelper.canManageFinance,
-        child: AddCollectionScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/finance/add-expense',
-      builder: (context, state) => const _RoleGuard(
-        isAllowed: PermissionHelper.canManageFinance,
-        child: AddExpenseScreen(),
-      ),
-    ),
+  switch (state) {
+    case AuthUnknown():
+      // Wait on the splash screen; remember where the user wanted to go.
+      if (path == '/splash') return null;
+      return Uri(
+        path: '/splash',
+        queryParameters: <String, String>{'from': uri.toString()},
+      ).toString();
 
-    GoRoute(
-      path: '/projects/:id/contributions',
-      builder: (context, state) => ProjectContributionsScreen(
-        projectId: state.pathParameters['id'] ?? '',
-        projectTitle: (state.extra as String?) ?? 'Project',
-      ),
-    ),
-    GoRoute(
-      path: '/finance/collection-contributions',
-      builder: (context, state) => const CollectionContributionsScreen(),
-    ),
-    GoRoute(
-      path: '/contributions',
-      builder: (context, state) => const MyContributionsScreen(),
-    ),
-    GoRoute(
-      path: '/contributions/imam-salary/:month/:year/payments',
-      builder: (context, state) {
-        final month = int.tryParse(state.pathParameters['month'] ?? '');
-        final year = int.tryParse(state.pathParameters['year'] ?? '');
-        if (month == null || year == null || month < 1 || month > 12) {
-          return const _InvalidRouteParametersScreen();
-        }
-        return ImamSalaryPaymentHistoryScreen(month: month, year: year);
-      },
-    ),
+    case AuthSignedOut():
+      if (publicLocations.contains(path)) return null;
+      return '/auth';
 
-    GoRoute(
-      path: '/imam-salaries',
-      builder: (context, state) => const ImamSalaryScreen(),
-    ),
+    case AuthSignedIn(:final user):
+      final home = homeLocationFor(user);
+      if (path == '/splash') {
+        final from = uri.queryParameters['from'];
+        final canResume =
+            from != null &&
+            from.startsWith('/') &&
+            !from.startsWith('/splash') &&
+            !_loginLocations.contains(Uri.parse(from).path);
+        return canResume ? from : home;
+      }
+      if (_loginLocations.contains(path) || path == '/' || path == '/main') {
+        return home;
+      }
+      final isSuperAdmin = PermissionHelper.isSuperAdmin(user);
+      if (path.startsWith('/super-admin') && !isSuperAdmin) return home;
+      // Super admins have no masjid, so the masjid app does not apply.
+      if (path.startsWith('/main') && isSuperAdmin) return home;
+      return null;
+  }
+}
 
-    GoRoute(
-      path: '/announcements',
-      builder: (context, state) => const AnnouncementsScreen(),
+/// Re-runs the router's redirect whenever the auth state changes.
+class _AuthRefresh extends ChangeNotifier {
+  _AuthRefresh(Ref ref) {
+    ref.listen<AuthState>(
+      authControllerProvider,
+      (previous, next) => notifyListeners(),
+    );
+  }
+}
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = _AuthRefresh(ref);
+  ref.onDispose(refresh.dispose);
+  return GoRouter(
+    navigatorKey: rootNavigatorKey,
+    initialLocation: '/splash',
+    refreshListenable: refresh,
+    redirect: (context, state) =>
+        authRedirect(ref.read(authControllerProvider), state.uri),
+    routes: _routes,
+  );
+});
+
+final List<RouteBase> _routes = <RouteBase>[
+  GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+  GoRoute(
+    path: '/auth',
+    builder: (context, state) => const AuthLandingScreen(),
+  ),
+  GoRoute(
+    path: '/login-phone',
+    builder: (context, state) => const LoginPhoneScreen(),
+  ),
+  GoRoute(
+    path: '/login-password',
+    builder: (context, state) {
+      final extra = _readExtraMap(state.extra);
+      final phone = extra?['phone'];
+
+      if (phone == null || phone.isEmpty) {
+        return const _MissingLoginDataScreen();
+      }
+
+      return LoginPasswordScreen(phone: phone);
+    },
+  ),
+  GoRoute(
+    path: '/login-otp',
+    builder: (context, state) {
+      final extra = _readExtraMap(state.extra);
+      final phone = extra?['phone'];
+      final challengeId = extra?['challengeId'];
+
+      if (phone == null ||
+          phone.isEmpty ||
+          challengeId == null ||
+          challengeId.isEmpty) {
+        return const _MissingLoginDataScreen();
+      }
+
+      return OtpScreen(
+        phone: phone,
+        challengeId: challengeId,
+        otpLength:
+            int.tryParse(extra?['otpLength'] ?? '') ??
+            LoginStartResponse.defaultOtpLength,
+      );
+    },
+  ),
+  GoRoute(
+    path: '/masjid-request',
+    builder: (context, state) => const MasjidRequestFormScreen(),
+  ),
+  GoRoute(
+    path: '/masjid-request/submitted',
+    builder: (context, state) => const MasjidRequestSubmittedScreen(),
+  ),
+  GoRoute(
+    path: '/masjid-request/track',
+    builder: (context, state) => const TrackMasjidApplicationScreen(),
+  ),
+  GoRoute(
+    path: '/community/add-user',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canAddCommunityUser,
+      child: AddCommunityUserScreen(),
     ),
-    GoRoute(
-      path: '/announcements/add',
-      builder: (context, state) => const _RoleGuard(
+  ),
+  GoRoute(
+    path: '/finance/add-collection',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canManageFinance,
+      child: AddCollectionScreen(),
+    ),
+  ),
+  GoRoute(
+    path: '/finance/add-expense',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canManageFinance,
+      child: AddExpenseScreen(),
+    ),
+  ),
+
+  GoRoute(
+    path: '/projects/:id/contributions',
+    builder: (context, state) => ProjectContributionsScreen(
+      projectId: state.pathParameters['id'] ?? '',
+      projectTitle: (state.extra as String?) ?? 'Project',
+    ),
+  ),
+  GoRoute(
+    path: '/finance/collection-contributions',
+    builder: (context, state) => const CollectionContributionsScreen(),
+  ),
+  GoRoute(
+    path: '/contributions',
+    builder: (context, state) => const MyContributionsScreen(),
+  ),
+  GoRoute(
+    path: '/contributions/imam-salary/:month/:year/payments',
+    builder: (context, state) {
+      final month = int.tryParse(state.pathParameters['month'] ?? '');
+      final year = int.tryParse(state.pathParameters['year'] ?? '');
+      if (month == null || year == null || month < 1 || month > 12) {
+        return const _InvalidRouteParametersScreen();
+      }
+      return ImamSalaryPaymentHistoryScreen(month: month, year: year);
+    },
+  ),
+
+  GoRoute(
+    path: '/imam-salaries',
+    builder: (context, state) => const ImamSalaryScreen(),
+  ),
+
+  GoRoute(
+    path: '/announcements',
+    builder: (context, state) => const AnnouncementsScreen(),
+  ),
+  GoRoute(
+    path: '/announcements/add',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canManageAnnouncements,
+      child: AddAnnouncementScreen(),
+    ),
+  ),
+  GoRoute(
+    path: '/announcements/:id/edit',
+    builder: (context, state) {
+      final announcementId = state.pathParameters['id'] ?? '';
+      final extra = state.extra;
+      final announcement = extra is AnnouncementModel ? extra : null;
+      return PermissionGate(
         isAllowed: PermissionHelper.canManageAnnouncements,
-        child: AddAnnouncementScreen(),
-      ),
+        child: EditAnnouncementScreen(
+          announcementId: announcementId,
+          announcement: announcement,
+        ),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/namaz-time/update',
+    builder: (context, state) {
+      final extra = state.extra;
+      String? masjidId;
+      if (extra is Map<String, dynamic>) {
+        masjidId = extra['masjidId']?.toString();
+      }
+      return PermissionGate(
+        isAllowed: PermissionHelper.canUpdateNamazTime,
+        child: UpdateNamazTimeScreen(masjidId: masjidId),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/projects/add',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canManageProjects,
+      child: AddProjectScreen(),
     ),
-    GoRoute(
-      path: '/announcements/:id/edit',
-      builder: (context, state) {
-        final announcementId = state.pathParameters['id'] ?? '';
-        final extra = state.extra;
-        final announcement = extra is AnnouncementModel ? extra : null;
-        return _RoleGuard(
-          isAllowed: PermissionHelper.canManageAnnouncements,
-          child: EditAnnouncementScreen(
-            announcementId: announcementId,
-            announcement: announcement,
-          ),
-        );
-      },
-    ),
-    GoRoute(
-      path: '/namaz-time/update',
-      builder: (context, state) {
-        final extra = state.extra;
-        String? masjidId;
-        if (extra is Map<String, dynamic>) {
-          masjidId = extra['masjidId']?.toString();
-        }
-        return _RoleGuard(
-          isAllowed: PermissionHelper.canUpdateNamazTime,
-          child: UpdateNamazTimeScreen(masjidId: masjidId),
-        );
-      },
-    ),
-    GoRoute(
-      path: '/projects/add',
-      builder: (context, state) => const _RoleGuard(
+  ),
+  GoRoute(
+    path: '/projects/:id/edit',
+    builder: (context, state) {
+      final projectId = state.pathParameters['id'] ?? '';
+      final extra = state.extra;
+      final project = extra is ProjectModel ? extra : null;
+      return PermissionGate(
         isAllowed: PermissionHelper.canManageProjects,
-        child: AddProjectScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/projects/:id/edit',
-      builder: (context, state) {
-        final projectId = state.pathParameters['id'] ?? '';
-        final extra = state.extra;
-        final project = extra is ProjectModel ? extra : null;
-        return _RoleGuard(
-          isAllowed: PermissionHelper.canManageProjects,
-          child: EditProjectScreen(
-            projectId: projectId,
-            initialProject: project,
-          ),
-        );
-      },
-    ),
-    GoRoute(
-      path: '/projects/:id',
-      builder: (context, state) {
-        final projectId = state.pathParameters['id'] ?? '';
-        final extra = state.extra;
-        final project = extra is ProjectModel ? extra : null;
-        return ProjectDetailScreen(
-          projectId: projectId,
-          initialProject: project,
-        );
-      },
-    ),
+        child: EditProjectScreen(projectId: projectId, initialProject: project),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/projects/:id',
+    builder: (context, state) {
+      final projectId = state.pathParameters['id'] ?? '';
+      final extra = state.extra;
+      final project = extra is ProjectModel ? extra : null;
+      return ProjectDetailScreen(projectId: projectId, initialProject: project);
+    },
+  ),
 
-    GoRoute(
-      path: '/super-admin',
-      builder: (context, state) =>
-          const _SuperAdminGuard(child: SuperAdminShellScreen()),
+  // ---------------------------------------------------------------- super admin
+  StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) => _superAdminOnly(
+      SuperAdminShellScreen(navigationShell: navigationShell),
     ),
-    GoRoute(
-      path: '/super-admin/requests',
-      builder: (context, state) =>
-          const _SuperAdminGuard(child: SuperAdminShellScreen(initialIndex: 1)),
-    ),
-    GoRoute(
-      path: '/super-admin/requests/:id',
-      builder: (context, state) => _SuperAdminGuard(
-        child: AdminMasjidRequestDetailScreen(
-          id: state.pathParameters['id'] ?? '',
-          initial: state.extra is AdminMasjidRequestModel
-              ? state.extra as AdminMasjidRequestModel
-              : null,
-        ),
+    branches: <StatefulShellBranch>[
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/super-admin',
+            builder: (context, state) => const SuperAdminDashboardScreen(),
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/super-admin/masjids',
-      builder: (context, state) =>
-          const _SuperAdminGuard(child: SuperAdminShellScreen(initialIndex: 2)),
-    ),
-    GoRoute(
-      path: '/super-admin/masjids/:id',
-      builder: (context, state) => _SuperAdminGuard(
-        child: AdminMasjidDetailScreen(
-          id: state.pathParameters['id'] ?? '',
-          initial: state.extra is AdminMasjidModel
-              ? state.extra as AdminMasjidModel
-              : null,
-        ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/super-admin/requests',
+            builder: (context, state) => const AdminMasjidRequestsScreen(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: rootNavigatorKey,
+                builder: (context, state) => _superAdminOnly(
+                  AdminMasjidRequestDetailScreen(
+                    id: state.pathParameters['id'] ?? '',
+                    initial: state.extra is AdminMasjidRequestModel
+                        ? state.extra as AdminMasjidRequestModel
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/super-admin/users',
-      builder: (context, state) =>
-          const _SuperAdminGuard(child: SuperAdminShellScreen(initialIndex: 3)),
-    ),
-    GoRoute(
-      path: '/super-admin/users/:id',
-      builder: (context, state) => _SuperAdminGuard(
-        child: AdminUserDetailScreen(
-          id: state.pathParameters['id'] ?? '',
-          initial: state.extra is AdminUserModel
-              ? state.extra as AdminUserModel
-              : null,
-        ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/super-admin/masjids',
+            builder: (context, state) => const AdminMasjidsScreen(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: rootNavigatorKey,
+                builder: (context, state) => _superAdminOnly(
+                  AdminMasjidDetailScreen(
+                    id: state.pathParameters['id'] ?? '',
+                    initial: state.extra is AdminMasjidModel
+                        ? state.extra as AdminMasjidModel
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/main',
-      redirect: (context, state) async {
-        final user = await SessionStorage().getUser();
-        if (PermissionHelper.isSuperAdmin(user)) return '/super-admin';
-        return '/main/home';
-      },
-    ),
-    ShellRoute(
-      builder: (context, state, child) => MainShellScreen(child: child),
-      routes: <RouteBase>[
-        GoRoute(
-          path: '/main/home',
-          builder: (context, state) => const HomeDashboardScreen(),
-        ),
-        GoRoute(
-          path: '/main/finance',
-          builder: (context, state) => const FinanceScreen(),
-        ),
-        GoRoute(
-          path: '/main/projects',
-          builder: (context, state) => const ProjectsScreen(),
-        ),
-        GoRoute(
-          path: '/main/community',
-          builder: (context, state) => const CommunityScreen(),
-        ),
-      ],
-    ),
-  ],
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/super-admin/users',
+            builder: (context, state) => const AdminUsersScreen(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: rootNavigatorKey,
+                builder: (context, state) => _superAdminOnly(
+                  AdminUserDetailScreen(
+                    id: state.pathParameters['id'] ?? '',
+                    initial: state.extra is AdminUserModel
+                        ? state.extra as AdminUserModel
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  ),
+
+  // ---------------------------------------------------------------- masjid app
+  StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) =>
+        MainShellScreen(navigationShell: navigationShell),
+    branches: <StatefulShellBranch>[
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/home',
+            builder: (context, state) => const HomeDashboardScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/finance',
+            builder: (context, state) => const FinanceScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/projects',
+            builder: (context, state) => const ProjectsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/community',
+            builder: (context, state) => const CommunityScreen(),
+          ),
+        ],
+      ),
+    ],
+  ),
+];
+
+/// Super admin screens need platform permissions (the redirect already keeps
+/// other users out; this also covers a stale stored user).
+Widget _superAdminOnly(Widget child) => PermissionGate(
+  isAllowed: (permissions) =>
+      permissions.contains(AppPermissions.platformUsersRead),
+  child: child,
 );
 
 class _InvalidRouteParametersScreen extends StatelessWidget {
@@ -365,69 +491,6 @@ class _MissingLoginDataScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SuperAdminGuard extends StatelessWidget {
-  const _SuperAdminGuard({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: SessionStorage().getUser(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final user = snapshot.data;
-        if (user == null) {
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => context.go('/auth'),
-          );
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (!PermissionHelper.isSuperAdmin(user)) {
-          return const Scaffold(
-            body: NotAllowedView(
-              message: 'Only SUPER_ADMIN users can access this page.',
-            ),
-          );
-        }
-        return child;
-      },
-    );
-  }
-}
-
-class _RoleGuard extends StatelessWidget {
-  const _RoleGuard({required this.isAllowed, required this.child});
-
-  /// Receives the signed-in user's permissions (see PermissionHelper).
-  final bool Function(List<String> permissions) isAllowed;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: SessionStorage().getUser(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final permissions = snapshot.data?.permissions ?? const <String>[];
-        if (!isAllowed(permissions)) {
-          return const Scaffold(body: NotAllowedView());
-        }
-        return child;
-      },
     );
   }
 }

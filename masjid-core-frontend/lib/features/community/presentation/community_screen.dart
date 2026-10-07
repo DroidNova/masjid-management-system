@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
 import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
@@ -15,29 +16,24 @@ import 'package:masjid_core_frontend/features/community/presentation/widgets/mas
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class CommunityScreen extends StatefulWidget {
+class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({
     super.key,
     CommunityRepository? communityRepository,
-    AuthRepository? authRepository,
     SessionStorage? sessionStorage,
   }) : _communityRepository = communityRepository,
-       _authRepository = authRepository,
        _sessionStorage = sessionStorage;
 
   final CommunityRepository? _communityRepository;
-  final AuthRepository? _authRepository;
   final SessionStorage? _sessionStorage;
 
   @override
-  State<CommunityScreen> createState() => _CommunityScreenState();
+  ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
 }
 
-class _CommunityScreenState extends State<CommunityScreen> {
+class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   late final CommunityRepository _communityRepository =
       widget._communityRepository ?? CommunityRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
 
@@ -114,9 +110,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _logout() async {
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
+    // The router sends the user to the login page.
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   String _cleanError(Object error) {
@@ -390,15 +385,16 @@ class _CommunityErrorView extends StatelessWidget {
   }
 }
 
-class _EditCommunityUserDialog extends StatefulWidget {
+class _EditCommunityUserDialog extends ConsumerStatefulWidget {
   const _EditCommunityUserDialog({required this.user});
   final CommunityUserModel user;
   @override
-  State<_EditCommunityUserDialog> createState() =>
+  ConsumerState<_EditCommunityUserDialog> createState() =>
       _EditCommunityUserDialogState();
 }
 
-class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
+class _EditCommunityUserDialogState
+    extends ConsumerState<_EditCommunityUserDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name = TextEditingController(
     text: widget.user.fullName,
@@ -542,14 +538,14 @@ class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
   }
 }
 
-class _StatusDialog extends StatefulWidget {
+class _StatusDialog extends ConsumerStatefulWidget {
   const _StatusDialog({this.currentStatus});
   final String? currentStatus;
   @override
-  State<_StatusDialog> createState() => _StatusDialogState();
+  ConsumerState<_StatusDialog> createState() => _StatusDialogState();
 }
 
-class _StatusDialogState extends State<_StatusDialog> {
+class _StatusDialogState extends ConsumerState<_StatusDialog> {
   static const _statuses = <String>['ACTIVE', 'INACTIVE', 'SUSPENDED'];
   late String _status = _statuses.contains(widget.currentStatus)
       ? widget.currentStatus!

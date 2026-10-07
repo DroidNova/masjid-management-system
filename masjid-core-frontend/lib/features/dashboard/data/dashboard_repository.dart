@@ -1,17 +1,17 @@
-import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/dashboard_api.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
 
+final dashboardRepositoryProvider = Provider<DashboardRepository>(
+  (ref) => DashboardRepository(DashboardApi(ref.watch(apiClientProvider))),
+);
+
 class DashboardRepository {
-  DashboardRepository({DashboardApi? dashboardApi})
-    : _dashboardApi = dashboardApi ?? DashboardApi();
+  DashboardRepository(this._api);
 
-  final DashboardApi _dashboardApi;
+  final DashboardApi _api;
 
-  Future<DashboardResponse> getMyMasjidDashboard() {
-    return ApiRequestCoordinator.instance.run<DashboardResponse>(
-      key: 'GET:/dashboard/my-masjid',
-      request: _dashboardApi.getMyMasjidDashboard,
-    );
-  }
+  Future<DashboardResponse> getMyMasjidDashboard() =>
+      _api.getMyMasjidDashboard();
 }

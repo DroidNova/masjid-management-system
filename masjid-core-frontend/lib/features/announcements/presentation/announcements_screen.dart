@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
@@ -7,34 +8,30 @@ import 'package:masjid_core_frontend/features/announcements/data/announcements_r
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_card.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_empty_view.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class AnnouncementsScreen extends StatefulWidget {
+class AnnouncementsScreen extends ConsumerStatefulWidget {
   const AnnouncementsScreen({
     super.key,
     AnnouncementsRepository? announcementsRepository,
-    AuthRepository? authRepository,
     SessionStorage? sessionStorage,
   }) : _announcementsRepository = announcementsRepository,
-       _authRepository = authRepository,
        _sessionStorage = sessionStorage;
 
   final AnnouncementsRepository? _announcementsRepository;
-  final AuthRepository? _authRepository;
   final SessionStorage? _sessionStorage;
 
   @override
-  State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
+  ConsumerState<AnnouncementsScreen> createState() =>
+      _AnnouncementsScreenState();
 }
 
-class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
+class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
   late final AnnouncementsRepository _announcementsRepository =
       widget._announcementsRepository ?? AnnouncementsRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
 
@@ -150,9 +147,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   }
 
   Future<void> _logout() async {
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
+    // The router sends the user to the login page.
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   String _cleanError(Object error) {

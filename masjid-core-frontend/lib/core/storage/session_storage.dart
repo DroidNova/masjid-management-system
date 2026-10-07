@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:masjid_core_frontend/core/storage/token_storage.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 
 class SessionStorage {
   SessionStorage({FlutterSecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+    : _secureStorage = secureStorage ?? TokenStorage.defaultSecureStorage;
 
   static const String _userKey = 'current_user';
 

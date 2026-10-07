@@ -3,48 +3,35 @@ import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/shared/widgets/account_menu_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/logout_button.dart';
 
+/// Bottom-tab shell for masjid users. Each tab is a branch of a
+/// StatefulShellRoute, so it keeps its scroll position and loaded data.
 class MainShellScreen extends StatelessWidget {
-  const MainShellScreen({super.key, required this.child});
+  const MainShellScreen({super.key, required this.navigationShell});
 
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   static const List<_MainTab> _tabs = <_MainTab>[
-    _MainTab(label: 'Home', icon: Icons.home_outlined, path: '/main/home'),
-    _MainTab(
-      label: 'Finance',
-      icon: Icons.account_balance_wallet_outlined,
-      path: '/main/finance',
-    ),
-    _MainTab(
-      label: 'Projects',
-      icon: Icons.task_alt_outlined,
-      path: '/main/projects',
-    ),
-    _MainTab(
-      label: 'Community',
-      icon: Icons.groups_outlined,
-      path: '/main/community',
-    ),
+    _MainTab(label: 'Home', icon: Icons.home_outlined),
+    _MainTab(label: 'Finance', icon: Icons.account_balance_wallet_outlined),
+    _MainTab(label: 'Projects', icon: Icons.task_alt_outlined),
+    _MainTab(label: 'Community', icon: Icons.groups_outlined),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _selectedIndexForLocation(
-      GoRouterState.of(context).uri.path,
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Masjid Core'),
         actions: const <Widget>[AccountMenuButton(), LogoutButton()],
       ),
-      body: child,
+      body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          if (index == selectedIndex) return;
-          context.go(_tabs[index].path);
-        },
+        currentIndex: navigationShell.currentIndex,
+        // Tapping the current tab again returns it to its first page.
+        onTap: (index) => navigationShell.goBranch(
+          index,
+          initialLocation: index == navigationShell.currentIndex,
+        ),
         type: BottomNavigationBarType.fixed,
         items: _tabs
             .map(
@@ -57,17 +44,11 @@ class MainShellScreen extends StatelessWidget {
       ),
     );
   }
-
-  int _selectedIndexForLocation(String location) {
-    final index = _tabs.indexWhere((tab) => location.startsWith(tab.path));
-    return index < 0 ? 0 : index;
-  }
 }
 
 class _MainTab {
-  const _MainTab({required this.label, required this.icon, required this.path});
+  const _MainTab({required this.label, required this.icon});
 
   final String label;
   final IconData icon;
-  final String path;
 }

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
-import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:masjid_core_frontend/features/dashboard/data/dashboard_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/announcement_preview_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/finance_summary_card.dart';
@@ -13,143 +12,48 @@ import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/ima
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/masjid_header_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/namaz_time_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/project_summary_card.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class HomeDashboardScreen extends StatefulWidget {
-  const HomeDashboardScreen({
-    super.key,
-    DashboardRepository? dashboardRepository,
-    AuthRepository? authRepository,
-    SessionStorage? sessionStorage,
-  }) : _dashboardRepository = dashboardRepository,
-       _authRepository = authRepository,
-       _sessionStorage = sessionStorage;
-
-  final DashboardRepository? _dashboardRepository;
-  final AuthRepository? _authRepository;
-  final SessionStorage? _sessionStorage;
+class HomeDashboardScreen extends ConsumerWidget {
+  const HomeDashboardScreen({super.key});
 
   @override
-  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final dashboardState = ref.watch(dashboardControllerProvider);
+
+    return dashboardState.when(
+      // Keep showing data during pull-to-refresh.
+      skipLoadingOnRefresh: true,
+      loading: () => const LoadingView(),
+      error: (error, _) {
+        final noMasjid =
+            error is ApiException &&
+            error.code == ApiErrorCodes.userMasjidNotAssigned;
+        return _DashboardErrorView(
+          message: noMasjid ? l10n.noMasjidAssigned : l10n.dashboardLoadFailed,
+          detail: noMasjid ? null : error.toString(),
+          primaryButtonLabel: noMasjid ? 'Logout / Back to Login' : l10n.retry,
+          onPrimaryPressed: noMasjid
+              ? () => ref.read(authControllerProvider.notifier).signOut()
+              : () => ref.invalidate(dashboardControllerProvider),
+        );
+      },
+      data: (dashboard) => _DashboardContent(dashboard: dashboard),
+    );
+  }
 }
 
-class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
-  late final DashboardRepository _dashboardRepository =
-      widget._dashboardRepository ?? DashboardRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
-  late final SessionStorage _sessionStorage =
-      widget._sessionStorage ?? SessionStorage();
+class _DashboardContent extends ConsumerWidget {
+  const _DashboardContent({required this.dashboard});
 
-  DashboardResponse? _dashboard;
-  String? _errorMessage;
-  bool _isLoading = true;
-  bool _hasLoaded = false;
-  Future<void>? _activeLoad;
-  late final ValueNotifier<int> _refreshNotifier;
-  AppUser? _currentUser;
+  final DashboardResponse dashboard;
 
   @override
-  void initState() {
-    super.initState();
-    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
-      AppDataScope.dashboard,
-    );
-    _refreshNotifier.addListener(_onRefreshRequested);
-    _loadCurrentUser();
-    _loadDashboard();
-  }
-
-  @override
-  void dispose() {
-    _refreshNotifier.removeListener(_onRefreshRequested);
-    super.dispose();
-  }
-
-  void _onRefreshRequested() {
-    _loadDashboard(force: true);
-  }
-
-  Future<void> _loadCurrentUser() async {
-    final user = await _sessionStorage.getUser();
-    if (!mounted) return;
-    setState(() => _currentUser = user);
-  }
-
-  Future<void> _loadDashboard({bool force = false}) {
-    final activeLoad = _activeLoad;
-    if (activeLoad != null) return activeLoad;
-    if (!force && _hasLoaded) return Future<void>.value();
-
-    _activeLoad = _performLoadDashboard().whenComplete(() {
-      _activeLoad = null;
-    });
-    return _activeLoad!;
-  }
-
-  Future<void> _performLoadDashboard() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final dashboard = await _dashboardRepository.getMyMasjidDashboard();
-      if (!mounted) return;
-      setState(() {
-        _dashboard = dashboard;
-        _hasLoaded = true;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _cleanError(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _logout() async {
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
-  }
-
-  String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
-  }
-
-  bool get _isNoMasjidError {
-    final message = _errorMessage?.toLowerCase() ?? '';
-    return message.contains('masjid') ||
-        message.contains('forbidden') ||
-        message.contains('not assigned');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const LoadingView();
-    }
-
-    if (_errorMessage != null) {
-      return _DashboardErrorView(
-        message: _isNoMasjidError
-            ? 'You are not assigned to any masjid yet.'
-            : 'Unable to load dashboard',
-        detail: _isNoMasjidError ? null : _errorMessage,
-        primaryButtonLabel: _isNoMasjidError
-            ? 'Logout / Back to Login'
-            : 'Retry',
-        onPrimaryPressed: _isNoMasjidError
-            ? _logout
-            : () => _loadDashboard(force: true),
-      );
-    }
-
-    final dashboard = _dashboard;
-    final permissions = _currentUser?.permissions ?? const <String>[];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final permissions = ref.watch(currentPermissionsProvider);
     final canUpdateNamazTime = PermissionHelper.canUpdateNamazTime(permissions);
     final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
       permissions,
@@ -159,16 +63,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     final canViewContributions = PermissionHelper.canViewOwnContributions(
       permissions,
     );
-    if (dashboard == null) {
-      return _DashboardErrorView(
-        message: 'Unable to load dashboard',
-        onPrimaryPressed: () => _loadDashboard(force: true),
-      );
-    }
 
     return SafeArea(
       child: RefreshIndicator(
-        onRefresh: () => _loadDashboard(force: true),
+        onRefresh: () =>
+            ref.read(dashboardControllerProvider.notifier).refresh(),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),

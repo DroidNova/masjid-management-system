@@ -8,15 +8,16 @@ Update the checkboxes and the status table as work lands.
 
 Last updated 2026-10-07.
 
-- **Done:** M0 Hygiene, M1 Backend security, M2 Access model, M3 Backend data and structure. Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** M4 Flutter foundation (Riverpod, one Dio client, auth state, router redirects). Use `docs/openapi.json` as the API contract; regenerate it with `npm run openapi` after backend changes.
+- **Done:** M0 Hygiene, M1 Backend security, M2 Access model, M3 Backend data and structure, M4 Flutter foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
+- **Next:** M5 Flutter feature migration, one feature per session, following the dashboard pattern (`features/dashboard/application` + repository on `apiClientProvider` + `ConsumerWidget`). Order in the M5 list. Each feature also adopts the backend's single pagination envelope and drops its own error extractor.
+- **App rules:** auth state lives only in `AuthController`; widgets read `currentUserProvider`/`currentPermissionsProvider`, never secure storage. Network calls go through `ApiClient` (`apiClientProvider`) and fail with `ApiException` (switch on `code`). Logging out = `authControllerProvider.notifier.signOut()`; the router redirect does the navigation.
 - **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
 - **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
 - **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
-- **Known debt carried forward:** The app still keeps per-screen state (M4 replaces it).
+- **Known debt carried forward:** Screens other than the dashboard still keep per-screen state (M5 replaces it).
 
 ## 1. What the app is
 
@@ -221,17 +222,21 @@ Done when: sums in the finance summary equal the sum of ledger entries and every
 
 Goal: one architecture, one network client, one auth state.
 
-- [ ] Add Riverpod, freezed, json_serializable, go_router_builder, flutter_localizations, intl, mocktail.
-- [ ] Single `Dio` provider and one interceptor with a refresh lock. Port the refresh lock idea from the dead `interceptors/auth_interceptor.dart` before deleting it.
-- [ ] `ApiEnvelope<T>`, `ApiException` with `code`, mapped once. Delete all per-feature error extractors and `error_message_helper.dart`.
-- [ ] `AuthNotifier` with `AuthState { unknown, signedOut, signedIn(user, permissions) }`, hydrated once at startup. Secure storage with `encryptedSharedPreferences` on Android.
-- [ ] Router: global `redirect`, `StatefulShellRoute` for the member shell and the super admin shell, typed routes, role and permission requirements declared per route.
-- [ ] `PermissionGate` widget and `hasPermission` helper replacing `PermissionHelper` role checks. Permission names come from the login response. The app never branches on role names except to pick the super admin shell.
-- [ ] No visual redesign in this milestone or M5. Keep existing screens and widgets, change only the data and state wiring.
-- [ ] Localisation scaffold with `l10n.yaml` and `app_en.arb`. Money and date formatting via `intl` with `en_IN`.
-- [ ] Environment files for dev, staging, prod. Docker image takes the URL at build time from the prod file.
-- [ ] Android release: upload keystore via `key.properties` (ignored), `INTERNET` permission in main manifest, R8 enabled, real app id, icon, and name.
-- [ ] Web: title, description, manifest, theme colour, landscape allowed, loading splash.
+- [x] Added Riverpod (2.6, plain providers, no generator), freezed, json_serializable, flutter_localizations, intl, mocktail. `AppUser` is the reference freezed model; regenerate with `dart run build_runner build --delete-conflicting-outputs` (generated files are committed).
+- [ ] Deferred to M5: `go_router_builder` typed routes. They only pay off once each screen loads its own data by id, which is M5 work; until then a few routes still pass models through `extra`.
+- [x] One shared `ApiClient` (configured in `main.dart`, `apiClientProvider`; old `ApiClient()` calls get the same instance). The interceptor refreshes once for any number of parallel 401s, and a network failure during refresh no longer logs the user out.
+- [x] `ApiException { message, code, statusCode, fieldErrors }` built once from the error envelope; `ApiClient.get/post/...` return the `data` field. New code switches on `code`.
+- [ ] Deferred to M5: delete the per-feature error extractors and `error_message_helper.dart` as each feature moves to `ApiClient.get/post`.
+- [x] `AuthController` (`features/auth/application`) with `AuthUnknown / AuthSignedOut / AuthSignedIn(user)`, hydrated once at startup and refreshed from `/auth/me` in the background. `currentUserProvider` and `currentPermissionsProvider` for widgets. Android secure storage uses EncryptedSharedPreferences (Android users log in once more after this update).
+- [x] Router (`routerProvider`): one `authRedirect` function (unit tested) driven by the auth state; deep links survive the startup check; `StatefulShellRoute` for both shells so tabs keep their state; permission requirements on routes through `PermissionGate`.
+- [x] `PermissionGate` widget; `PermissionHelper` reads permissions (done in M2).
+- [x] No visual redesign. Visible changes: money shows Indian grouping with paise (₹12,34,567.50), a "session expired" snack bar, and a loading message on the web while the app downloads.
+- [x] Localisation scaffold (`l10n.yaml`, `lib/l10n/app_en.arb`, used by splash and dashboard). `AppFormat` (`core/format`) for rupees and dates in `en_IN`.
+- [x] `env/dev.json`, `dev-android-emulator.json`, `staging.json`, `prod.json` for `--dart-define-from-file`. The web Docker image takes `APP_ENV` (and optional `API_BASE_URL` override). Staging and prod URLs are placeholders until M6.
+- [x] Android release: `key.properties` signing (falls back to the debug key when absent; template in `android/key.properties.example`), `INTERNET` permission in the main manifest, R8 shrinking. App id and name done in M0; a real icon comes with the UI work.
+- [x] Web: title, description, manifest, theme colour, landscape allowed (M0), loading message until the first frame.
+- [x] Dashboard migrated as the reference screen: `DashboardController` (AsyncNotifier) + `ConsumerWidget`, errors by code (the "not assigned to a masjid" message no longer triggers on any error mentioning "masjid").
+- [x] Verified: 38 app tests (redirect rules, auth controller, interceptor refresh lock and offline case, error mapping, dashboard states, formatters); a live run against the local backend logged in with OTP 1111, survived a corrupted access token with a single refresh, and signed out with "session expired" after the server revoked the session.
 
 Done when: login, logout, token refresh, and redirects work end to end through the new stack and one screen (dashboard) is migrated.
 
@@ -297,7 +302,7 @@ Still open:
 | M1 Backend security | done 2026-10-07 | migrations applied and login flows verified on the local DB |
 | M2 Access model | done 2026-10-07 | membership table and tenant helper deferred (see M2 notes) |
 | M3 Backend structure | done 2026-10-08 | pagination envelope and salary error codes deferred to M4/M5 |
-| M4 Flutter foundation | next | |
-| M5 Flutter features | not started | |
+| M4 Flutter foundation | done 2026-10-08 | typed routes and per-feature error cleanup move to M5 |
+| M5 Flutter features | next | |
 | M6 Deployment | not started | |
 | M7 Polish | not started | |

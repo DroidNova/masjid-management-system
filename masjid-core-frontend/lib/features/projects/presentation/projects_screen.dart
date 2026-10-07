@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
 import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
@@ -12,29 +13,24 @@ import 'package:masjid_core_frontend/features/projects/presentation/widgets/proj
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class ProjectsScreen extends StatefulWidget {
+class ProjectsScreen extends ConsumerStatefulWidget {
   const ProjectsScreen({
     super.key,
     ProjectsRepository? projectsRepository,
-    AuthRepository? authRepository,
     SessionStorage? sessionStorage,
   }) : _projectsRepository = projectsRepository,
-       _authRepository = authRepository,
        _sessionStorage = sessionStorage;
 
   final ProjectsRepository? _projectsRepository;
-  final AuthRepository? _authRepository;
   final SessionStorage? _sessionStorage;
 
   @override
-  State<ProjectsScreen> createState() => _ProjectsScreenState();
+  ConsumerState<ProjectsScreen> createState() => _ProjectsScreenState();
 }
 
-class _ProjectsScreenState extends State<ProjectsScreen> {
+class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   late final ProjectsRepository _projectsRepository =
       widget._projectsRepository ?? ProjectsRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
 
@@ -115,9 +111,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _logout() async {
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
+    // The router sends the user to the login page.
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   List<ProjectModel> get _filteredProjects {

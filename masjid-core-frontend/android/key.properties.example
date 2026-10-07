@@ -1,0 +1,6 @@
+# Copy to key.properties (git-ignored) and fill in. Keep the .jks file and
+# these passwords somewhere safe: losing them means you cannot update the app.
+storeFile=../upload-keystore.jks
+storePassword=change-me
+keyAlias=upload
+keyPassword=change-me

@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
 
-class LogoutButton extends StatefulWidget {
-  const LogoutButton({super.key, AuthRepository? authRepository})
-    : _authRepository = authRepository;
-
-  final AuthRepository? _authRepository;
+class LogoutButton extends ConsumerStatefulWidget {
+  const LogoutButton({super.key, AuthRepository? authRepository});
 
   @override
-  State<LogoutButton> createState() => _LogoutButtonState();
+  ConsumerState<LogoutButton> createState() => _LogoutButtonState();
 }
 
-class _LogoutButtonState extends State<LogoutButton> {
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
+class _LogoutButtonState extends ConsumerState<LogoutButton> {
   bool _isLoggingOut = false;
 
   Future<void> _confirmLogout() async {
@@ -39,9 +35,8 @@ class _LogoutButtonState extends State<LogoutButton> {
     if (shouldLogout != true || !mounted) return;
 
     setState(() => _isLoggingOut = true);
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
+    // The router sends the user to the login page.
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   @override

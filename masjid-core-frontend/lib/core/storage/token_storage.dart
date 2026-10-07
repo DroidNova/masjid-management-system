@@ -1,8 +1,14 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Access and refresh tokens in the platform's secure store
+/// (Android: EncryptedSharedPreferences; web: browser storage).
 class TokenStorage {
   TokenStorage({FlutterSecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+    : _secureStorage = secureStorage ?? defaultSecureStorage;
+
+  static const FlutterSecureStorage defaultSecureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
@@ -17,21 +23,10 @@ class TokenStorage {
     await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
   }
 
-  Future<void> saveAccessToken(String token) {
-    return _secureStorage.write(key: _accessTokenKey, value: token);
-  }
+  Future<String?> getAccessToken() => _secureStorage.read(key: _accessTokenKey);
 
-  Future<void> saveRefreshToken(String token) {
-    return _secureStorage.write(key: _refreshTokenKey, value: token);
-  }
-
-  Future<String?> getAccessToken() {
-    return _secureStorage.read(key: _accessTokenKey);
-  }
-
-  Future<String?> getRefreshToken() {
-    return _secureStorage.read(key: _refreshTokenKey);
-  }
+  Future<String?> getRefreshToken() =>
+      _secureStorage.read(key: _refreshTokenKey);
 
   Future<bool> hasAccessToken() async {
     final token = await getAccessToken();

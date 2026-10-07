@@ -89,8 +89,14 @@ Frontend (needs Flutter 3.41 stable):
 ```sh
 cd masjid-core-frontend
 flutter pub get
-flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+flutter run -d chrome --dart-define-from-file=env/dev.json
+# Android emulator (reaches your PC as 10.0.2.2):
+flutter run --dart-define-from-file=env/dev-android-emulator.json
 ```
+
+After changing a freezed/json model run `dart run build_runner build --delete-conflicting-outputs`; translations in `lib/l10n/*.arb` regenerate on build.
+
+Android release builds are signed with `android/key.properties` (copy `android/key.properties.example`; never commit the real file or the `.jks`). Gradle 8.14 needs Java 17 or 21: if `flutter build apk` fails with a bare Java version number, point Flutter at a supported JDK with `flutter config --jdk-dir=<path>`.
 
 ## Checks that CI runs
 

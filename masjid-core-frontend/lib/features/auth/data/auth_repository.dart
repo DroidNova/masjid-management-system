@@ -1,8 +1,8 @@
 import 'package:masjid_core_frontend/core/storage/session_storage.dart';
 import 'package:masjid_core_frontend/core/storage/token_storage.dart';
 import 'package:masjid_core_frontend/features/auth/data/auth_api.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/auth_session.dart';
-import 'package:masjid_core_frontend/features/auth/data/models/auth_tokens.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 
 class AuthRepository {
@@ -50,29 +50,11 @@ class AuthRepository {
     return session;
   }
 
-  Future<AuthTokens> refreshSession() async {
-    final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      await clearLocalSession();
-      throw Exception('Session expired. Please login again.');
-    }
-
-    try {
-      final tokens = await _authApi.refreshToken(refreshToken);
-      if (tokens.accessToken.isEmpty || tokens.refreshToken.isEmpty) {
-        await clearLocalSession();
-        throw Exception('Session expired. Please login again.');
-      }
-
-      await _tokenStorage.saveTokens(
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      );
-      return tokens;
-    } catch (_) {
-      await clearLocalSession();
-      throw Exception('Session expired. Please login again.');
-    }
+  /// Loads `/auth/me` and keeps the stored copy in sync.
+  Future<AppUser> fetchCurrentUser() async {
+    final user = await _authApi.fetchCurrentUser();
+    await _sessionStorage.saveUser(user);
+    return user;
   }
 
   Future<void> logout() async {

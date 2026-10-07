@@ -1,40 +1,60 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:masjid_core_frontend/core/session/session_expired_handler.dart';
-import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/storage/token_storage.dart';
 
+/// Called when the refresh token is rejected: the user must log in again.
+typedef SessionExpiredCallback = FutureOr<void> Function();
+
+/// Adds the access token to requests and renews it on 401.
+///
+/// Only one refresh runs at a time: requests that fail while a refresh is in
+/// flight wait for it and then retry with the new token. The backend rotates
+/// refresh tokens and revokes the session if an old one is reused, so two
+/// parallel refreshes would log the user out.
+///
+/// A network failure during refresh does NOT log the user out; only a
+/// rejected refresh token does.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Dio dio,
-    TokenStorage? tokenStorage,
-    SessionStorage? sessionStorage,
+    required Dio refreshDio,
+    required TokenStorage tokenStorage,
+    required SessionExpiredCallback onSessionExpired,
   }) : _dio = dio,
-       _refreshDio = Dio(dio.options),
-       _tokenStorage = tokenStorage ?? TokenStorage(),
-       _sessionStorage = sessionStorage ?? SessionStorage();
+       _refreshDio = refreshDio,
+       _tokenStorage = tokenStorage,
+       _onSessionExpired = onSessionExpired;
 
   final Dio _dio;
   final Dio _refreshDio;
   final TokenStorage _tokenStorage;
-  final SessionStorage _sessionStorage;
+  final SessionExpiredCallback _onSessionExpired;
 
-  static const String _retriedKey = 'retried';
+  Completer<String?>? _refreshing;
+
+  static const String _retriedKey = 'auth_retried';
+  static const List<String> _publicPaths = <String>[
+    '/auth/refresh',
+    '/auth/login/start',
+    '/auth/login/password',
+    '/auth/login/verify-otp',
+    '/masjid-requests',
+    '/masjid-requests/track',
+  ];
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (!_shouldSkipAuthHeader(options.path)) {
-      final accessToken = await _tokenStorage.getAccessToken();
-
-      if (accessToken != null && accessToken.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $accessToken';
+    if (!_isPublic(options)) {
+      final token = await _tokenStorage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
       }
     }
-
     handler.next(options);
   }
 
@@ -44,104 +64,135 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final options = err.requestOptions;
-    final statusCode = err.response?.statusCode;
-    final alreadyRetried = options.extra[_retriedKey] == true;
+    final shouldRefresh =
+        err.response?.statusCode == 401 &&
+        options.extra[_retriedKey] != true &&
+        !_isPublic(options) &&
+        !options.path.contains('/auth/logout');
 
-    if (statusCode != 401 ||
-        alreadyRetried ||
-        _shouldSkipRefresh(options.path)) {
-      handler.next(err);
+    if (!shouldRefresh) {
+      handler.next(_withApiException(err));
       return;
     }
 
     try {
-      final newAccessToken = await _refreshAccessToken();
-      if (newAccessToken == null || newAccessToken.isEmpty) {
-        await _clearLocalSession();
-        unawaited(SessionExpiredHandler.showDialogAndRedirect());
-        handler.next(_sessionExpiredError(options));
+      final token = await _freshAccessToken(options);
+      if (token == null) {
+        handler.next(_sessionExpired(err));
         return;
       }
-
-      final headers = Map<String, dynamic>.from(options.headers);
-      headers['Authorization'] = 'Bearer $newAccessToken';
-
-      final response = await _dio.fetch<dynamic>(
+      final retried = await _dio.fetch<dynamic>(
         options.copyWith(
-          headers: headers,
+          headers: <String, dynamic>{
+            ...options.headers,
+            'Authorization': 'Bearer $token',
+          },
           extra: <String, dynamic>{...options.extra, _retriedKey: true},
         ),
       );
-
-      handler.resolve(response);
-    } catch (_) {
-      await _clearLocalSession();
-      unawaited(SessionExpiredHandler.showDialogAndRedirect());
-      handler.next(_sessionExpiredError(options));
+      handler.resolve(retried);
+    } on DioException catch (retryError) {
+      handler.next(_withApiException(retryError));
     }
   }
 
-  Future<String?> _refreshAccessToken() async {
+  /// Returns a usable access token, refreshing at most once at a time.
+  Future<String?> _freshAccessToken(RequestOptions failed) async {
+    // Another request may already have refreshed while this one was in flight.
+    final sent = (failed.headers['Authorization'] as String?)?.replaceFirst(
+      'Bearer ',
+      '',
+    );
+    final current = await _tokenStorage.getAccessToken();
+    if (current != null && current.isNotEmpty && current != sent) {
+      return current;
+    }
+
+    final inFlight = _refreshing;
+    if (inFlight != null) return inFlight.future;
+
+    final completer = Completer<String?>();
+    // Waiters may not exist; don't let a failed refresh become an
+    // unhandled async error. Each caller still sees the error.
+    completer.future.ignore();
+    _refreshing = completer;
+    try {
+      final token = await _refresh();
+      completer.complete(token);
+      return token;
+    } catch (error) {
+      completer.completeError(error);
+      rethrow;
+    } finally {
+      _refreshing = null;
+    }
+  }
+
+  /// null = refresh token rejected (session over). Throws on network errors.
+  Future<String?> _refresh() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return null;
-
-    final response = await _refreshDio.post<Object?>(
-      '/auth/refresh',
-      data: <String, dynamic>{'refreshToken': refreshToken},
-      options: Options(extra: <String, dynamic>{_retriedKey: true}),
-    );
-
-    final tokenData = _extractMapData(response.data);
-    final accessToken = tokenData['accessToken']?.toString() ?? '';
-    final newRefreshToken = tokenData['refreshToken']?.toString() ?? '';
-
-    if (accessToken.isEmpty || newRefreshToken.isEmpty) return null;
-
-    await _tokenStorage.saveTokens(
-      accessToken: accessToken,
-      refreshToken: newRefreshToken,
-    );
-    return accessToken;
-  }
-
-  Map<String, dynamic> _extractMapData(Object? responseData) {
-    if (responseData is Map<String, dynamic>) {
-      final data = responseData['data'];
-      if (data is Map<String, dynamic>) return data;
-      return responseData;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _expire();
+      return null;
     }
-    return <String, dynamic>{};
+
+    try {
+      final response = await _refreshDio.post<Object?>(
+        '/auth/refresh',
+        data: <String, dynamic>{'refreshToken': refreshToken},
+      );
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      final tokens = data is Map<String, dynamic> ? data['tokens'] : null;
+      final access = tokens is Map<String, dynamic>
+          ? tokens['accessToken']?.toString()
+          : null;
+      final refresh = tokens is Map<String, dynamic>
+          ? tokens['refreshToken']?.toString()
+          : null;
+      if (access == null || access.isEmpty || refresh == null) {
+        await _expire();
+        return null;
+      }
+      await _tokenStorage.saveTokens(
+        accessToken: access,
+        refreshToken: refresh,
+      );
+      return access;
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status == 400 || status == 401 || status == 403) {
+        await _expire();
+        return null;
+      }
+      rethrow; // offline or server error: keep the session.
+    }
   }
 
-  Future<void> _clearLocalSession() async {
+  Future<void> _expire() async {
     await _tokenStorage.clearTokens();
-    await _sessionStorage.clearUser();
+    await _onSessionExpired();
   }
 
-  DioException _sessionExpiredError(RequestOptions options) {
-    return DioException(
-      requestOptions: options,
-      type: DioExceptionType.badResponse,
-      response: Response<String>(
-        requestOptions: options,
-        statusCode: 401,
-        data: 'Session expired. Please login again.',
-      ),
-      message: 'Session expired. Please login again.',
-    );
+  bool _isPublic(RequestOptions options) {
+    final path = options.path.toLowerCase();
+    if (path.contains('/auth/')) {
+      return _publicPaths.any(path.endsWith);
+    }
+    // Submitting and tracking a masjid request need no login.
+    return options.method == 'POST' &&
+        (path.endsWith('/masjid-requests') ||
+            path.endsWith('/masjid-requests/track'));
   }
 
-  bool _shouldSkipAuthHeader(String path) {
-    final normalizedPath = path.toLowerCase();
-    return normalizedPath.contains('/auth/refresh') ||
-        normalizedPath.contains('/auth/login/start') ||
-        normalizedPath.contains('/auth/login/password') ||
-        normalizedPath.contains('/auth/login/verify-otp');
-  }
+  DioException _withApiException(DioException err) =>
+      err.copyWith(error: ApiException.fromDio(err));
 
-  bool _shouldSkipRefresh(String path) {
-    final normalizedPath = path.toLowerCase();
-    return _shouldSkipAuthHeader(path) ||
-        normalizedPath.contains('/auth/logout');
-  }
+  DioException _sessionExpired(DioException err) => err.copyWith(
+    error: const ApiException(
+      message: 'Your session has expired. Please login again.',
+      code: ApiErrorCodes.sessionExpired,
+      statusCode: 401,
+    ),
+  );
 }

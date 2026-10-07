@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds need this to reach the API (debug builds get it automatically). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="Masjid Core"
         android:name="${applicationName}"

@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "Masjid Core",
+  "@appTitle": { "description": "App name shown in the window title and splash screen." },
+  "loading": "Loading…",
+  "retry": "Retry",
+  "logout": "Logout",
+  "notAllowedTitle": "Not allowed",
+  "notAllowedMessage": "You do not have permission to perform this action.",
+  "sessionExpired": "Your session has expired. Please login again.",
+  "noMasjidAssigned": "You are not assigned to any masjid yet.",
+  "dashboardLoadFailed": "Unable to load dashboard"
+}

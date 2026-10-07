@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
 import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/collection_entry_model.dart';
@@ -15,29 +16,24 @@ import 'package:masjid_core_frontend/features/finance/presentation/widgets/finan
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
-class FinanceScreen extends StatefulWidget {
+class FinanceScreen extends ConsumerStatefulWidget {
   const FinanceScreen({
     super.key,
     FinanceRepository? financeRepository,
-    AuthRepository? authRepository,
     SessionStorage? sessionStorage,
   }) : _financeRepository = financeRepository,
-       _authRepository = authRepository,
        _sessionStorage = sessionStorage;
 
   final FinanceRepository? _financeRepository;
-  final AuthRepository? _authRepository;
   final SessionStorage? _sessionStorage;
 
   @override
-  State<FinanceScreen> createState() => _FinanceScreenState();
+  ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
 }
 
-class _FinanceScreenState extends State<FinanceScreen> {
+class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   late final FinanceRepository _financeRepository =
       widget._financeRepository ?? FinanceRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
 
@@ -129,9 +125,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 
   Future<void> _logout() async {
-    await _authRepository.logout();
-    if (!mounted) return;
-    context.go('/auth');
+    // The router sends the user to the login page.
+    await ref.read(authControllerProvider.notifier).signOut();
   }
 
   String _cleanError(Object error) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/storage/session_storage.dart';
-import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
 
 /// App bar menu with account actions. Today: "Leave masjid", shown to users
@@ -10,29 +10,24 @@ import 'package:masjid_core_frontend/features/community/data/community_repositor
 ///
 /// One phone number can belong to one masjid at a time, so a person must
 /// leave their current masjid before another masjid's committee can add them.
-class AccountMenuButton extends StatefulWidget {
+class AccountMenuButton extends ConsumerStatefulWidget {
   const AccountMenuButton({
     super.key,
     CommunityRepository? communityRepository,
-    AuthRepository? authRepository,
     SessionStorage? sessionStorage,
   }) : _communityRepository = communityRepository,
-       _authRepository = authRepository,
        _sessionStorage = sessionStorage;
 
   final CommunityRepository? _communityRepository;
-  final AuthRepository? _authRepository;
   final SessionStorage? _sessionStorage;
 
   @override
-  State<AccountMenuButton> createState() => _AccountMenuButtonState();
+  ConsumerState<AccountMenuButton> createState() => _AccountMenuButtonState();
 }
 
-class _AccountMenuButtonState extends State<AccountMenuButton> {
+class _AccountMenuButtonState extends ConsumerState<AccountMenuButton> {
   late final CommunityRepository _communityRepository =
       widget._communityRepository ?? CommunityRepository();
-  late final AuthRepository _authRepository =
-      widget._authRepository ?? AuthRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
 
@@ -83,12 +78,12 @@ class _AccountMenuButtonState extends State<AccountMenuButton> {
     setState(() => _busy = true);
     try {
       await _communityRepository.leaveMyMasjid();
-      await _authRepository.logout();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You have left the masjid.')),
       );
-      context.go('/auth');
+      // Signing out sends the user to the login page (router redirect).
+      await ref.read(authControllerProvider.notifier).signOut();
     } catch (error) {
       if (!mounted) return;
       setState(() => _busy = false);

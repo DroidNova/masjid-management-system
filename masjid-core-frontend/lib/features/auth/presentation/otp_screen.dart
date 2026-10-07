@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
 import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({
     super.key,
     required this.phone,
@@ -22,10 +23,10 @@ class OtpScreen extends StatefulWidget {
   final AuthRepository? _authRepository;
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _OtpScreenState extends ConsumerState<OtpScreen> {
   int get _otpLength => widget.otpLength;
 
   late final List<TextEditingController> _controllers =
@@ -84,9 +85,8 @@ class _OtpScreenState extends State<OtpScreen> {
 
       if (!mounted) return;
 
-      context.go(
-        PermissionHelper.isSuperAdmin(session.user) ? '/super-admin' : '/main',
-      );
+      // The router moves the signed-in user to their home page.
+      ref.read(authControllerProvider.notifier).signIn(session);
     } catch (error) {
       if (mounted) _showError(_cleanError(error));
     } finally {
