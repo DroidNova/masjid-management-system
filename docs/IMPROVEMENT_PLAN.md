@@ -16,6 +16,28 @@ A management system for masjids in villages and cities (example: the masjid in B
 
 Deployment goal: website + Android app on Play Store (iOS maybe later), backend on a VPS.
 
+### Owner's standing rules (2026-10-07)
+
+- **Dev auth:** while developing, the OTP is fixed to `1111` and the default password is `123456`. These are env-driven dev values. The real OTP generator and SMS provider are built, configured, and tested only when shipping (M6). Production refuses to start with dev auth enabled.
+- **No UI work now.** Functionality first. Visual polish of the Flutter app happens at the end.
+- **Role matrix** (the product rule; implemented in M2):
+
+| Capability | SUPER_ADMIN | IMAM | COMMITTEE_MEMBER | MEMBER |
+|---|---|---|---|---|
+| Everything, every masjid | yes | | | |
+| Update namaz times | yes | yes | | |
+| Create, edit, delete announcements | yes | yes | | |
+| Imam salary months, assignments, record payments | yes | | yes | |
+| Projects and project contributions | yes | | yes | |
+| Collections, expenses, finance summary | yes | | yes | |
+| Members: add, edit, status | yes | | yes | |
+| Everything else the app already provides to committee | yes | | yes | |
+| Read namaz times, announcements, own contributions, and whatever members can see today | yes | yes | yes | yes |
+
+MASJID_ADMIN is not assigned to anyone and appears in no guard.
+
+- **Permissions must be easy to change.** One file holds the permission catalogue and the role-to-permission matrix. Changing who can do what means editing that file and re-seeding. The Flutter app receives the user's permission list at login and shows or hides features from it, never from role names.
+
 ## 2. Audit summary
 
 ### What is good and worth keeping
@@ -116,26 +138,27 @@ Goal: real authentication and basic hardening.
 
 - [ ] `@nestjs/config` with a zod-validated schema. App refuses to start on missing or short secrets.
 - [ ] `helmet`, `@nestjs/throttler` (tight limits on `auth/*` and `masjid-requests/*`), strict CORS from env, Swagger disabled when `NODE_ENV=production`.
-- [ ] `OtpChallenge` table. Generate a random 6-digit code, store its hash, 5 minute expiry, 5 attempts, resend cooldown.
-- [ ] `SmsProvider` interface with a console implementation for dev and an MSG91 or Fast2SMS implementation for prod. Decision needed: which provider.
-- [ ] Remove `TEMPORARY_USER_PASSWORD`. New privileged users get `mustSetPassword=true` and set their password after first OTP login. Add `auth/password/change` and `auth/password/reset` (OTP verified).
+- [ ] `OtpChallenge` table replacing the in-memory map (challenge id, phone, hashed code, expiry, attempts). In dev mode the code is always `AUTH_DEV_OTP` (default `1111`); the real random generator and SMS sending are wired in M6.
+- [ ] `AuthConfig` with `AUTH_DEV_MODE`, `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`. Production startup fails if dev mode is on.
+- [ ] Replace the hardcoded `TEMPORARY_USER_PASSWORD` with `AUTH_DEV_PASSWORD`. Add `auth/password/change` now so users can move off the default. `mustSetPassword` on first login and OTP-based reset are added in M6 with real OTP.
 - [ ] Refresh token rework: SHA-256 hash, session id in JWT, rotate with reuse detection, `auth/logout-all`, expired session cleanup job.
 - [ ] Set `isPhoneVerified=true` after OTP success. Stop logging raw phone numbers.
 - [ ] Health endpoint checks the DB.
 - [ ] Tests: OTP flow, password flow, refresh rotation, throttling.
 
-Done when: nobody can log in without a code delivered to their phone, and no default password exists anywhere.
+Done when: dev auth is explicit and env-driven, challenges survive a restart, and production cannot start with dev auth on.
 
 ### M2: Access model and tenancy
 
 Goal: implement the product rule. Power is distributed by permissions, scoped per masjid.
 
 - [ ] Add `MasjidMembership` and migrate existing `User.masjidId` + `UserRole` data into it. Then drop the old columns.
-- [ ] Write the permission catalogue and role matrix in one file. Seed from it. Permissions are returned in the login response and in `auth/me`.
+- [ ] Write the permission catalogue and role matrix in one file, `src/access/permissions.ts`, following the table in section 1. Seed from it. Permissions are returned in the login response and in `auth/me`. Super admin bypasses all checks.
 - [ ] Replace every `@Roles(...)` on masjid-core controllers with `@RequirePermission(...)`. Remove MASJID_ADMIN from guards and seed.
+- [ ] Audit every existing endpoint against the matrix: imam gets namaz times and announcements only, committee gets everything else, member keeps today's read access.
 - [ ] `TenantGuard` + `TenantContext`. Services take the masjid id from the context, never from the body or query.
 - [ ] Scope admin endpoints: only SUPER_ADMIN can list all users, change masjid status, or assign roles. Role assignment is transactional.
-- [ ] Decide and enforce what a MEMBER may read: namaz times, announcements, own contributions, finance summary (recommended yes for transparency), full member list with phone numbers (recommended no).
+- [ ] MEMBER keeps exactly what the current app gives members. Write that list down in the permissions file so it is explicit.
 - [ ] Fix untyped `@Query` and `@Body` in admin controller. All DTOs validated.
 - [ ] Tests: a user of masjid A can never read or write masjid B's rows, member cannot call committee endpoints, imam cannot record money.
 
@@ -168,7 +191,8 @@ Goal: one architecture, one network client, one auth state.
 - [ ] `ApiEnvelope<T>`, `ApiException` with `code`, mapped once. Delete all per-feature error extractors and `error_message_helper.dart`.
 - [ ] `AuthNotifier` with `AuthState { unknown, signedOut, signedIn(user, permissions) }`, hydrated once at startup. Secure storage with `encryptedSharedPreferences` on Android.
 - [ ] Router: global `redirect`, `StatefulShellRoute` for the member shell and the super admin shell, typed routes, role and permission requirements declared per route.
-- [ ] `PermissionGate` widget and `hasPermission` helper replacing `PermissionHelper` role checks.
+- [ ] `PermissionGate` widget and `hasPermission` helper replacing `PermissionHelper` role checks. Permission names come from the login response. The app never branches on role names except to pick the super admin shell.
+- [ ] No visual redesign in this milestone or M5. Keep existing screens and widgets, change only the data and state wiring.
 - [ ] Localisation scaffold with `l10n.yaml` and `app_en.arb`. Money and date formatting via `intl` with `en_IN`.
 - [ ] Environment files for dev, staging, prod. Docker image takes the URL at build time from the prod file.
 - [ ] Android release: upload keystore via `key.properties` (ignored), `INTERNET` permission in main manifest, R8 enabled, real app id, icon, and name.
@@ -191,7 +215,7 @@ Goal: move each feature to the new stack. One feature per session, in this order
 - [ ] Super admin (requests, masjids, users) with pinned response contracts, no key guessing
 - [ ] Masjid registration request and tracking (split the 633-line form)
 
-For each feature: freezed models, repository provider, AsyncNotifier, strings in ARB, loading, empty, and error states with retry, widget test for the main screen.
+For each feature: freezed models, repository provider, AsyncNotifier, strings in ARB, loading, empty, and error states with retry, permission-gated actions, widget test for the main screen. Existing look and feel is kept as is.
 
 Done when: no `setState`-driven data loading remains and `features/` has one pattern.
 
@@ -199,6 +223,8 @@ Done when: no `setState`-driven data loading remains and `features/` has one pat
 
 Goal: the backend on a VPS, the website live, the app on the Play Store.
 
+- [ ] Real OTP: random 6-digit code per challenge, hashed in `OtpChallenge`, resend cooldown. `SmsProvider` interface with a console implementation for dev and an Indian provider (MSG91 or Fast2SMS) for prod. Decision needed then: which provider.
+- [ ] `mustSetPassword` on first login and OTP-verified password reset. Turn `AUTH_DEV_MODE` off and test the full flow on staging with real SMS.
 - [ ] Production `docker-compose.prod.yml`: Postgres on the internal network only, API, Caddy with automatic TLS serving the API under `/api` and the Flutter web build at `/`.
 - [ ] Secrets in a server-side `.env` not in git. Document the server setup in `docs/DEPLOY.md`.
 - [ ] Nightly `pg_dump` to object storage (Backblaze B2 or similar). Test a restore once.
@@ -219,11 +245,14 @@ Done when: a tagged release reaches the VPS without manual steps and the app is 
 
 ## 5. Decisions needed from the owner
 
-1. SMS provider for OTP (MSG91, Fast2SMS, or Twilio). Affects M1.
-2. Can a MEMBER see the finance summary and the member list? Recommended: summary yes, member phone list no. Affects M2.
-3. Can one person be a member of two masjids? The membership table allows it. Recommended: allow, but the app shows one active masjid at a time. Affects M2 and M4.
-4. Keep the generated Prisma client in git or generate on install. Recommended: generate. Affects M0.
-5. Domain name and VPS provider. Affects M6.
+Answered on 2026-10-07: dev OTP `1111` and password `123456` until shipping; members keep today's access; no UI work until the end.
+
+Still open:
+
+1. Can one person be a member of two masjids? The membership table allows it. Recommended: allow, but the app shows one active masjid at a time. Affects M2 and M4.
+2. Keep the generated Prisma client in git or generate on install. Recommended: generate. Affects M0.
+3. SMS provider for OTP (MSG91, Fast2SMS, or Twilio). Needed only at M6.
+4. Domain name and VPS provider. Affects M6.
 
 ## 6. Status
 
