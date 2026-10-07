@@ -7,13 +7,13 @@ const base = {
 };
 
 describe('AppConfig', () => {
-  it('uses development defaults: dev auth with OTP 1111 and password 123456', () => {
+  it('uses development defaults: dev auth with OTP 1111 and password 12345678', () => {
     const config = AppConfig.fromEnv({ ...base });
 
     expect(config.nodeEnv).toBe('development');
     expect(config.auth.devMode).toBe(true);
     expect(config.auth.devOtp).toBe('1111');
-    expect(config.auth.devPassword).toBe('123456');
+    expect(config.auth.devPassword).toBe('12345678');
     expect(config.auth.otpLength).toBe(4);
     expect(config.swaggerEnabled).toBe(true);
     expect(config.rateLimitEnabled).toBe(true);

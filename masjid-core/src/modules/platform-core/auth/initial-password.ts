@@ -10,7 +10,7 @@ export type InitialPassword = {
 /**
  * Password given to a newly created imam or committee member.
  *
- * Dev mode: AUTH_DEV_PASSWORD (123456), so testers can log in straight away.
+ * Dev mode: AUTH_DEV_PASSWORD (12345678), so testers can log in straight away.
  * Otherwise: a random secret nobody knows. The user will set their own
  * password through the OTP reset flow added in milestone M6.
  */

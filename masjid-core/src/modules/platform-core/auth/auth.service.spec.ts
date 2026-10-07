@@ -179,7 +179,7 @@ function createFakePrisma() {
 
 /* ------------------------------------------------------------------ */
 
-const PASSWORD = '123456';
+const PASSWORD = '12345678';
 const MEMBER_PHONE = '+919876500001';
 const IMAM_PHONE = '+919876500002';
 
@@ -388,7 +388,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('logs in with the dev password 123456 and OTP 1111', async () => {
+    it('logs in with the dev password 12345678 and OTP 1111', async () => {
       const { service } = await setup();
       const result = await loginImam(service);
       expect(result.user.roles).toEqual(['IMAM']);

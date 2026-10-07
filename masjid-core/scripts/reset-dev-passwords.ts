@@ -7,7 +7,7 @@ import { AppConfig } from '../src/config/app-config';
 
 /**
  * Development helper: sets the password of every imam, committee member and
- * masjid admin to AUTH_DEV_PASSWORD (default 123456) and signs them out.
+ * masjid admin to AUTH_DEV_PASSWORD (default 12345678) and signs them out.
  * Super admins are left alone. Refuses to run unless AUTH_DEV_MODE is on.
  *
  *   npm run dev:reset-passwords          (from source)

@@ -54,8 +54,8 @@ const envSchema = z
       .default('1111'),
     AUTH_DEV_PASSWORD: z
       .string()
-      .min(6, 'must be at least 6 characters')
-      .default('123456'),
+      .min(8, 'must be at least 8 characters')
+      .default('12345678'),
     AUTH_OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
     AUTH_OTP_TTL_SECONDS: z.coerce.number().int().min(60).default(300),
     AUTH_OTP_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),

@@ -79,7 +79,9 @@ async function main(): Promise<void> {
         });
       }
 
-      logger.log(`Super admin bootstrap skipped: user already exists (${existingUser.id}).`);
+      logger.log(
+        `Super admin bootstrap skipped: user already exists (${existingUser.id}).`,
+      );
       return;
     }
 
@@ -107,6 +109,9 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  logger.error('Super admin bootstrap failed', error instanceof Error ? error.stack : String(error));
+  logger.error(
+    'Super admin bootstrap failed',
+    error instanceof Error ? error.stack : String(error),
+  );
   process.exit(1);
 });

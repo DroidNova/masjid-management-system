@@ -10,7 +10,7 @@ Last updated 2026-10-07.
 
 - **Done:** M0 Hygiene and M1 Backend security foundation. Both apps lint, build, and test clean. CI runs on every push to `main`.
 - **Next:** M2 Access model and tenancy. Start by writing `src/access/permissions.ts` (catalogue + role matrix from section 1), then the `MasjidMembership` table and data migration, then swap every `@Roles(...)` for `@RequirePermission(...)`.
-- **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it. Existing imam/committee users still have the old password `12345678` until `npm run dev:reset-passwords` is run.
+- **Database:** local dev DB is native Postgres on localhost:5432 (not Docker). All migrations are applied as of 2026-10-07 and M1 login flows were verified end to end against it.
 - **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
 - **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
 - **Config rule:** all env vars are declared and validated in `masjid-core/src/config/app-config.ts`. Inject `AppConfig`; never read `process.env` in app code.
@@ -30,7 +30,7 @@ Deployment goal: website + Android app on Play Store (iOS maybe later), backend 
 
 ### Owner's standing rules (2026-10-07)
 
-- **Dev auth:** while developing, the OTP is fixed to `1111` and the default password is `123456`. These are env-driven dev values. The real OTP generator and SMS provider are built, configured, and tested only when shipping (M6). Production refuses to start with dev auth enabled.
+- **Dev auth:** while developing, the OTP is fixed to `1111` and the default password is `12345678` (passwords are at least 8 characters). These are env-driven dev values. The real OTP generator and SMS provider are built, configured, and tested only when shipping (M6). Production refuses to start with dev auth enabled.
 - **No UI work now.** Functionality first. Visual polish of the Flutter app happens at the end.
 - **Low budget, full features.** This is a startup with very little money. Every choice is optimised for cost: one small VPS, self-hosted Postgres, free tiers for CI, monitoring, and backups, cheap Indian SMS. Saving money never removes a feature.
 - **Role matrix** (the product rule; implemented in M2):
@@ -158,7 +158,7 @@ Goal: real authentication and basic hardening.
 - [x] Typed `AppConfig` validated with zod (`src/config/app-config.ts`); `@nestjs/config` was not needed. Refuses to start on missing values, secrets under 16 chars (32 in staging/production), or identical access/refresh secrets.
 - [x] `helmet`, `@nestjs/throttler` (limits in `src/common/rate-limit/rate-limit.ts`; `RATE_LIMIT_ENABLED=false` turns them off), CORS list required in staging/production, Swagger off by default in production, `TRUST_PROXY` for running behind Caddy.
 - [x] `OtpChallenge` table replacing the in-memory map (challenge id, phone, hashed code, expiry, attempts). In dev mode the code is always `AUTH_DEV_OTP` (default `1111`); the real random generator and SMS sending are wired in M6.
-- [x] `AUTH_DEV_MODE` (default on outside production), `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`. Production fails to start with dev mode on, and also without it until M6 (no SMS provider yet). Server returns `otpLength` so the app asks for 4 digits.
+- [x] `AUTH_DEV_MODE` (default on outside production), `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=12345678`. Production fails to start with dev mode on, and also without it until M6 (no SMS provider yet). Server returns `otpLength` so the app asks for 4 digits.
 - [x] Replace the hardcoded `TEMPORARY_USER_PASSWORD` with `AUTH_DEV_PASSWORD`. Add `auth/password/change` now so users can move off the default. `mustSetPassword` on first login and OTP-based reset are added in M6 with real OTP.
 - [x] Refresh token rework: SHA-256 hash, session id in JWT, rotate with reuse detection (`SESSION_REVOKED`), `auth/logout-all`, hourly cleanup of expired sessions and OTP rows. Access tokens are checked against their session on every request, so logout takes effect immediately.
 - [x] Set `isPhoneVerified=true` after OTP success. Stop logging raw phone numbers (also redacted from request logs).
@@ -265,7 +265,7 @@ Done when: a tagged release reaches the VPS without manual steps and the app is 
 
 ## 5. Decisions needed from the owner
 
-Answered on 2026-10-07: dev OTP `1111` and password `123456` until shipping; members keep today's access; no UI work until the end.
+Answered on 2026-10-07: dev OTP `1111` and password `12345678` until shipping; members keep today's access; no UI work until the end.
 
 Still open:
 

@@ -17,9 +17,9 @@ The roadmap and architecture decisions live in [docs/IMPROVEMENT_PLAN.md](docs/I
 
 ## Development auth (until shipping)
 
-While the product is in development (`AUTH_DEV_MODE=true`, the default outside production) the OTP is always `1111` and newly created imams and committee members get the password `123456`. The real OTP and SMS provider arrive at the shipping milestone (M6). Until then `NODE_ENV=production` refuses to start; use `NODE_ENV=staging` on a test server.
+While the product is in development (`AUTH_DEV_MODE=true`, the default outside production) the OTP is always `1111` and newly created imams and committee members get the password `12345678`. The real OTP and SMS provider arrive at the shipping milestone (M6). Until then `NODE_ENV=production` refuses to start; use `NODE_ENV=staging` on a test server.
 
-Users created before this rule still have the old password `12345678`. Reset all imam and committee passwords to `123456` with:
+To reset every imam and committee password back to the dev password (signs them out):
 
 ```sh
 cd masjid-core && npm run dev:reset-passwords
