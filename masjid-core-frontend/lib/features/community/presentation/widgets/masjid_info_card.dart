@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
 
 class MasjidInfoCard extends StatelessWidget {
   const MasjidInfoCard({super.key, required this.masjid});
@@ -24,9 +24,9 @@ class MasjidInfoCard extends StatelessWidget {
           children: <Widget>[
             Text(
               masjid.name,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (location.isNotEmpty) ...<Widget>[
               const SizedBox(height: 6),

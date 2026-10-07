@@ -1,5 +1,5 @@
-import 'package:platform_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/imam_input.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/imam_input.dart';
 
 class CreateMasjidRequest {
   const CreateMasjidRequest({

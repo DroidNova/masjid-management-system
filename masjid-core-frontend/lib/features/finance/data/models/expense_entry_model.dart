@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
 
 class ExpenseEntryModel {
   const ExpenseEntryModel({

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
 class ErrorView extends StatelessWidget {
   const ErrorView({
@@ -35,9 +35,9 @@ class ErrorView extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (detail != null && detail.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 8),

@@ -1,136 +1,126 @@
-# Masjid Management System Docker Setup
+# Masjid Management System
 
-This repository contains a NestJS/Prisma backend, a Flutter Web frontend, and PostgreSQL. Docker lets a new developer run everything without installing Node, Flutter, PostgreSQL, or Nginx locally.
+A low-cost management system for masjids in villages and cities. The imam sets namaz times and announcements. Committee members run imam salary collection, projects, collections, expenses, and members. Members see times, announcements, and their own contributions. A super admin approves masjid registrations.
 
-## Prerequisites
+The roadmap and architecture decisions live in [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md). Read it before changing anything substantial.
 
-1. Git
-2. Docker Desktop
-3. Docker Compose plugin (`docker compose version`)
+## Repository layout
 
-## First-time setup
+| Path | What it is |
+|---|---|
+| `masjid-core/` | NestJS 11 + Prisma 7 backend (PostgreSQL) |
+| `masjid-core-frontend/` | Flutter app for web and Android |
+| `docker-compose.yml` | Postgres + backend + web frontend for local development |
+| `docker-compose.dev.yml` | Overlay that runs the backend with hot reload |
+| `scripts/` | Setup, start, logs, and stop helpers for Linux, macOS, and Windows |
+| `.github/workflows/ci.yml` | Lint, format, build, and test for both apps |
 
-1. Clone the repository.
-2. Open the project directory:
-   ```sh
-   cd masjid-management-system
-   ```
-3. Copy environment examples:
-   ```sh
-   cp .env.example .env
-   cp masjid-core/.env.example masjid-core/.env
-   ```
-   Windows PowerShell:
-   ```powershell
-   Copy-Item .env.example .env
-   Copy-Item masjid-core/.env.example masjid-core/.env
-   ```
-4. Fill required values in `.env` and `masjid-core/.env`. Do not commit real `.env` files.
-5. Start the complete application:
-   ```sh
-   docker compose up --build -d
-   ```
-6. Check containers:
-   ```sh
-   docker compose ps
-   ```
-7. Open:
-   - Frontend: <http://localhost:8080>
-   - Backend Swagger: <http://localhost:3000/api>
-   - Backend health: <http://localhost:3000/api/v1/health>
-   - PostgreSQL from DBeaver/pgAdmin on Windows/macOS/Linux:
-     - host: `localhost`
-     - port: `5433`
-     - database/user/password: values from root `.env`
+## Development auth (until shipping)
 
-Inside Docker, the backend connects to PostgreSQL with hostname `postgres`. From your host tools, use `localhost:5433`.
+While the product is in development the OTP is always `1111` and newly created privileged users get the password `123456`. The real OTP and SMS provider arrive at the shipping milestone. See the plan for details.
 
-## Optional seed/bootstrap commands
+## Quick start with Docker
 
-Migrations run automatically with `prisma migrate deploy` when the backend container starts. Seeds and superadmin bootstrap do **not** run automatically.
-
-Run these only when required:
+Prerequisites: Git, Docker Desktop with the Compose plugin.
 
 ```sh
-docker compose exec backend npm run prisma:seed
-docker compose exec backend npm run bootstrap:super-admin
-```
-
-Create a new development migration from your host after editing `schema.prisma`:
-
-```sh
-cd masjid-core
-npm run prisma:migrate -- --name your_migration_name
-```
-
-Commit the generated folder under `masjid-core/prisma/migrations`.
-
-## Useful commands
-
-```sh
-docker compose up -d
+cp .env.example .env
+cp masjid-core/.env.example masjid-core/.env
 docker compose up --build -d
-docker compose down
-# WARNING: deletes PostgreSQL data volume
-docker compose down -v
-docker compose logs -f
-docker compose logs -f backend
-docker compose restart backend
-docker compose exec backend sh
-docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-docker compose build frontend
 docker compose ps
-```
-
-## Helper scripts
-
-Linux/macOS:
-
-```sh
-./scripts/setup.sh
-./scripts/start.sh
-./scripts/logs.sh
-./scripts/stop.sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-./scripts/setup.ps1
-./scripts/start.ps1
-./scripts/logs.ps1
-./scripts/stop.ps1
+Copy-Item .env.example .env
+Copy-Item masjid-core/.env.example masjid-core/.env
+docker compose up --build -d
 ```
 
-The setup scripts copy `.env.example` files only when the matching `.env` file does not already exist.
+Then open:
 
-## Development backend hot reload
+- Frontend: <http://localhost:8080>
+- Backend Swagger: <http://localhost:3000/api>
+- Backend health: <http://localhost:3000/api/v1/health>
+- PostgreSQL from host tools: `localhost:5433`, credentials from the root `.env`
 
-The normal `docker compose up --build -d` command uses production-style images. For backend hot reload, use the separate dev compose file:
+Migrations run automatically when the backend container starts. Seeding roles and creating the first super admin are manual:
+
+```sh
+docker compose exec backend npm run prisma:seed:prod
+docker compose exec backend npm run bootstrap:super-admin:prod
+```
+
+The `:prod` variants run the compiled JavaScript in `dist/`, which is what the production image contains. Outside Docker use `npm run prisma:seed` and `npm run bootstrap:super-admin`.
+
+Backend hot reload inside Docker:
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d backend
 ```
 
-This bind-mounts `masjid-core`, keeps `node_modules` in a Docker volume, regenerates Prisma client, and runs `npm run start:dev`.
+The helper scripts in `scripts/` wrap the same commands.
+
+## Running without Docker
+
+Backend (needs Node 22 and a PostgreSQL instance):
+
+```sh
+cd masjid-core
+cp .env.example .env        # set DATABASE_URL and the JWT secrets
+npm ci
+npm run prisma:migrate      # applies migrations to your local database
+npm run prisma:seed
+npm run start:dev           # generates the Prisma client, then starts on :3000
+```
+
+Frontend (needs Flutter 3.41 stable):
+
+```sh
+cd masjid-core-frontend
+flutter pub get
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+```
+
+## Checks that CI runs
+
+Backend:
+
+```sh
+cd masjid-core
+npm run lint:check
+npm run format:check
+npm run build
+npm test
+```
+
+Frontend:
+
+```sh
+cd masjid-core-frontend
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+Run these before pushing to `main`. The Prisma client under `masjid-core/src/generated` is not committed. It is generated by `npm run build`, `npm run start:dev`, `npm test`, or `npx prisma generate`.
+
+## Database migrations
+
+After editing `masjid-core/prisma/schema.prisma`:
+
+```sh
+cd masjid-core
+npm run prisma:migrate -- --name describe_the_change
+```
+
+Commit the new folder under `masjid-core/prisma/migrations`.
 
 ## Troubleshooting
 
-- **Docker Desktop not running**: start Docker Desktop and retry `docker compose ps`.
-- **Port 5433 already in use**: stop the other PostgreSQL instance or change the host port in `docker-compose.yml`.
-- **Port 3000 already in use**: stop the other backend process or change the backend host port mapping.
-- **Port 8080 already in use**: stop the other web server or change the frontend host port mapping.
-- **Backend cannot connect to PostgreSQL**: confirm `postgres` is healthy with `docker compose ps`; inside containers the database host must be `postgres`, not `localhost`.
-- **Flutter frontend cannot call backend**: set `FRONTEND_API_BASE_URL=http://localhost:3000/api/v1` in root `.env` and rebuild the frontend with `docker compose build frontend`.
-- **CORS errors**: set `CORS_ALLOWED_ORIGINS=http://localhost:8080` in root `.env` and `masjid-core/.env`, then restart backend.
-- **Prisma migration failures**: inspect `docker compose logs -f backend`. Do not run destructive reset commands unless you intentionally want to delete local data.
-- **Rebuilding after dependency changes**: run `docker compose up --build -d` after changing `package-lock.json` or `pubspec.lock`.
-- **Clean containers without deleting database**: run `docker compose down`. The named `postgres_data` volume remains.
-- **Intentional local database reset**: run `docker compose down -v` only when you accept deleting all local PostgreSQL data.
-
-## Production notes
-
-- Do not expose PostgreSQL publicly in production.
-- Replace all placeholder passwords and JWT secrets with long random values.
-- Keep `.env` files out of Git.
-- Review `FRONTEND_API_BASE_URL` for the production public backend URL before building the frontend image.
+- **Port already in use** (5433, 3000, or 8080): stop the other process or change the host port mapping in `docker-compose.yml`.
+- **Backend cannot reach PostgreSQL inside Docker**: the host must be `postgres`, not `localhost`.
+- **Frontend cannot call the backend**: set `FRONTEND_API_BASE_URL` in the root `.env` and rebuild with `docker compose build frontend`.
+- **CORS errors**: set `CORS_ALLOWED_ORIGINS=http://localhost:8080` in both `.env` files and restart the backend.
+- **Reset the local database**: `docker compose down -v` deletes the Postgres volume. Only do this on purpose.

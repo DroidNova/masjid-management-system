@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/auth/data/models/auth_session.dart';
-import 'package:platform_core_frontend/features/auth/data/models/auth_tokens.dart';
-import 'package:platform_core_frontend/features/auth/data/models/login_start_response.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/auth_session.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/auth_tokens.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 
 class AuthApi {
   AuthApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
@@ -29,10 +29,7 @@ class AuthApi {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         '/auth/login/password',
-        data: <String, dynamic>{
-          'phone': phone,
-          'password': password,
-        },
+        data: <String, dynamic>{'phone': phone, 'password': password},
       );
 
       return LoginStartResponse.fromJson(_extractData(response.data));

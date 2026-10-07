@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/shared/widgets/logout_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/logout_button.dart';
 
 class MainShellScreen extends StatelessWidget {
   const MainShellScreen({super.key, required this.child});
@@ -8,11 +8,7 @@ class MainShellScreen extends StatelessWidget {
   final Widget child;
 
   static const List<_MainTab> _tabs = <_MainTab>[
-    _MainTab(
-      label: 'Home',
-      icon: Icons.home_outlined,
-      path: '/main/home',
-    ),
+    _MainTab(label: 'Home', icon: Icons.home_outlined, path: '/main/home'),
     _MainTab(
       label: 'Finance',
       icon: Icons.account_balance_wallet_outlined,
@@ -68,11 +64,7 @@ class MainShellScreen extends StatelessWidget {
 }
 
 class _MainTab {
-  const _MainTab({
-    required this.label,
-    required this.icon,
-    required this.path,
-  });
+  const _MainTab({required this.label, required this.icon, required this.path});
 
   final String label;
   final IconData icon;

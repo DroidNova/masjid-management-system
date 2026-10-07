@@ -13,7 +13,11 @@ class CommitteeMemberInput {
   final int age;
   final String gender;
 
-  bool get isEmpty => name.trim().isEmpty && phone.trim().isEmpty && fatherName.trim().isEmpty && gender.trim().isEmpty;
+  bool get isEmpty =>
+      name.trim().isEmpty &&
+      phone.trim().isEmpty &&
+      fatherName.trim().isEmpty &&
+      gender.trim().isEmpty;
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -25,8 +29,20 @@ class CommitteeMemberInput {
     return json;
   }
 
-  CommitteeMemberInput copyWith({String? name, String? phone, String? fatherName, int? age, String? gender}) {
-    return CommitteeMemberInput(name: name ?? this.name, phone: phone ?? this.phone, fatherName: fatherName ?? this.fatherName, age: age ?? this.age, gender: gender ?? this.gender);
+  CommitteeMemberInput copyWith({
+    String? name,
+    String? phone,
+    String? fatherName,
+    int? age,
+    String? gender,
+  }) {
+    return CommitteeMemberInput(
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      fatherName: fatherName ?? this.fatherName,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+    );
   }
 
   void _addIfNotEmpty(Map<String, dynamic> json, String key, String value) {

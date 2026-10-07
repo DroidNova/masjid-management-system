@@ -160,7 +160,11 @@ export class CollectionsService {
       select: collectionSelect,
     });
 
-    this.logger.log({ message: 'Collection created', collectionId: collection.id, masjidId });
+    this.logger.log({
+      message: 'Collection created',
+      collectionId: collection.id,
+      masjidId,
+    });
     return this.toResponse(collection);
   }
 
@@ -195,7 +199,11 @@ export class CollectionsService {
       data,
       select: collectionSelect,
     });
-    this.logger.log({ message: 'Collection updated', collectionId: collection.id, masjidId });
+    this.logger.log({
+      message: 'Collection updated',
+      collectionId: collection.id,
+      masjidId,
+    });
     return this.toResponse(collection);
   }
 
@@ -210,7 +218,11 @@ export class CollectionsService {
       data: { status: FinanceEntryStatusDto.CANCELLED },
       select: collectionSelect,
     });
-    this.logger.warn({ message: 'Collection cancelled', collectionId: collection.id, masjidId });
+    this.logger.warn({
+      message: 'Collection cancelled',
+      collectionId: collection.id,
+      masjidId,
+    });
     return this.toResponse(collection);
   }
 

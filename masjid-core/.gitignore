@@ -1,0 +1,2 @@
+# Prisma client is generated on build (npm run build / prisma generate)
+src/generated/

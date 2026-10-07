@@ -1,13 +1,13 @@
-import 'package:platform_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/features/projects/data/models/create_project_request.dart';
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:platform_core_frontend/features/projects/data/models/update_project_request.dart';
-import 'package:platform_core_frontend/features/projects/data/projects_api.dart';
+import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/create_project_request.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/update_project_request.dart';
+import 'package:masjid_core_frontend/features/projects/data/projects_api.dart';
 
 class ProjectsRepository {
   ProjectsRepository({ProjectsApi? projectsApi})
-      : _projectsApi = projectsApi ?? ProjectsApi();
+    : _projectsApi = projectsApi ?? ProjectsApi();
 
   final ProjectsApi _projectsApi;
 
@@ -34,7 +34,10 @@ class ProjectsRepository {
     return project;
   }
 
-  Future<ProjectModel> updateProject(String id, UpdateProjectRequest request) async {
+  Future<ProjectModel> updateProject(
+    String id,
+    UpdateProjectRequest request,
+  ) async {
     final project = await _projectsApi.updateProject(id, request);
     AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
       AppDataScope.projects,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/features/announcements/data/announcements_repository.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/create_announcement_request.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/features/announcements/data/announcements_repository.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/create_announcement_request.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class AddAnnouncementScreen extends StatefulWidget {
   const AddAnnouncementScreen({
@@ -64,7 +64,9 @@ class _AddAnnouncementScreenState extends State<AddAnnouncementScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

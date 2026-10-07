@@ -1,11 +1,11 @@
-import 'package:platform_core_frontend/features/dashboard/data/models/announcement_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/finance_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/imam_salary_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/imam_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/masjid_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/model_parsing.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/project_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/announcement_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/finance_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/imam_salary_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/imam_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/masjid_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/model_parsing.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/project_summary.dart';
 
 class DashboardResponse {
   const DashboardResponse({
@@ -37,9 +37,9 @@ class DashboardResponse {
       membersCount: parseInt(json['membersCount']),
       latestAnnouncements: announcements is List<dynamic>
           ? announcements
-              .whereType<Map<String, dynamic>>()
-              .map(AnnouncementSummary.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(AnnouncementSummary.fromJson)
+                .toList()
           : <AnnouncementSummary>[],
       projectsSummary: projectsSummaryJson == null
           ? null

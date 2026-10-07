@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_model.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjids/widgets/admin_masjid_card.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjids/widgets/update_masjid_status_dialog.dart';
-import 'package:platform_core_frontend/shared/widgets/error_view.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/admin_masjid_card.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/update_masjid_status_dialog.dart';
+import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class AdminMasjidsScreen extends StatefulWidget {
   const AdminMasjidsScreen({super.key, this.repository});
@@ -18,8 +18,6 @@ class AdminMasjidsScreen extends StatefulWidget {
 }
 
 class _AdminMasjidsScreenState extends State<AdminMasjidsScreen> {
-  static const int _pageLimit = 20;
-
   late final SuperAdminRepository _repository =
       widget.repository ?? SuperAdminRepository();
   final TextEditingController _searchController = TextEditingController();
@@ -68,7 +66,6 @@ class _AdminMasjidsScreenState extends State<AdminMasjidsScreen> {
         search: _search,
         status: _selectedStatus,
         page: _page,
-        limit: _pageLimit,
       );
       if (!mounted || revision != _requestRevision) return;
       setState(() => _items = page.items);
@@ -118,7 +115,9 @@ class _AdminMasjidsScreenState extends State<AdminMasjidsScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Masjid status API is not available yet.')),
+          const SnackBar(
+            content: Text('Masjid status API is not available yet.'),
+          ),
         );
       }
     }

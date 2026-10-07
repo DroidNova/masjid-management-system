@@ -1,7 +1,9 @@
 int parseInt(Object? value) {
   if (value is int) return value;
   if (value is double) return value.round();
-  if (value is String) return int.tryParse(value) ?? double.tryParse(value)?.round() ?? 0;
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.round() ?? 0;
+  }
   return 0;
 }
 

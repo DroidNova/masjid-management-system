@@ -59,7 +59,8 @@ class ImamSalaryModel {
       note: _readString(json['note']),
       createdAt: _readString(json['createdAt']),
       updatedAt: _readString(json['updatedAt']),
-      imamName: _readString(imamMap?['fullName']) ?? _readString(imamMap?['name']),
+      imamName:
+          _readString(imamMap?['fullName']) ?? _readString(imamMap?['name']),
       imamPhone: _readString(imamMap?['phone']),
       imamEmail: _readString(imamMap?['email']),
     );

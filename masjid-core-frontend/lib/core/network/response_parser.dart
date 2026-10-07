@@ -15,7 +15,8 @@ class PaginationResult<T> {
 }
 
 Object? unwrapData(Object? responseData) {
-  if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+  if (responseData is Map<String, dynamic> &&
+      responseData.containsKey('data')) {
     return responseData['data'];
   }
   return responseData;
@@ -42,9 +43,15 @@ PaginationResult<T> parsePaginatedList<T>(
 ) {
   final data = unwrapData(responseData);
   final map = data is Map<String, dynamic> ? data : <String, dynamic>{};
-  final rawItems = data is List<dynamic> ? data : (map['items'] as List<dynamic>? ?? const <dynamic>[]);
-  final items = rawItems.whereType<Map<String, dynamic>>().map(fromJson).toList();
-  int readInt(String key, int fallback) => int.tryParse('${map[key] ?? fallback}') ?? fallback;
+  final rawItems = data is List<dynamic>
+      ? data
+      : (map['items'] as List<dynamic>? ?? const <dynamic>[]);
+  final items = rawItems
+      .whereType<Map<String, dynamic>>()
+      .map(fromJson)
+      .toList();
+  int readInt(String key, int fallback) =>
+      int.tryParse('${map[key] ?? fallback}') ?? fallback;
   return PaginationResult<T>(
     items: items,
     total: readInt('total', items.length),

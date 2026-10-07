@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/core/network/api_request_coordinator.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
 
 class AdminListResult {
   const AdminListResult(this.items, this.total);
@@ -13,7 +13,6 @@ class SuperAdminApi {
   SuperAdminApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
-
 
   Future<Map<String, dynamic>> getDashboardSummary() {
     return ApiRequestCoordinator.instance.run<Map<String, dynamic>>(
@@ -234,7 +233,9 @@ class SuperAdminApi {
     if (error.response?.statusCode == 401) {
       return 'Session expired. Please login again.';
     }
-    if (error.response?.statusCode == 404) return 'This API is not available yet.';
+    if (error.response?.statusCode == 404) {
+      return 'This API is not available yet.';
+    }
     return error.message ?? 'Something went wrong.';
   }
 }

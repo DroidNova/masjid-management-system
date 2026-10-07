@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/finance/data/models/finance_model_parsing.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/finance_model_parsing.dart';
 
 class CreateExpenseRequest {
   const CreateExpenseRequest({
@@ -16,10 +16,7 @@ class CreateExpenseRequest {
   final String? spentAt;
 
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{
-      'type': type,
-      'amount': amount,
-    };
+    final json = <String, dynamic>{'type': type, 'amount': amount};
     addStringIfNotEmpty(json, 'title', title);
     addStringIfNotEmpty(json, 'description', description);
     addStringIfNotEmpty(json, 'spentAt', spentAt);

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 
 class CommunityUserCard extends StatelessWidget {
   const CommunityUserCard({
@@ -30,7 +30,10 @@ class CommunityUserCard extends StatelessWidget {
             if (user.email != null) Text('Email: ${user.email}'),
             if (user.status != null) Text('Status: ${user.status}'),
             if (user.fatherName != null) Text('Father: ${user.fatherName}'),
-            if (user.age != null || user.gender != null) Text('Profile: ${user.age?.toString() ?? '-'} • ${user.gender ?? '-'}'),
+            if (user.age != null || user.gender != null)
+              Text(
+                'Profile: ${user.age?.toString() ?? '-'} • ${user.gender ?? '-'}',
+              ),
             if (user.isFamilyHead) const Chip(label: Text('Family Head')),
             if (onEdit != null || onChangeStatus != null) ...<Widget>[
               const SizedBox(height: 8),

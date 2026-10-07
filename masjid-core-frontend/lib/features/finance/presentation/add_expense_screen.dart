@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/features/finance/data/finance_repository.dart';
-import 'package:platform_core_frontend/features/finance/data/models/create_expense_request.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
-import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
-import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/create_expense_request.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key, FinanceRepository? financeRepository})
-      : _financeRepository = financeRepository;
+    : _financeRepository = financeRepository;
 
   final FinanceRepository? _financeRepository;
 
@@ -76,11 +76,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +97,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     DropdownButtonFormField<String>(
-                      value: _selectedType,
+                      initialValue: _selectedType,
                       decoration: const InputDecoration(
                         labelText: 'Expense Type *',
                       ),
@@ -111,7 +110,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           )
                           .toList(),
                       onChanged: (value) {
-                        if (value != null) setState(() => _selectedType = value);
+                        if (value != null) {
+                          setState(() => _selectedType = value);
+                        }
                       },
                     ),
                     const SizedBox(height: 16),
@@ -142,7 +143,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
                       required: true,
-                      onDateSelected: (date) => setState(() => _entryDate = date),
+                      onDateSelected: (date) =>
+                          setState(() => _entryDate = date),
                     ),
                     const SizedBox(height: 24),
                     AppButton(

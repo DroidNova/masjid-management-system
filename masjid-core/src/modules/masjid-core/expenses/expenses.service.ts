@@ -160,7 +160,11 @@ export class ExpensesService {
       select: expenseSelect,
     });
 
-    this.logger.log({ message: 'Expense created', expenseId: expense.id, masjidId });
+    this.logger.log({
+      message: 'Expense created',
+      expenseId: expense.id,
+      masjidId,
+    });
     return this.toResponse(expense);
   }
 
@@ -195,7 +199,11 @@ export class ExpensesService {
       data,
       select: expenseSelect,
     });
-    this.logger.log({ message: 'Expense updated', expenseId: expense.id, masjidId });
+    this.logger.log({
+      message: 'Expense updated',
+      expenseId: expense.id,
+      masjidId,
+    });
     return this.toResponse(expense);
   }
 
@@ -207,7 +215,11 @@ export class ExpensesService {
       data: { status: FinanceEntryStatusDto.CANCELLED },
       select: expenseSelect,
     });
-    this.logger.warn({ message: 'Expense cancelled', expenseId: expense.id, masjidId });
+    this.logger.warn({
+      message: 'Expense cancelled',
+      expenseId: expense.id,
+      masjidId,
+    });
     return this.toResponse(expense);
   }
 

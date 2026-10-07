@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:platform_core_frontend/shared/models/paginated_response.dart';
+import 'package:masjid_core_frontend/shared/models/paginated_response.dart';
 
-typedef PageLoader<T> = Future<PaginatedResponse<T>> Function(
-  int page,
-  int limit,
-);
+typedef PageLoader<T> =
+    Future<PaginatedResponse<T>> Function(int page, int limit);
 
 class PaginatedListController<T> extends ChangeNotifier {
   PaginatedListController({
@@ -44,7 +42,8 @@ class PaginatedListController<T> extends ChangeNotifier {
       _page = result.page;
       hasNextPage = result.hasNextPage;
     } catch (exception) {
-      error = errorMapper?.call(exception) ??
+      error =
+          errorMapper?.call(exception) ??
           exception.toString().replaceFirst('Exception: ', '');
     } finally {
       isLoading = false;

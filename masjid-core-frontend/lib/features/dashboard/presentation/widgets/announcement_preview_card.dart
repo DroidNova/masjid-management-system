@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/announcement_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/announcement_summary.dart';
 
 class AnnouncementPreviewCard extends StatelessWidget {
   const AnnouncementPreviewCard({
@@ -29,14 +29,11 @@ class AnnouncementPreviewCard extends StatelessWidget {
                   child: Text(
                     'Latest Announcements',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                TextButton(
-                  onPressed: onViewAll,
-                  child: const Text('View All'),
-                ),
+                TextButton(onPressed: onViewAll, child: const Text('View All')),
               ],
             ),
             if (onAddAnnouncement != null) ...<Widget>[

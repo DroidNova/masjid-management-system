@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/community/presentation/widgets/community_empty_view.dart';
-import 'package:platform_core_frontend/features/community/presentation/widgets/community_user_card.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/community_empty_view.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/community_user_card.dart';
 
 class CommunitySection extends StatelessWidget {
   const CommunitySection({
@@ -34,9 +34,9 @@ class CommunitySection extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (subtitle != null) ...<Widget>[
               const SizedBox(height: 4),

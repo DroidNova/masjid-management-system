@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
 class MasjidRequestSubmittedScreen extends StatelessWidget {
   const MasjidRequestSubmittedScreen({super.key});

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/core/storage/token_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/features/community/data/community_repository.dart';
-import 'package:platform_core_frontend/features/community/data/models/create_community_user_request.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/community/presentation/widgets/add_user_role_dropdown.dart';
-import 'package:platform_core_frontend/shared/models/country_code.dart';
-import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
-import 'package:platform_core_frontend/shared/widgets/not_allowed_view.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/storage/token_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/create_community_user_request.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/add_user_role_dropdown.dart';
+import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/shared/widgets/not_allowed_view.dart';
 
 class AddCommunityUserScreen extends StatefulWidget {
   const AddCommunityUserScreen({
@@ -23,9 +23,9 @@ class AddCommunityUserScreen extends StatefulWidget {
     CommunityRepository? communityRepository,
     SessionStorage? sessionStorage,
     TokenStorage? tokenStorage,
-  })  : _communityRepository = communityRepository,
-        _sessionStorage = sessionStorage,
-        _tokenStorage = tokenStorage;
+  }) : _communityRepository = communityRepository,
+       _sessionStorage = sessionStorage,
+       _tokenStorage = tokenStorage;
 
   final CommunityRepository? _communityRepository;
   final SessionStorage? _sessionStorage;
@@ -49,7 +49,8 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
       widget._communityRepository ?? CommunityRepository();
   late final SessionStorage _sessionStorage =
       widget._sessionStorage ?? SessionStorage();
-  late final TokenStorage _tokenStorage = widget._tokenStorage ?? TokenStorage();
+  late final TokenStorage _tokenStorage =
+      widget._tokenStorage ?? TokenStorage();
 
   AppUser? _currentUser;
   List<String> _allowedRoles = const <String>[];
@@ -100,14 +101,21 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
       final createdUser = await _communityRepository.createMasjidUser(
         CreateCommunityUserRequest(
           fullName: _fullNameController.text,
-          phone: normalizePhone(countryCode: _selectedCountry, nationalNumber: _phoneController.text),
+          phone: normalizePhone(
+            countryCode: _selectedCountry,
+            nationalNumber: _phoneController.text,
+          ),
           email: _emailController.text,
           role: _selectedRole!,
           fatherName: _fatherNameController.text,
           age: int.parse(_ageController.text.trim()),
           gender: _selectedGender!,
-          isFamilyHead: _selectedRole == PermissionHelper.member ? _isFamilyHead : null,
-          familyMemberCount: _familyMemberCountController.text.trim().isEmpty ? null : int.parse(_familyMemberCountController.text.trim()),
+          isFamilyHead: _selectedRole == PermissionHelper.member
+              ? _isFamilyHead
+              : null,
+          familyMemberCount: _familyMemberCountController.text.trim().isEmpty
+              ? null
+              : int.parse(_familyMemberCountController.text.trim()),
           masjidId: _masjidIdController.text,
         ),
       );
@@ -152,10 +160,13 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   }
 
   Future<void> _handleError(Object error) async {
-    final message = getReadableErrorMessage(error, fallbackMessage: 'Unable to add user.');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    final message = getReadableErrorMessage(
+      error,
+      fallbackMessage: 'Unable to add user.',
     );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
 
     final lower = error.toString().toLowerCase();
     if (lower.contains('unauthorized') || lower.contains('401')) {
@@ -168,10 +179,7 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
   bool get _shouldShowMasjidIdField {
     final user = _currentUser;
     if (user == null) return false;
-    return PermissionHelper.hasRole(
-          user,
-          PermissionHelper.superAdmin,
-        ) &&
+    return PermissionHelper.hasRole(user, PermissionHelper.superAdmin) &&
         (user.masjidId == null || user.masjidId!.trim().isEmpty);
   }
 
@@ -203,9 +211,9 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
         children: <Widget>[
           Text(
             'Add User',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           const Text('Create a user for your masjid community.'),
@@ -254,16 +262,26 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
 
           TextFormField(
             controller: _fatherNameController,
-            decoration: const InputDecoration(labelText: 'Father Name *', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Father Name *',
+              border: OutlineInputBorder(),
+            ),
             textInputAction: TextInputAction.next,
-            validator: (value) => (value == null || value.trim().isEmpty) ? 'Please enter father name.' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Please enter father name.'
+                : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _ageController,
-            decoration: const InputDecoration(labelText: 'Age *', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Age *',
+              border: OutlineInputBorder(),
+            ),
             keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly,
+            ],
             validator: (value) {
               final age = int.tryParse(value?.trim() ?? '');
               if (age == null) return 'Please enter age.';
@@ -273,15 +291,19 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedGender,
-            decoration: const InputDecoration(labelText: 'Gender *', border: OutlineInputBorder()),
+            initialValue: _selectedGender,
+            decoration: const InputDecoration(
+              labelText: 'Gender *',
+              border: OutlineInputBorder(),
+            ),
             items: const <DropdownMenuItem<String>>[
               DropdownMenuItem(value: 'MALE', child: Text('Male')),
               DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
               DropdownMenuItem(value: 'OTHER', child: Text('Other')),
             ],
             onChanged: (value) => setState(() => _selectedGender = value),
-            validator: (value) => value == null ? 'Please select gender.' : null,
+            validator: (value) =>
+                value == null ? 'Please select gender.' : null,
           ),
           const SizedBox(height: 16),
           AddUserRoleDropdown(
@@ -302,14 +324,21 @@ class _AddCommunityUserScreenState extends State<AddCommunityUserScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _familyMemberCountController,
-                decoration: const InputDecoration(labelText: 'Family Member Count', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Family Member Count',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 validator: (value) {
                   final text = value?.trim() ?? '';
                   if (text.isEmpty) return null;
                   final count = int.tryParse(text);
-                  if (count == null || count < 0) return 'Family member count cannot be negative.';
+                  if (count == null || count < 0) {
+                    return 'Family member count cannot be negative.';
+                  }
                   return null;
                 },
               ),

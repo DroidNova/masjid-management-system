@@ -131,14 +131,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     if (statusCode >= 500) {
-      this.logger.error(logPayload, error?.message ?? 'Unhandled request error');
+      this.logger.error(
+        logPayload,
+        error?.message ?? 'Unhandled request error',
+      );
       return;
     }
 
-    if (
-      statusCode === HttpStatus.UNAUTHORIZED ||
-      statusCode === HttpStatus.FORBIDDEN
-    ) {
+    const authorizationStatuses: number[] = [
+      HttpStatus.UNAUTHORIZED,
+      HttpStatus.FORBIDDEN,
+    ];
+    if (authorizationStatuses.includes(statusCode)) {
       this.logger.info(logPayload, 'Request rejected by authorization');
       return;
     }

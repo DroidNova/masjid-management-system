@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
-import 'package:platform_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
 
 class NamazTimeApi {
   NamazTimeApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();

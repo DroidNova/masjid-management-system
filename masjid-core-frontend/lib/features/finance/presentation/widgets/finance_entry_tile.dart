@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
 
 class FinanceEntryTile extends StatelessWidget {
   const FinanceEntryTile({

@@ -175,7 +175,11 @@ export class ProjectsService {
       select: projectSelect,
     });
 
-    this.logger.log({ message: 'Project created', projectId: project.id, masjidId });
+    this.logger.log({
+      message: 'Project created',
+      projectId: project.id,
+      masjidId,
+    });
     return this.toProjectResponse(project);
   }
 
@@ -213,7 +217,11 @@ export class ProjectsService {
       select: projectSelect,
     });
 
-    this.logger.log({ message: 'Project updated', projectId: project.id, masjidId });
+    this.logger.log({
+      message: 'Project updated',
+      projectId: project.id,
+      masjidId,
+    });
     return this.toProjectResponse(project);
   }
 
@@ -227,7 +235,11 @@ export class ProjectsService {
       select: projectSelect,
     });
 
-    this.logger.warn({ message: 'Project cancelled', projectId: project.id, masjidId });
+    this.logger.warn({
+      message: 'Project cancelled',
+      projectId: project.id,
+      masjidId,
+    });
     return this.toProjectResponse(project);
   }
 

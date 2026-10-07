@@ -1,4 +1,7 @@
-export function normalizePhone(input: string, defaultCountryCode = '+91'): string {
+export function normalizePhone(
+  input: string,
+  defaultCountryCode = '+91',
+): string {
   if (typeof input !== 'string') return '';
   const trimmed = input.trim();
   if (!trimmed) return '';

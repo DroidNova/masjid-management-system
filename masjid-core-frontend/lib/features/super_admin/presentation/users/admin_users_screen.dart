@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_user_model.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/users/widgets/admin_user_card.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/users/widgets/update_user_status_dialog.dart';
-import 'package:platform_core_frontend/shared/widgets/error_view.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/admin_user_card.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/update_user_status_dialog.dart';
+import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key, this.repository});
@@ -18,8 +18,6 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
-  static const int _pageLimit = 20;
-
   late final SuperAdminRepository _repository =
       widget.repository ?? SuperAdminRepository();
   final TextEditingController _searchController = TextEditingController();
@@ -72,7 +70,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         status: _selectedStatus,
         role: _selectedRole,
         page: _page,
-        limit: _pageLimit,
       );
       if (!mounted || revision != _requestRevision) return;
       setState(() => _items = page.items);
@@ -159,19 +156,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             DropdownButton<String?>(
               value: _selectedRole,
               hint: const Text('All Roles'),
-              items: const <String?>[
-                null,
-                'SUPER_ADMIN',
-                'MASJID_ADMIN',
-                'IMAM',
-                'COMMITTEE_MEMBER',
-                'MEMBER',
-              ].map((role) {
-                return DropdownMenuItem<String?>(
-                  value: role,
-                  child: Text(role ?? 'All Roles'),
-                );
-              }).toList(),
+              items:
+                  const <String?>[
+                    null,
+                    'SUPER_ADMIN',
+                    'MASJID_ADMIN',
+                    'IMAM',
+                    'COMMITTEE_MEMBER',
+                    'MEMBER',
+                  ].map((role) {
+                    return DropdownMenuItem<String?>(
+                      value: role,
+                      child: Text(role ?? 'All Roles'),
+                    );
+                  }).toList(),
               onChanged: _onRoleChanged,
             ),
           ],

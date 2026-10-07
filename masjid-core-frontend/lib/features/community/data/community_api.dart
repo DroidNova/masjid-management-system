@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/create_community_user_request.dart';
-import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/update_community_user_request.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/create_community_user_request.dart';
+import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/update_community_user_request.dart';
 
 class CommunityApi {
   CommunityApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();

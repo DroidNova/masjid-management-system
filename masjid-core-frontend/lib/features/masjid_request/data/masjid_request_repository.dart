@@ -1,10 +1,10 @@
-import 'package:platform_core_frontend/features/masjid_request/data/masjid_request_api.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_api.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
 
 class MasjidRequestRepository {
   MasjidRequestRepository({MasjidRequestApi? masjidRequestApi})
-      : _masjidRequestApi = masjidRequestApi ?? MasjidRequestApi();
+    : _masjidRequestApi = masjidRequestApi ?? MasjidRequestApi();
 
   final MasjidRequestApi _masjidRequestApi;
 

@@ -1,5 +1,5 @@
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 
 class CurrentUserRoleHelper {
   const CurrentUserRoleHelper._();

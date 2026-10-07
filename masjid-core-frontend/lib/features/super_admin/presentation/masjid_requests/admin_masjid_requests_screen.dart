@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjid_requests/widgets/admin_masjid_request_card.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjid_requests/widgets/approve_reject_request_dialog.dart';
-import 'package:platform_core_frontend/shared/widgets/error_view.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/admin_masjid_request_card.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/approve_reject_request_dialog.dart';
+import 'package:masjid_core_frontend/shared/widgets/error_view.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class AdminMasjidRequestsScreen extends StatefulWidget {
   const AdminMasjidRequestsScreen({super.key, this.repository});
@@ -18,10 +18,7 @@ class AdminMasjidRequestsScreen extends StatefulWidget {
       _AdminMasjidRequestsScreenState();
 }
 
-class _AdminMasjidRequestsScreenState
-    extends State<AdminMasjidRequestsScreen> {
-  static const int _pageLimit = 20;
-
+class _AdminMasjidRequestsScreenState extends State<AdminMasjidRequestsScreen> {
   late final SuperAdminRepository _repository =
       widget.repository ?? SuperAdminRepository();
   final TextEditingController _searchController = TextEditingController();
@@ -72,7 +69,6 @@ class _AdminMasjidRequestsScreenState
         search: _search,
         status: _selectedStatus,
         page: _page,
-        limit: _pageLimit,
       );
       if (!mounted || revision != _requestRevision) return;
       setState(() => _items = page.items);

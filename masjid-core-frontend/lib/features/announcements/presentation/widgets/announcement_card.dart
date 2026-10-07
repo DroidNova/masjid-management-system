@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/announcement_model.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 
 class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({
@@ -27,8 +27,8 @@ class AnnouncementCard extends StatelessWidget {
                   child: Text(
                     announcement.title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Chip(

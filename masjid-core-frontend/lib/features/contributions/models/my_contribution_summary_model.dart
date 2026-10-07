@@ -72,7 +72,9 @@ class MyContributionSummaryModel {
             : const <String, dynamic>{},
       ),
       projectContributionTotal: _readDouble(json['projectContributionTotal']),
-      collectionContributionTotal: _readDouble(json['collectionContributionTotal']),
+      collectionContributionTotal: _readDouble(
+        json['collectionContributionTotal'],
+      ),
       totalContributionAmount: _readDouble(json['totalContributionAmount']),
       imamSalary: ImamSalaryContributionSummaryModel.fromJson(
         json['imamSalary'] is Map<String, dynamic>

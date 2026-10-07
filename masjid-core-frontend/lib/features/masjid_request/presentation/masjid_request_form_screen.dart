@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/imam_input.dart';
-import 'package:platform_core_frontend/shared/constants/indian_states.dart';
-import 'package:platform_core_frontend/shared/models/country_code.dart';
-import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_country_dropdown.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/committee_member_input.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/imam_input.dart';
+import 'package:masjid_core_frontend/shared/constants/indian_states.dart';
+import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_country_dropdown.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class MasjidRequestFormScreen extends StatefulWidget {
   const MasjidRequestFormScreen({
@@ -29,9 +29,12 @@ class MasjidRequestFormScreen extends StatefulWidget {
 class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _requesterNameController = TextEditingController();
-  final TextEditingController _requesterPhoneController = TextEditingController();
-  final TextEditingController _requesterEmailController = TextEditingController();
+  final TextEditingController _requesterNameController =
+      TextEditingController();
+  final TextEditingController _requesterPhoneController =
+      TextEditingController();
+  final TextEditingController _requesterEmailController =
+      TextEditingController();
   final TextEditingController _masjidNameController = TextEditingController();
   final TextEditingController _localityController = TextEditingController();
   final TextEditingController _districtController = TextEditingController();
@@ -44,7 +47,8 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   final TextEditingController _imamPhoneController = TextEditingController();
   final TextEditingController _imamEmailController = TextEditingController();
   final TextEditingController _imamAddressController = TextEditingController();
-  final TextEditingController _imamFatherNameController = TextEditingController();
+  final TextEditingController _imamFatherNameController =
+      TextEditingController();
   final TextEditingController _imamAgeController = TextEditingController();
   String? _imamGender;
   final List<_CommitteeMemberControllers> _committeeMembers = [];
@@ -88,7 +92,6 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
     }
     super.dispose();
   }
-
 
   bool _validateMemberPhones() {
     if (_committeeMembers.isEmpty) {
@@ -143,7 +146,10 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   CreateMasjidRequest _buildRequest() {
     return CreateMasjidRequest(
       requesterName: _requesterNameController.text,
-      requesterPhone: normalizePhone(countryCode: _requesterCountry, nationalNumber: _requesterPhoneController.text),
+      requesterPhone: normalizePhone(
+        countryCode: _requesterCountry,
+        nationalNumber: _requesterPhoneController.text,
+      ),
       requesterEmail: _requesterEmailController.text,
       masjidName: _masjidNameController.text,
       country: _masjidCountry.name,
@@ -151,13 +157,23 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
       locality: _localityController.text,
       state: _stateController.text,
       address: _addressController.text,
-      contactNo: _contactNoController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _contactCountry, nationalNumber: _contactNoController.text),
+      contactNo: _contactNoController.text.trim().isEmpty
+          ? ''
+          : normalizePhone(
+              countryCode: _contactCountry,
+              nationalNumber: _contactNoController.text,
+            ),
       description: _descriptionController.text,
       welcomeMsg: _welcomeMsgController.text,
       imam: ImamInput(
         name: _imamNameController.text,
         email: _imamEmailController.text,
-        phone: _imamPhoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: _imamCountry, nationalNumber: _imamPhoneController.text),
+        phone: _imamPhoneController.text.trim().isEmpty
+            ? ''
+            : normalizePhone(
+                countryCode: _imamCountry,
+                nationalNumber: _imamPhoneController.text,
+              ),
         address: _imamAddressController.text,
         fatherName: _imamFatherNameController.text,
         age: int.parse(_imamAgeController.text.trim()),
@@ -167,7 +183,12 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
           .map(
             (member) => CommitteeMemberInput(
               name: member.nameController.text,
-              phone: member.phoneController.text.trim().isEmpty ? '' : normalizePhone(countryCode: member.countryCode, nationalNumber: member.phoneController.text),
+              phone: member.phoneController.text.trim().isEmpty
+                  ? ''
+                  : normalizePhone(
+                      countryCode: member.countryCode,
+                      nationalNumber: member.phoneController.text,
+                    ),
               fatherName: member.fatherNameController.text,
               age: int.parse(member.ageController.text.trim()),
               gender: member.gender!,
@@ -192,9 +213,9 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {
@@ -204,17 +225,6 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
   String? _requiredValidator(String? value, String label) {
     if (value == null || value.trim().isEmpty) {
       return '$label is required.';
-    }
-    return null;
-  }
-
-  String? _phoneValidator(String? value, String label, {bool required = false}) {
-    final trimmedValue = value?.trim() ?? '';
-    if (trimmedValue.isEmpty) {
-      return required ? '$label is required.' : null;
-    }
-    if (trimmedValue.length < 10) {
-      return '$label must be at least 10 digits.';
     }
     return null;
   }
@@ -292,16 +302,25 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         ),
                         if (_masjidCountry.isoCode == 'IN')
                           DropdownButtonFormField<String>(
-                            value: _stateController.text.isEmpty ? null : _stateController.text,
+                            initialValue: _stateController.text.isEmpty
+                                ? null
+                                : _stateController.text,
                             isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'State *',
                               border: OutlineInputBorder(),
                             ),
                             items: indianStates
-                                .map((state) => DropdownMenuItem<String>(value: state, child: Text(state)))
+                                .map(
+                                  (state) => DropdownMenuItem<String>(
+                                    value: state,
+                                    child: Text(state),
+                                  ),
+                                )
                                 .toList(),
-                            onChanged: (state) => setState(() => _stateController.text = state ?? ''),
+                            onChanged: (state) => setState(
+                              () => _stateController.text = state ?? '',
+                            ),
                             validator: (value) =>
                                 _requiredValidator(value, 'State'),
                           )
@@ -325,8 +344,10 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           controller: _localityController,
                           label: 'City / Village / Town *',
                           textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              _requiredValidator(value, 'City / Village / Town'),
+                          validator: (value) => _requiredValidator(
+                            value,
+                            'City / Village / Town',
+                          ),
                         ),
                         AppTextField(
                           controller: _addressController,
@@ -339,9 +360,9 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         AppPhoneField(
                           phoneController: _contactNoController,
                           initialCountry: _contactCountry,
-                          onCountryChanged: (country) => _contactCountry = country,
+                          onCountryChanged: (country) =>
+                              _contactCountry = country,
                           label: 'Phone Number',
-                          isRequired: false,
                           textInputAction: TextInputAction.next,
                         ),
                         AppTextField(
@@ -372,7 +393,8 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                         AppPhoneField(
                           phoneController: _requesterPhoneController,
                           initialCountry: _requesterCountry,
-                          onCountryChanged: (country) => _requesterCountry = country,
+                          onCountryChanged: (country) =>
+                              _requesterCountry = country,
                           label: 'Requester Mobile Number *',
                           isRequired: true,
                           textInputAction: TextInputAction.next,
@@ -419,21 +441,46 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           controller: _imamFatherNameController,
                           label: 'Imam Father Name *',
                           textInputAction: TextInputAction.next,
-                          validator: (value) => _requiredValidator(value, 'Imam father name'),
+                          validator: (value) =>
+                              _requiredValidator(value, 'Imam father name'),
                         ),
                         TextFormField(
                           controller: _imamAgeController,
-                          decoration: const InputDecoration(labelText: 'Imam Age *', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(
+                            labelText: 'Imam Age *',
+                            border: OutlineInputBorder(),
+                          ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                          validator: (value) => _ageValidator(value, 'Imam age'),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (value) =>
+                              _ageValidator(value, 'Imam age'),
                         ),
                         DropdownButtonFormField<String>(
-                          value: _imamGender,
-                          decoration: const InputDecoration(labelText: 'Imam Gender *', border: OutlineInputBorder()),
-                          items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))],
-                          onChanged: (value) => setState(() => _imamGender = value),
-                          validator: (value) => value == null ? 'Imam gender is required.' : null,
+                          initialValue: _imamGender,
+                          decoration: const InputDecoration(
+                            labelText: 'Imam Gender *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const <DropdownMenuItem<String>>[
+                            DropdownMenuItem(
+                              value: 'MALE',
+                              child: Text('Male'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'FEMALE',
+                              child: Text('Female'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'OTHER',
+                              child: Text('Other'),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _imamGender = value),
+                          validator: (value) =>
+                              value == null ? 'Imam gender is required.' : null,
                         ),
                         AppTextField(
                           controller: _imamAddressController,
@@ -453,14 +500,16 @@ class _MasjidRequestFormScreenState extends State<MasjidRequestFormScreen> {
                           Text(
                             'No committee members added yet.',
                             style: textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        for (var index = 0;
-                            index < _committeeMembers.length;
-                            index++)
+                        for (
+                          var index = 0;
+                          index < _committeeMembers.length;
+                          index++
+                        )
                           _CommitteeMemberFields(
                             member: _committeeMembers[index],
                             index: index,
@@ -502,7 +551,6 @@ class _FormSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -513,9 +561,9 @@ class _FormSection extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...children.expand(
@@ -538,13 +586,6 @@ class _CommitteeMemberFields extends StatelessWidget {
   final _CommitteeMemberControllers member;
   final int index;
   final VoidCallback onRemove;
-
-  String? _ageValidator(String? value, String label) {
-    final age = int.tryParse(value?.trim() ?? '');
-    if (age == null) return '$label is required.';
-    if (age < 1 || age > 120) return '$label must be between 1 and 120.';
-    return null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -592,21 +633,40 @@ class _CommitteeMemberFields extends StatelessWidget {
           controller: member.fatherNameController,
           label: 'Father Name *',
           textInputAction: TextInputAction.next,
-          validator: (value) => (value == null || value.trim().isEmpty) ? 'Father name is required.' : null,
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? 'Father name is required.'
+              : null,
         ),
         const SizedBox(height: 14),
         TextFormField(
           controller: member.ageController,
-          decoration: const InputDecoration(labelText: 'Age *', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            labelText: 'Age *',
+            border: OutlineInputBorder(),
+          ),
           keyboardType: TextInputType.number,
-          inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-          validator: (value) { final age = int.tryParse(value?.trim() ?? ''); if (age == null) return 'Age is required.'; if (age < 1 || age > 120) return 'Age must be between 1 and 120.'; return null; },
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          validator: (value) {
+            final age = int.tryParse(value?.trim() ?? '');
+            if (age == null) return 'Age is required.';
+            if (age < 1 || age > 120) return 'Age must be between 1 and 120.';
+            return null;
+          },
         ),
         const SizedBox(height: 14),
         DropdownButtonFormField<String>(
-          value: member.gender,
-          decoration: const InputDecoration(labelText: 'Gender *', border: OutlineInputBorder()),
-          items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))],
+          initialValue: member.gender,
+          decoration: const InputDecoration(
+            labelText: 'Gender *',
+            border: OutlineInputBorder(),
+          ),
+          items: const <DropdownMenuItem<String>>[
+            DropdownMenuItem(value: 'MALE', child: Text('Male')),
+            DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+            DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+          ],
           onChanged: (value) => member.gender = value,
           validator: (value) => value == null ? 'Gender is required.' : null,
         ),

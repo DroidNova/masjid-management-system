@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/dashboard/data/models/model_parsing.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/model_parsing.dart';
 
 class NamazTimeSummary {
   const NamazTimeSummary({

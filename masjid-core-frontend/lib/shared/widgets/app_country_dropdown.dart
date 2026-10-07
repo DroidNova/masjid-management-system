@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/shared/constants/country_codes.dart';
-import 'package:platform_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/constants/country_codes.dart';
+import 'package:masjid_core_frontend/shared/models/country_code.dart';
 
 class AppCountryDropdown extends StatelessWidget {
   const AppCountryDropdown({
@@ -19,9 +19,12 @@ class AppCountryDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<CountryCode>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
       items: countryCodes
           .map(
             (country) => DropdownMenuItem<CountryCode>(
@@ -30,7 +33,11 @@ class AppCountryDropdown extends StatelessWidget {
             ),
           )
           .toList(),
-      onChanged: enabled ? (country) { if (country != null) onChanged(country); } : null,
+      onChanged: enabled
+          ? (country) {
+              if (country != null) onChanged(country);
+            }
+          : null,
       validator: (country) => country == null ? 'Country is required.' : null,
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/project_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/project_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
 
 class ProjectSummaryCard extends StatelessWidget {
   const ProjectSummaryCard({super.key, required this.projectsSummary});
@@ -19,12 +19,14 @@ class ProjectSummaryCard extends StatelessWidget {
           children: <Widget>[
             Text(
               'Projects',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('Active projects: ${projectsSummary?.activeProjectsCount ?? 0}'),
+            Text(
+              'Active projects: ${projectsSummary?.activeProjectsCount ?? 0}',
+            ),
             const SizedBox(height: 12),
             if (projects.isEmpty)
               const Text('No active projects yet.')
@@ -44,8 +46,9 @@ class _ProjectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        (project.progressPercentage / 100).clamp(0.0, 1.0).toDouble();
+    final progress = (project.progressPercentage / 100)
+        .clamp(0.0, 1.0)
+        .toDouble();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),

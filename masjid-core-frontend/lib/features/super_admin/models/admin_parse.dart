@@ -24,10 +24,16 @@ int readInt(Map<String, dynamic> json, List<String> keys) {
 
 List<String> readRoles(dynamic raw) {
   if (raw is List) {
-    return raw.map((role) {
-      if (role is Map<String, dynamic>) return (role['name'] ?? role['role'] ?? role['code'] ?? '').toString();
-      return role.toString();
-    }).where((role) => role.isNotEmpty).toList();
+    return raw
+        .map((role) {
+          if (role is Map<String, dynamic>) {
+            return (role['name'] ?? role['role'] ?? role['code'] ?? '')
+                .toString();
+          }
+          return role.toString();
+        })
+        .where((role) => role.isNotEmpty)
+        .toList();
   }
   return const <String>[];
 }

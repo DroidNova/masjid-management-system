@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/core/auth/current_user_role_helper.dart';
+import 'package:masjid_core_frontend/core/auth/current_user_role_helper.dart';
 
 class AddUserRoleDropdown extends StatelessWidget {
   const AddUserRoleDropdown({
@@ -16,7 +16,7 @@ class AddUserRoleDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Role *',
         border: OutlineInputBorder(),

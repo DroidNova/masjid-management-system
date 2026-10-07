@@ -1,9 +1,10 @@
+// Load .env before any module reads process.env at import time (app.module.ts does).
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import 'dotenv/config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiException } from './common/exceptions/api.exception';
 import { ERROR_CODES } from './common/constants/error-codes.constant';
@@ -54,8 +55,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new SuccessResponseInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Platform Core API')
-    .setDescription('Reusable backend core for future domain products')
+    .setTitle('Masjid Core API')
+    .setDescription('Backend for the masjid management system')
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -74,4 +75,4 @@ async function bootstrap() {
   app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();

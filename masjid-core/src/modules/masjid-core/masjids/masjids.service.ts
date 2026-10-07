@@ -564,7 +564,8 @@ export class MasjidsService {
 
     if (
       target.userRoles.some(
-        (userRole) => userRole.role.name === CreateMasjidUserRoleDto.MEMBER,
+        (userRole) =>
+          userRole.role.name === (CreateMasjidUserRoleDto.MEMBER as string),
       ) &&
       dto.isFamilyHead === undefined
     ) {

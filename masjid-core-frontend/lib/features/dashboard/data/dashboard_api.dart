@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/dashboard_response.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
 
 class DashboardApi {
   DashboardApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();

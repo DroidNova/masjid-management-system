@@ -3,7 +3,8 @@ class ApiRequestCoordinator {
 
   static final ApiRequestCoordinator instance = ApiRequestCoordinator._();
 
-  final Map<String, Future<dynamic>> _inFlightRequests = <String, Future<dynamic>>{};
+  final Map<String, Future<dynamic>> _inFlightRequests =
+      <String, Future<dynamic>>{};
 
   Future<T> run<T>({
     required String key,

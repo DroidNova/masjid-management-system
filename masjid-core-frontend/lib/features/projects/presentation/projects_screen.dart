@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:platform_core_frontend/features/projects/data/projects_repository.dart';
-import 'package:platform_core_frontend/features/projects/presentation/widgets/project_card.dart';
-import 'package:platform_core_frontend/features/projects/presentation/widgets/project_empty_view.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_card.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_empty_view.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({
@@ -19,9 +18,9 @@ class ProjectsScreen extends StatefulWidget {
     ProjectsRepository? projectsRepository,
     AuthRepository? authRepository,
     SessionStorage? sessionStorage,
-  })  : _projectsRepository = projectsRepository,
-        _authRepository = authRepository,
-        _sessionStorage = sessionStorage;
+  }) : _projectsRepository = projectsRepository,
+       _authRepository = authRepository,
+       _sessionStorage = sessionStorage;
 
   final ProjectsRepository? _projectsRepository;
   final AuthRepository? _authRepository;
@@ -51,8 +50,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifier =
-        AppDataRefreshBus.instance.notifierFor(AppDataScope.projects);
+    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
+      AppDataScope.projects,
+    );
     _refreshNotifier.addListener(_onRefreshRequested);
     _loadCurrentUser();
     _loadProjects();
@@ -182,15 +182,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   children: <Widget>[
                     Text(
                       'Projects',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
                     const Text('Track masjid construction and repair work'),
                     const SizedBox(height: 16),
                     if (canManageProjects) ...<Widget>[
-                      AppButton(label: 'Add Project', onPressed: _openAddProject),
+                      AppButton(
+                        label: 'Add Project',
+                        onPressed: _openAddProject,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     SingleChildScrollView(
@@ -272,9 +274,9 @@ class _ProjectsErrorView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (detail != null) ...<Widget>[
                   const SizedBox(height: 8),

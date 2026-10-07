@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/announcements/data/announcements_repository.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/announcement_model.dart';
-import 'package:platform_core_frontend/features/announcements/presentation/widgets/announcement_card.dart';
-import 'package:platform_core_frontend/features/announcements/presentation/widgets/announcement_empty_view.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/announcements/data/announcements_repository.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
+import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_card.dart';
+import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_empty_view.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({
@@ -19,9 +18,9 @@ class AnnouncementsScreen extends StatefulWidget {
     AnnouncementsRepository? announcementsRepository,
     AuthRepository? authRepository,
     SessionStorage? sessionStorage,
-  })  : _announcementsRepository = announcementsRepository,
-        _authRepository = authRepository,
-        _sessionStorage = sessionStorage;
+  }) : _announcementsRepository = announcementsRepository,
+       _authRepository = authRepository,
+       _sessionStorage = sessionStorage;
 
   final AnnouncementsRepository? _announcementsRepository;
   final AuthRepository? _authRepository;
@@ -50,8 +49,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifier =
-        AppDataRefreshBus.instance.notifierFor(AppDataScope.announcements);
+    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
+      AppDataScope.announcements,
+    );
     _refreshNotifier.addListener(_onRefreshRequested);
     _loadCurrentUser();
     _loadAnnouncements();
@@ -160,7 +160,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool get _isUnauthorizedError {
@@ -215,15 +217,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                     children: <Widget>[
                       Text(
                         'Announcements',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
+                        style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Important updates for your masjid community',
-                      ),
+                      const Text('Important updates for your masjid community'),
                       const SizedBox(height: 16),
                       if (canManageAnnouncements) ...<Widget>[
                         AppButton(
@@ -293,9 +291,9 @@ class _AnnouncementErrorView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (detail != null) ...<Widget>[
                   const SizedBox(height: 8),

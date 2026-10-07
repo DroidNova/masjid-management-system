@@ -1,18 +1,18 @@
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/core/storage/token_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_api.dart';
-import 'package:platform_core_frontend/features/auth/data/models/auth_session.dart';
-import 'package:platform_core_frontend/features/auth/data/models/auth_tokens.dart';
-import 'package:platform_core_frontend/features/auth/data/models/login_start_response.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/storage/token_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_api.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/auth_session.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/auth_tokens.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 
 class AuthRepository {
   AuthRepository({
     AuthApi? authApi,
     TokenStorage? tokenStorage,
     SessionStorage? sessionStorage,
-  })  : _authApi = authApi ?? AuthApi(),
-        _tokenStorage = tokenStorage ?? TokenStorage(),
-        _sessionStorage = sessionStorage ?? SessionStorage();
+  }) : _authApi = authApi ?? AuthApi(),
+       _tokenStorage = tokenStorage ?? TokenStorage(),
+       _sessionStorage = sessionStorage ?? SessionStorage();
 
   final AuthApi _authApi;
   final TokenStorage _tokenStorage;

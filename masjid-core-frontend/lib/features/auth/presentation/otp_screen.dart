@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({
@@ -26,9 +26,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
   late final List<TextEditingController> _controllers =
       List<TextEditingController>.generate(
-    _otpLength,
-    (_) => TextEditingController(),
-  );
+        _otpLength,
+        (_) => TextEditingController(),
+      );
   late final List<FocusNode> _focusNodes = List<FocusNode>.generate(
     _otpLength,
     (_) => FocusNode(),
@@ -137,7 +137,9 @@ class _OtpScreenState extends State<OtpScreen> {
       if (currentIndex >= _otpLength) break;
     }
 
-    final focusIndex = currentIndex >= _otpLength ? _otpLength - 1 : currentIndex;
+    final focusIndex = currentIndex >= _otpLength
+        ? _otpLength - 1
+        : currentIndex;
     _focusNodes[focusIndex].requestFocus();
     _controllers[focusIndex].selection = TextSelection.collapsed(
       offset: _controllers[focusIndex].text.length,
@@ -146,9 +148,9 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {
@@ -209,7 +211,6 @@ class _OtpScreenState extends State<OtpScreen> {
     );
   }
 
-
   TextInputFormatter _pasteFormatter(int index) {
     return TextInputFormatter.withFunction((oldValue, newValue) {
       final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
@@ -235,9 +236,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 ? TextInputAction.done
                 : TextInputAction.next,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             inputFormatters: <TextInputFormatter>[
               _pasteFormatter(index),
               FilteringTextInputFormatter.digitsOnly,

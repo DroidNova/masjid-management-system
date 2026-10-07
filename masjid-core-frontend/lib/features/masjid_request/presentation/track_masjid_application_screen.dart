@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
-import 'package:platform_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
-import 'package:platform_core_frontend/shared/models/country_code.dart';
-import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
+import 'package:masjid_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
+import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
 class TrackMasjidApplicationScreen extends StatefulWidget {
   const TrackMasjidApplicationScreen({
@@ -64,10 +64,7 @@ class _TrackMasjidApplicationScreenState
       if (!mounted) return;
       setState(() {
         _items = const <TrackMasjidApplicationResult>[];
-        _errorMessage = getReadableErrorMessage(
-          error,
-          fallbackMessage: 'Something went wrong. Please try again.',
-        );
+        _errorMessage = getReadableErrorMessage(error);
       });
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -135,7 +132,8 @@ class _TrackMasjidApplicationScreenState
                           _errorMessage == null &&
                           _items.isEmpty)
                         const _TrackMessageCard(
-                          message: 'No application found for this phone number.',
+                          message:
+                              'No application found for this phone number.',
                         )
                       else
                         ..._items.map(_ApplicationCard.new),
@@ -187,8 +185,8 @@ class _ApplicationCard extends StatelessWidget {
                   child: Text(
                     item.masjidName,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 _StatusChip(status: item.status),

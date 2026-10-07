@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 
 class UpdateProjectRequest {
   const UpdateProjectRequest({

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/app/router.dart';
-import 'package:platform_core_frontend/shared/theme/app_theme.dart';
+import 'package:masjid_core_frontend/app/router.dart';
+import 'package:masjid_core_frontend/shared/theme/app_theme.dart';
 
 class MasjidCoreApp extends StatelessWidget {
   const MasjidCoreApp({super.key});

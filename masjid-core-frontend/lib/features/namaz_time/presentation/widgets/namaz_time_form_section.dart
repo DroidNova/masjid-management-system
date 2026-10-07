@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class NamazTimeFormSection extends StatelessWidget {
   const NamazTimeFormSection({
@@ -65,7 +65,11 @@ class NamazTimeFormSection extends StatelessWidget {
               fallbackTime: const TimeOfDay(hour: 13, minute: 15),
             ),
             const SizedBox(height: 14),
-            AppTextField(controller: noteController, label: 'Note', maxLines: 3),
+            AppTextField(
+              controller: noteController,
+              label: 'Note',
+              maxLines: 3,
+            ),
           ],
         ),
       ),

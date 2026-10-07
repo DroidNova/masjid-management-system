@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/features/contributions/data/contributions_repository.dart';
-import 'package:platform_core_frontend/features/contributions/models/collection_contribution_model.dart';
-import 'package:platform_core_frontend/features/contributions/models/project_contribution_model.dart';
-import 'package:platform_core_frontend/features/contributions/models/my_contribution_summary_model.dart';
-import 'package:platform_core_frontend/features/contributions/models/my_imam_salary_contribution_model.dart';
-import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_summary_card.dart';
-import 'package:platform_core_frontend/features/contributions/presentation/widgets/imam_salary_month_card.dart';
-import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:platform_core_frontend/shared/utils/paginated_list_controller.dart';
-import 'package:platform_core_frontend/shared/widgets/app_card.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/features/contributions/data/contributions_repository.dart';
+import 'package:masjid_core_frontend/features/contributions/models/collection_contribution_model.dart';
+import 'package:masjid_core_frontend/features/contributions/models/my_contribution_summary_model.dart';
+import 'package:masjid_core_frontend/features/contributions/models/my_imam_salary_contribution_model.dart';
+import 'package:masjid_core_frontend/features/contributions/models/project_contribution_model.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_summary_card.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/imam_salary_month_card.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/shared/utils/paginated_list_controller.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_card.dart';
 
 class MyContributionsScreen extends StatefulWidget {
   const MyContributionsScreen({super.key, ContributionsRepository? repository})
-      : _repository = repository;
+    : _repository = repository;
 
   final ContributionsRepository? _repository;
 
@@ -39,19 +39,18 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
     super.initState();
     _history = PaginatedListController<MyImamSalaryContributionModel>(
       errorMapper: getReadableErrorMessage,
-      loader: (page, limit) => _repository.getMyImamSalaryContributions(
-        monthsBack: 6,
-        page: page,
-        limit: limit,
-      ),
+      loader: (page, limit) =>
+          _repository.getMyImamSalaryContributions(page: page, limit: limit),
     )..addListener(_onHistoryChanged);
     _projects = PaginatedListController<ProjectContributionModel>(
       errorMapper: getReadableErrorMessage,
-      loader: (page, limit) => _repository.getMyProjectContributions(page: page, limit: limit),
+      loader: (page, limit) =>
+          _repository.getMyProjectContributions(page: page, limit: limit),
     )..addListener(_onHistoryChanged);
     _collections = PaginatedListController<CollectionContributionModel>(
       errorMapper: getReadableErrorMessage,
-      loader: (page, limit) => _repository.getMyCollectionContributions(page: page, limit: limit),
+      loader: (page, limit) =>
+          _repository.getMyCollectionContributions(page: page, limit: limit),
     )..addListener(_onHistoryChanged);
     _scrollController.addListener(_loadMoreNearBottom);
     _refresh();
@@ -128,9 +127,16 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                         spacing: 20,
                         runSpacing: 8,
                         children: <Widget>[
-                          Text('Projects ${formatRupees(_summary!.projectContributionTotal)}'),
-                          Text('Collections ${formatRupees(_summary!.collectionContributionTotal)}'),
-                          Text('All paid contributions ${formatRupees(_summary!.totalContributionAmount)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'Projects ${formatRupees(_summary!.projectContributionTotal)}',
+                          ),
+                          Text(
+                            'Collections ${formatRupees(_summary!.collectionContributionTotal)}',
+                          ),
+                          Text(
+                            'All paid contributions ${formatRupees(_summary!.totalContributionAmount)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                     ),
@@ -168,21 +174,58 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
                       onRetry: _history.loadNext,
                     ),
                   const SizedBox(height: 20),
-                  Text('Project Contributions', style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    'Project Contributions',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 10),
                   if (_projects.items.isEmpty && !_projects.isLoading)
-                    const AppCard(child: Text('No project contributions yet.', textAlign: TextAlign.center))
+                    const AppCard(
+                      child: Text(
+                        'No project contributions yet.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
                   else
-                    ..._projects.items.map((item) => ContributionTransactionCard(title: item.projectTitle ?? item.contributorName, subtitle: item.note, amount: item.amount, paymentMode: item.paymentMode, paidAt: item.paidAt, collectedByName: item.collectedByName)),
+                    ..._projects.items.map(
+                      (item) => ContributionTransactionCard(
+                        title: item.projectTitle ?? item.contributorName,
+                        subtitle: item.note,
+                        amount: item.amount,
+                        paymentMode: item.paymentMode,
+                        paidAt: item.paidAt,
+                        collectedByName: item.collectedByName,
+                      ),
+                    ),
                   const SizedBox(height: 20),
-                  Text('General Collections', style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    'General Collections',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 10),
                   if (_collections.items.isEmpty && !_collections.isLoading)
-                    const AppCard(child: Text('No collection contributions yet.', textAlign: TextAlign.center))
+                    const AppCard(
+                      child: Text(
+                        'No collection contributions yet.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
                   else
-                    ..._collections.items.map((item) => ContributionTransactionCard(title: item.collectionType.replaceAll('_', ' '), subtitle: item.note, amount: item.amount, paymentMode: item.paymentMode, paidAt: item.paidAt, collectedByName: item.collectedByName)),
+                    ..._collections.items.map(
+                      (item) => ContributionTransactionCard(
+                        title: item.collectionType.replaceAll('_', ' '),
+                        subtitle: item.note,
+                        amount: item.amount,
+                        paymentMode: item.paymentMode,
+                        paidAt: item.paidAt,
+                        collectedByName: item.collectedByName,
+                      ),
+                    ),
                   if (_projects.isLoading || _collections.isLoading)
-                    const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
                 ],
               ),
             ),
@@ -208,8 +251,8 @@ class _UserCard extends StatelessWidget {
                 Text(
                   user.fullName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(user.phone ?? 'Phone not available'),
               ],

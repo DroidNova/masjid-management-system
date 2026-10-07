@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 
 class PermissionHelper {
   const PermissionHelper._();
@@ -14,7 +14,9 @@ class PermissionHelper {
   }
 
   static bool hasRoleInList(List<String> roles, String role) {
-    return roles.map((value) => value.toUpperCase()).contains(role.toUpperCase());
+    return roles
+        .map((value) => value.toUpperCase())
+        .contains(role.toUpperCase());
   }
 
   static bool isSuperAdmin(AppUser? user) => hasRole(user, superAdmin);
@@ -28,7 +30,9 @@ class PermissionHelper {
   }
 
   static bool canManageFinance(List<String> roles) {
-    return hasRoleInList(roles, masjidAdmin) || hasRoleInList(roles, committeeMember) || hasRoleInList(roles, superAdmin);
+    return hasRoleInList(roles, masjidAdmin) ||
+        hasRoleInList(roles, committeeMember) ||
+        hasRoleInList(roles, superAdmin);
   }
 
   static bool canManageProjects(List<String> roles) => canManageFinance(roles);
@@ -40,11 +44,14 @@ class PermissionHelper {
         hasRoleInList(roles, superAdmin);
   }
 
-  static bool canUpdateNamazTime(List<String> roles) => canManageAnnouncements(roles);
+  static bool canUpdateNamazTime(List<String> roles) =>
+      canManageAnnouncements(roles);
 
-  static bool canManageImamSalary(List<String> roles) => canManageFinance(roles);
+  static bool canManageImamSalary(List<String> roles) =>
+      canManageFinance(roles);
 
-  static bool canAddCommunityUser(List<String> roles) => allowedCommunityRolesToCreate(roles).isNotEmpty;
+  static bool canAddCommunityUser(List<String> roles) =>
+      allowedCommunityRolesToCreate(roles).isNotEmpty;
 
   static List<String> allowedCommunityRolesToCreate(List<String> roles) {
     if (hasRoleInList(roles, superAdmin) || hasRoleInList(roles, masjidAdmin)) {
@@ -69,11 +76,23 @@ class PermissionHelper {
     return false;
   }
 
-  static bool canEditCommunityUser({required List<String> currentUserRoles, required List<String> targetUserRoles}) {
-    return canManageCommunityUser(currentUserRoles: currentUserRoles, targetUserRoles: targetUserRoles);
+  static bool canEditCommunityUser({
+    required List<String> currentUserRoles,
+    required List<String> targetUserRoles,
+  }) {
+    return canManageCommunityUser(
+      currentUserRoles: currentUserRoles,
+      targetUserRoles: targetUserRoles,
+    );
   }
 
-  static bool canChangeCommunityUserStatus({required List<String> currentUserRoles, required List<String> targetUserRoles}) {
-    return canManageCommunityUser(currentUserRoles: currentUserRoles, targetUserRoles: targetUserRoles);
+  static bool canChangeCommunityUserStatus({
+    required List<String> currentUserRoles,
+    required List<String> targetUserRoles,
+  }) {
+    return canManageCommunityUser(
+      currentUserRoles: currentUserRoles,
+      targetUserRoles: targetUserRoles,
+    );
   }
 }

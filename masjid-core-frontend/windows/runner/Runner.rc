@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.droidnova" "\0"
-            VALUE "FileDescription", "platform_core_frontend" "\0"
+            VALUE "FileDescription", "masjid_core_frontend" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "platform_core_frontend" "\0"
+            VALUE "InternalName", "masjid_core_frontend" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.droidnova. All rights reserved." "\0"
-            VALUE "OriginalFilename", "platform_core_frontend.exe" "\0"
-            VALUE "ProductName", "platform_core_frontend" "\0"
+            VALUE "OriginalFilename", "masjid_core_frontend.exe" "\0"
+            VALUE "ProductName", "masjid_core_frontend" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

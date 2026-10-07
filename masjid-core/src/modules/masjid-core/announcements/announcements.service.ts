@@ -148,7 +148,11 @@ export class AnnouncementsService {
       },
       select: announcementSelect,
     });
-    this.logger.log({ message: 'Announcement created', announcementId: announcement.id, masjidId });
+    this.logger.log({
+      message: 'Announcement created',
+      announcementId: announcement.id,
+      masjidId,
+    });
     return announcement;
   }
 
@@ -175,7 +179,11 @@ export class AnnouncementsService {
       data,
       select: announcementSelect,
     });
-    this.logger.log({ message: 'Announcement updated', announcementId: announcement.id, masjidId });
+    this.logger.log({
+      message: 'Announcement updated',
+      announcementId: announcement.id,
+      masjidId,
+    });
     return announcement;
   }
 
@@ -191,7 +199,11 @@ export class AnnouncementsService {
       data: { isActive: false },
       select: announcementSelect,
     });
-    this.logger.warn({ message: 'Announcement deactivated', announcementId: announcement.id, masjidId });
+    this.logger.warn({
+      message: 'Announcement deactivated',
+      announcementId: announcement.id,
+      masjidId,
+    });
     return announcement;
   }
 

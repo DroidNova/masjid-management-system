@@ -115,7 +115,11 @@ export class AuthController {
     schema: {
       allOf: [
         { $ref: '#/components/schemas/SuccessResponseDto' },
-        { properties: { data: { $ref: '#/components/schemas/AuthResponseDto' } } },
+        {
+          properties: {
+            data: { $ref: '#/components/schemas/AuthResponseDto' },
+          },
+        },
       ],
     },
   })
@@ -138,7 +142,11 @@ export class AuthController {
     schema: {
       allOf: [
         { $ref: '#/components/schemas/SuccessResponseDto' },
-        { properties: { data: { $ref: '#/components/schemas/AuthResponseDto' } } },
+        {
+          properties: {
+            data: { $ref: '#/components/schemas/AuthResponseDto' },
+          },
+        },
       ],
     },
   })
@@ -156,7 +164,11 @@ export class AuthController {
     schema: {
       allOf: [
         { $ref: '#/components/schemas/SuccessResponseDto' },
-        { properties: { data: { type: 'object', example: { loggedOut: true } } } },
+        {
+          properties: {
+            data: { type: 'object', example: { loggedOut: true } },
+          },
+        },
       ],
     },
   })

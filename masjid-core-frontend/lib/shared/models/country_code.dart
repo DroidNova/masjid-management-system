@@ -17,7 +17,10 @@ class CountryCode {
 }
 
 class PhoneNumberParts {
-  const PhoneNumberParts({required this.countryCode, required this.nationalNumber});
+  const PhoneNumberParts({
+    required this.countryCode,
+    required this.nationalNumber,
+  });
   final CountryCode countryCode;
   final String nationalNumber;
 }

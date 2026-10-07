@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/finance/data/models/collection_entry_model.dart';
-import 'package:platform_core_frontend/features/finance/data/models/create_collection_request.dart';
-import 'package:platform_core_frontend/features/finance/data/models/create_expense_request.dart';
-import 'package:platform_core_frontend/features/finance/data/models/expense_entry_model.dart';
-import 'package:platform_core_frontend/features/finance/data/models/finance_summary_model.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/collection_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/create_collection_request.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/create_expense_request.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/expense_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
 
 class FinanceApi {
   FinanceApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
@@ -49,9 +49,7 @@ class FinanceApi {
 
   Future<List<ExpenseEntryModel>> getExpenses() async {
     try {
-      final response = await _apiClient.dio.get<Object?>(
-        '/expenses/my-masjid',
-      );
+      final response = await _apiClient.dio.get<Object?>('/expenses/my-masjid');
       return _extractListData(response.data)
           .whereType<Map<String, dynamic>>()
           .map(ExpenseEntryModel.fromJson)

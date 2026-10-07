@@ -330,7 +330,7 @@ export class ImamSalariesService {
         'Current user is not assigned to a masjid',
         HttpStatus.FORBIDDEN,
       );
-    return actor.masjidId as string;
+    return actor.masjidId;
   }
   private fail(message: string, status = HttpStatus.BAD_REQUEST): never {
     throw new ApiException(message, status, ERROR_CODES.BAD_REQUEST);

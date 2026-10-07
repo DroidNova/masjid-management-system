@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/imam_salary_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/imam_salary_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
 
 class ImamSalaryCard extends StatelessWidget {
   const ImamSalaryCard({super.key, required this.salarySummary});
@@ -19,9 +19,9 @@ class ImamSalaryCard extends StatelessWidget {
           children: <Widget>[
             Text(
               'Imam Salary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             if (summary == null)

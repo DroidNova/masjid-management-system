@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/finance_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/finance_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
 
 class FinanceSummaryCard extends StatelessWidget {
   const FinanceSummaryCard({super.key, required this.financeSummary});
@@ -19,9 +19,9 @@ class FinanceSummaryCard extends StatelessWidget {
           children: <Widget>[
             Text(
               'Finance Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             _AmountRow('Total Collection', summary.totalCollection),

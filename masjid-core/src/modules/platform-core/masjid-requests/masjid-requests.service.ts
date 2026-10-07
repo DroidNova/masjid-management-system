@@ -25,11 +25,13 @@ const COMMITTEE_MEMBER_ROLE = 'COMMITTEE_MEMBER';
 const TEMPORARY_USER_PASSWORD = '12345678';
 const BCRYPT_SALT_ROUNDS = 10;
 
-enum MasjidRegistrationRequestStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
+const MasjidRegistrationRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+type MasjidRegistrationRequestStatus =
+  (typeof MasjidRegistrationRequestStatus)[keyof typeof MasjidRegistrationRequestStatus];
 
 enum MasjidStatus {
   APPROVED = 'APPROVED',
@@ -85,7 +87,7 @@ type MasjidRequestRecord = {
   imamFatherName: string | null;
   imamAge: number | null;
   imamGender: string | null;
-  committeeMembers: unknown | null;
+  committeeMembers: unknown;
   rejectionReason: string | null;
   reviewedAt: Date | null;
   createdMasjidId: string | null;
@@ -101,14 +103,6 @@ type TrackedMasjidRequestRecord = {
   status: string;
   imamName: string | null;
   createdAt: Date;
-  reviewedAt: Date | null;
-};
-
-type TrackedMasjidRequestResponse = {
-  masjidName: string;
-  status: string;
-  imamName: string | null;
-  requestedAt: Date;
   reviewedAt: Date | null;
 };
 

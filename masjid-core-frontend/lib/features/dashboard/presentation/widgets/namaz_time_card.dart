@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
 
 class NamazTimeCard extends StatelessWidget {
   const NamazTimeCard({super.key, required this.namazTime});
@@ -33,10 +33,7 @@ class NamazTimeCard extends StatelessWidget {
           ),
           if (times.note != null) ...<Widget>[
             const Divider(),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(times.note!),
-            ),
+            Align(alignment: Alignment.centerLeft, child: Text(times.note!)),
           ],
         ],
       ),
@@ -94,9 +91,9 @@ class _SectionCard extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             child,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
 
 class LogoutButton extends StatefulWidget {
   const LogoutButton({super.key, AuthRepository? authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final AuthRepository? _authRepository;
 

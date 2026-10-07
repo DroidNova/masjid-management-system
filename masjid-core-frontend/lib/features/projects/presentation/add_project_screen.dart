@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/features/projects/data/models/create_project_request.dart';
-import 'package:platform_core_frontend/features/projects/data/projects_repository.dart';
-import 'package:platform_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/app_text_field.dart';
-import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
-import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/create_project_request.dart';
+import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
 
 class AddProjectScreen extends StatefulWidget {
   const AddProjectScreen({super.key, ProjectsRepository? projectsRepository})
-      : _projectsRepository = projectsRepository;
+    : _projectsRepository = projectsRepository;
 
   final ProjectsRepository? _projectsRepository;
 
@@ -93,9 +93,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +125,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
 
 class ProjectFormBody extends StatelessWidget {
   const ProjectFormBody({
+    super.key,
     required this.formKey,
     required this.titleController,
     required this.descriptionController,
@@ -209,7 +211,7 @@ class ProjectFormBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: status,
+                    initialValue: status,
                     decoration: const InputDecoration(labelText: 'Status *'),
                     items: projectStatusLabels.entries
                         .map(

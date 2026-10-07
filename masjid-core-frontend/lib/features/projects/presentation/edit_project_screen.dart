@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:platform_core_frontend/features/projects/data/models/update_project_request.dart';
-import 'package:platform_core_frontend/features/projects/data/projects_repository.dart';
-import 'package:platform_core_frontend/features/projects/presentation/add_project_screen.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/update_project_request.dart';
+import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/add_project_screen.dart';
 
 class EditProjectScreen extends StatefulWidget {
   const EditProjectScreen({
@@ -58,7 +58,8 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
 
   Future<void> _loadProject() async {
     try {
-      final project = widget.initialProject ??
+      final project =
+          widget.initialProject ??
           await _projectsRepository.getProjectById(widget.projectId);
       if (!mounted) return;
       _fill(project);
@@ -131,7 +132,9 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {

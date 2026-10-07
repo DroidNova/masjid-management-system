@@ -29,10 +29,9 @@ class AppUser {
       roles: (json['roles'] as List<dynamic>? ?? const <dynamic>[])
           .map((role) => role.toString())
           .toList(),
-      permissions:
-          (json['permissions'] as List<dynamic>? ?? const <dynamic>[])
-              .map((permission) => permission.toString())
-              .toList(),
+      permissions: (json['permissions'] as List<dynamic>? ?? const <dynamic>[])
+          .map((permission) => permission.toString())
+          .toList(),
     );
   }
 

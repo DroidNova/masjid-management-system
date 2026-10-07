@@ -37,7 +37,8 @@ String getReadableErrorMessage(
       combined.contains('400')) {
     return 'Please check the entered details.';
   }
-  if (error is DioException && error.type == DioExceptionType.connectionTimeout) {
+  if (error is DioException &&
+      error.type == DioExceptionType.connectionTimeout) {
     return 'Connection timed out. Please try again.';
   }
   if (error is DioException && error.type == DioExceptionType.receiveTimeout) {

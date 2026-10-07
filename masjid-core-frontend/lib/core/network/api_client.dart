@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/config/api_config.dart';
-import 'package:platform_core_frontend/core/network/auth_interceptor.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/core/storage/token_storage.dart';
+import 'package:masjid_core_frontend/core/config/api_config.dart';
+import 'package:masjid_core_frontend/core/network/auth_interceptor.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/storage/token_storage.dart';
 
 class ApiClient {
   ApiClient({
@@ -21,12 +21,12 @@ class ApiClient {
     );
 
     this.dio.interceptors.add(
-          AuthInterceptor(
-            dio: this.dio,
-            tokenStorage: tokenStorage,
-            sessionStorage: sessionStorage,
-          ),
-        );
+      AuthInterceptor(
+        dio: this.dio,
+        tokenStorage: tokenStorage,
+        sessionStorage: sessionStorage,
+      ),
+    );
   }
 
   final Dio dio;

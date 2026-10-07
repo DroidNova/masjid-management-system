@@ -1,14 +1,14 @@
-import 'package:platform_core_frontend/core/network/api_request_coordinator.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/features/community/data/community_api.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/create_community_user_request.dart';
-import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/update_community_user_request.dart';
+import 'package:masjid_core_frontend/core/network/api_request_coordinator.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/features/community/data/community_api.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/create_community_user_request.dart';
+import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/update_community_user_request.dart';
 
 class CommunityRepository {
   CommunityRepository({CommunityApi? communityApi})
-      : _communityApi = communityApi ?? CommunityApi();
+    : _communityApi = communityApi ?? CommunityApi();
 
   final CommunityApi _communityApi;
 

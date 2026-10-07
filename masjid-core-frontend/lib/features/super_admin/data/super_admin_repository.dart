@@ -1,10 +1,10 @@
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/features/super_admin/data/super_admin_api.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_dashboard_summary.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_model.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_user_detail_model.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/super_admin_api.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_dashboard_summary.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_masjid_request_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_user_detail_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
 
 class AdminPage<T> {
   const AdminPage(this.items, this.total);
@@ -94,8 +94,8 @@ class SuperAdminRepository {
     final updated = AdminMasjidRequestModel.fromJson(
       await _api.updateMasjidRequestStatus(id, <String, dynamic>{
         'status': status,
-        if (reason != null) 'reason': reason,
-        if (reason != null) 'rejectionReason': reason,
+        'reason': ?reason,
+        'rejectionReason': ?reason,
       }),
     );
     AppDataRefreshBus.instance.notifyMany(<AppDataScope>[
@@ -136,7 +136,7 @@ class SuperAdminRepository {
     final updated = AdminMasjidModel.fromJson(
       await _api.updateMasjidStatus(id, <String, dynamic>{
         'status': status,
-        if (reason != null) 'reason': reason,
+        'reason': ?reason,
       }),
     );
     AppDataRefreshBus.instance.notifyMany(<AppDataScope>[

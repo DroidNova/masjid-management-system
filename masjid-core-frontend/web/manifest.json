@@ -1,12 +1,12 @@
 {
-    "name": "platform_core_frontend",
-    "short_name": "platform_core_frontend",
+    "name": "Masjid Core",
+    "short_name": "Masjid Core",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "description": "Masjid management for villages and cities",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

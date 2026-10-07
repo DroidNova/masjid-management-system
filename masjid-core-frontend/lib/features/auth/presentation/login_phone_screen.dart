@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/models/country_code.dart';
-import 'package:platform_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
 class LoginPhoneScreen extends StatefulWidget {
   const LoginPhoneScreen({super.key, AuthRepository? authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final AuthRepository? _authRepository;
 
@@ -32,12 +32,17 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   Future<void> _continue() async {
     final nationalPhone = _phoneController.text.trim();
 
-    if (nationalPhone.isEmpty || nationalPhone.length < (_selectedCountry.minLength ?? 6) || nationalPhone.length > (_selectedCountry.maxLength ?? 15)) {
+    if (nationalPhone.isEmpty ||
+        nationalPhone.length < (_selectedCountry.minLength ?? 6) ||
+        nationalPhone.length > (_selectedCountry.maxLength ?? 15)) {
       _showError('Enter a valid phone number');
       return;
     }
 
-    final phone = normalizePhone(countryCode: _selectedCountry, nationalNumber: nationalPhone);
+    final phone = normalizePhone(
+      countryCode: _selectedCountry,
+      nationalNumber: nationalPhone,
+    );
 
     setState(() => _isLoading = true);
 
@@ -80,9 +85,9 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {
@@ -122,7 +127,6 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
                     phoneController: _phoneController,
                     initialCountry: _selectedCountry,
                     onCountryChanged: (country) => _selectedCountry = country,
-                    label: 'Phone number',
                     isRequired: true,
                     textInputAction: TextInputAction.done,
                   ),

@@ -12,7 +12,9 @@ class SessionExpiredHandler {
     final context = rootNavigatorKey.currentContext;
     if (context == null || _isShowingDialog) return;
 
-    final location = GoRouter.of(context).routeInformationProvider.value.uri.path;
+    final location = GoRouter.of(
+      context,
+    ).routeInformationProvider.value.uri.path;
     if (_isAuthRoute(location)) return;
 
     _isShowingDialog = true;
@@ -33,8 +35,11 @@ class SessionExpiredHandler {
       );
     } finally {
       _isShowingDialog = false;
+      // The context is read fresh from the root navigator after the dialog
+      // closes, so it is not a stale context captured before the await.
       final redirectContext = rootNavigatorKey.currentContext;
       if (redirectContext != null) {
+        // ignore: use_build_context_synchronously
         redirectContext.go('/login-phone');
       }
     }

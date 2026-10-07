@@ -60,7 +60,7 @@ export class ContributionsService {
         dueAmount: true,
         status: true,
       },
-    } as never)) as unknown as AssignmentRow[];
+    } as never)) as AssignmentRow[];
 
     const [projectAggregate, collectionAggregate] = (await Promise.all([
       this.db.projectContribution.aggregate({
@@ -184,7 +184,7 @@ export class ContributionsService {
     const where = { memberId: actor.id, masjidId: user.masjidId };
     const totalAvailable = (await this.db.imamSalaryAssignment.count({
       where,
-    } as never)) as unknown as number;
+    } as never)) as number;
     const total = Math.min(totalAvailable, monthsBack);
     const skip = (page - 1) * limit;
 
@@ -212,7 +212,7 @@ export class ContributionsService {
                 select: { paidAt: true },
               },
             },
-          } as never)) as unknown as AssignmentRow[]);
+          } as never)) as AssignmentRow[]);
 
     return successResponse('Imam salary contributions fetched successfully', {
       ...this.pagination(total, page, limit),
@@ -282,7 +282,7 @@ export class ContributionsService {
         isFamilyHead: true,
         masjidId: true,
       },
-    } as never)) as unknown as {
+    } as never)) as {
       id: string;
       fullName: string;
       phone: string | null;

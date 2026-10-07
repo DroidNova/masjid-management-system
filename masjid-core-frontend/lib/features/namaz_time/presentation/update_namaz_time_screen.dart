@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
-import 'package:platform_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
-import 'package:platform_core_frontend/features/namaz_time/data/namaz_time_repository.dart';
-import 'package:platform_core_frontend/features/namaz_time/presentation/widgets/namaz_time_form_section.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/models/update_namaz_time_request.dart';
+import 'package:masjid_core_frontend/features/namaz_time/data/namaz_time_repository.dart';
+import 'package:masjid_core_frontend/features/namaz_time/presentation/widgets/namaz_time_form_section.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class UpdateNamazTimeScreen extends StatefulWidget {
   const UpdateNamazTimeScreen({
@@ -15,8 +15,8 @@ class UpdateNamazTimeScreen extends StatefulWidget {
     this.initialNamazTime,
     NamazTimeRepository? namazTimeRepository,
     SessionStorage? sessionStorage,
-  })  : _namazTimeRepository = namazTimeRepository,
-        _sessionStorage = sessionStorage;
+  }) : _namazTimeRepository = namazTimeRepository,
+       _sessionStorage = sessionStorage;
 
   final String? masjidId;
   final NamazTimeModel? initialNamazTime;
@@ -82,7 +82,8 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
       }
 
       _masjidId = masjidId;
-      final namazTime = await _namazTimeRepository.getNamazTime(masjidId) ??
+      final namazTime =
+          await _namazTimeRepository.getNamazTime(masjidId) ??
           widget.initialNamazTime;
       if (!mounted) return;
       if (namazTime != null) _fill(namazTime);
@@ -152,7 +153,9 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -201,8 +204,8 @@ class _UpdateNamazTimeScreenState extends State<UpdateNamazTimeScreen> {
                   Text(
                     'Update Namaz Time',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   const Text('Set daily prayer timings for your masjid'),

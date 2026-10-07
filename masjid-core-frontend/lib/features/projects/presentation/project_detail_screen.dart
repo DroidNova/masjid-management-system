@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/shared/utils/date_format_utils.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:platform_core_frontend/features/projects/data/projects_repository.dart';
-import 'package:platform_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
-import 'package:platform_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
+import 'package:masjid_core_frontend/shared/utils/date_format_utils.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   const ProjectDetailScreen({
@@ -18,8 +18,8 @@ class ProjectDetailScreen extends StatefulWidget {
     this.initialProject,
     ProjectsRepository? projectsRepository,
     SessionStorage? sessionStorage,
-  })  : _projectsRepository = projectsRepository,
-        _sessionStorage = sessionStorage;
+  }) : _projectsRepository = projectsRepository,
+       _sessionStorage = sessionStorage;
 
   final String projectId;
   final ProjectModel? initialProject;
@@ -65,7 +65,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       _errorMessage = null;
     });
     try {
-      final project = widget.initialProject ??
+      final project =
+          widget.initialProject ??
           await _projectsRepository.getProjectById(widget.projectId);
       if (!mounted) return;
       setState(() => _project = project);
@@ -121,7 +122,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {
@@ -167,9 +170,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           Expanded(
                             child: Text(
                               project.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
+                              style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -182,7 +183,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       ],
                       const SizedBox(height: 16),
                       Text('Target: ${formatRupees(project.targetAmount)}'),
-                      Text('Collected: ${formatRupees(project.collectedAmount)}'),
+                      Text(
+                        'Collected: ${formatRupees(project.collectedAmount)}',
+                      ),
                       Text('Spent: ${formatRupees(project.spentAmount)}'),
                       const SizedBox(height: 16),
                       ProjectProgressBar(
@@ -198,12 +201,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         ),
                       ),
                       const Divider(height: 28),
-                      Text('Start Date: ${formatReadableDate(parseApiDate(project.startDate))}'),
-                      Text('End Date: ${formatReadableDate(parseApiDate(project.endDate))}'),
+                      Text(
+                        'Start Date: ${formatReadableDate(parseApiDate(project.startDate))}',
+                      ),
+                      Text(
+                        'End Date: ${formatReadableDate(parseApiDate(project.endDate))}',
+                      ),
                       Text('Created: ${project.createdAt ?? '-'}'),
                       if (_canManageProjects) ...<Widget>[
                         const SizedBox(height: 20),
-                        AppButton(label: 'Edit Project', onPressed: _editProject),
+                        AppButton(
+                          label: 'Edit Project',
+                          onPressed: _editProject,
+                        ),
                         const SizedBox(height: 12),
                         AppButton(
                           label: 'Delete / Cancel Project',

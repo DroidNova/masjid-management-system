@@ -12,7 +12,10 @@ import { ApiException } from '../../../common/exceptions/api.exception';
 import { ERROR_CODES } from '../../../common/constants/error-codes.constant';
 import { successResponse } from '../../../common/helpers/api-response.helper';
 import { OtpChallengeService } from './services/otp-challenge.service';
-import { getPhoneSearchVariants, normalizePhone } from '../../../common/utils/phone.util';
+import {
+  getPhoneSearchVariants,
+  normalizePhone,
+} from '../../../common/utils/phone.util';
 
 type SafeUser = {
   id: string;
@@ -83,7 +86,10 @@ export class AuthService {
     this.assertUserActive(user);
 
     if (this.hasPrivilegedRole(user)) {
-      this.logger.debug({ message: 'Password login required for privileged user', userId: user.id });
+      this.logger.debug({
+        message: 'Password login required for privileged user',
+        userId: user.id,
+      });
       return {
         nextStep: 'PASSWORD_REQUIRED',
         phone,
@@ -93,7 +99,10 @@ export class AuthService {
 
     const challenge = this.otpChallengeService.create(phone, false);
     await this.sendOtp(phone);
-    this.logger.debug({ message: 'OTP challenge created', challengeId: challenge.challengeId });
+    this.logger.debug({
+      message: 'OTP challenge created',
+      challengeId: challenge.challengeId,
+    });
 
     return {
       nextStep: 'OTP_REQUIRED',
@@ -143,7 +152,11 @@ export class AuthService {
 
     const challenge = this.otpChallengeService.create(phone, true);
     await this.sendOtp(phone);
-    this.logger.debug({ message: 'Password verified and OTP challenge created', userId: user.id, challengeId: challenge.challengeId });
+    this.logger.debug({
+      message: 'Password verified and OTP challenge created',
+      userId: user.id,
+      challengeId: challenge.challengeId,
+    });
 
     return {
       nextStep: 'OTP_REQUIRED',

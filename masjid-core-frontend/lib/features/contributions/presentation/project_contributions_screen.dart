@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/community/data/community_repository.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/contributions/data/contributions_repository.dart';
-import 'package:platform_core_frontend/features/contributions/models/project_contribution_model.dart';
-import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
-import 'package:platform_core_frontend/shared/utils/paginated_list_controller.dart';
-import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/contributions/data/contributions_repository.dart';
+import 'package:masjid_core_frontend/features/contributions/models/project_contribution_model.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
+import 'package:masjid_core_frontend/shared/utils/paginated_list_controller.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
 class ProjectContributionsScreen extends StatefulWidget {
   const ProjectContributionsScreen({
@@ -126,11 +126,8 @@ class _ProjectContributionsScreenState
               initialValue: _paymentMode,
               decoration: const InputDecoration(labelText: 'Payment mode'),
               items: const <DropdownMenuItem<String?>>[
-                DropdownMenuItem<String?>(value: null, child: Text('All')),
-                DropdownMenuItem<String?>(
-                  value: 'CASH',
-                  child: Text('Cash'),
-                ),
+                DropdownMenuItem<String?>(child: Text('All')),
+                DropdownMenuItem<String?>(value: 'CASH', child: Text('Cash')),
                 DropdownMenuItem<String?>(
                   value: 'ONLINE',
                   child: Text('Online'),
@@ -263,7 +260,6 @@ class _ProjectContributionDialogState
                   ),
                   items: <DropdownMenuItem<String?>>[
                     const DropdownMenuItem<String?>(
-                      value: null,
                       child: Text('External contributor'),
                     ),
                     ..._members.map(
@@ -376,9 +372,9 @@ class _ProjectContributionDialogState
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getReadableErrorMessage(error))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(getReadableErrorMessage(error))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

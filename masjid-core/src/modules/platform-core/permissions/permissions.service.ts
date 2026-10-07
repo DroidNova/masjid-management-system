@@ -12,7 +12,9 @@ export class PermissionsService {
     };
   }
 
-  async getPermissionsForRoleIds(roleIds: string[]): Promise<Record<string, string[]>> {
+  async getPermissionsForRoleIds(
+    roleIds: string[],
+  ): Promise<Record<string, string[]>> {
     const rolePermissions = await this.prisma.rolePermission.findMany({
       where: {
         roleId: {
@@ -24,11 +26,17 @@ export class PermissionsService {
       },
     });
 
-    return rolePermissions.reduce<Record<string, string[]>>((acc: Record<string, string[]>, rolePermission: { roleId: string; permission: { name: string } }) => {
-      const current = acc[rolePermission.roleId] ?? [];
-      current.push(rolePermission.permission.name);
-      acc[rolePermission.roleId] = current;
-      return acc;
-    }, {});
+    return rolePermissions.reduce<Record<string, string[]>>(
+      (
+        acc: Record<string, string[]>,
+        rolePermission: { roleId: string; permission: { name: string } },
+      ) => {
+        const current = acc[rolePermission.roleId] ?? [];
+        current.push(rolePermission.permission.name);
+        acc[rolePermission.roleId] = current;
+        return acc;
+      },
+      {},
+    );
   }
 }

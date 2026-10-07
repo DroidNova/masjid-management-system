@@ -23,7 +23,10 @@ import { JwtAuthGuard } from '../../platform-core/auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 import { CreateMasjidUserDto } from './dto/create-masjid-user.dto';
 import { UpdateWelcomeMessageDto } from './dto/update-welcome-message.dto';
-import { UpdateMasjidUserDto, UpdateMasjidUserStatusDto } from './dto/update-masjid-user.dto';
+import {
+  UpdateMasjidUserDto,
+  UpdateMasjidUserStatusDto,
+} from './dto/update-masjid-user.dto';
 import { MasjidsService } from './masjids.service';
 
 type AuthenticatedRequest = {
@@ -116,7 +119,11 @@ export class MasjidsController {
     @Body() dto: UpdateMasjidUserStatusDto,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.masjidsService.updateMyMasjidUserStatus(request.user, userId, dto);
+    return this.masjidsService.updateMyMasjidUserStatus(
+      request.user,
+      userId,
+      dto,
+    );
   }
 
   @Get('my/users')

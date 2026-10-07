@@ -23,14 +23,15 @@ RUN apk add --no-cache --virtual .build-deps python3 make g++ \
     && npm ci --omit=dev \
     && npm cache clean --force \
     && apk del .build-deps
+# dist/ contains src/, prisma/seed.js and scripts/ because tsconfig's root is
+# the project directory. The generated Prisma client is compiled into
+# dist/src/generated, so nothing from src/ is needed at runtime.
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/src/generated ./src/generated
 COPY prisma ./prisma
-COPY prisma.config.ts tsconfig.json ./
-COPY scripts ./scripts
+COPY prisma.config.ts ./
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chown -R node:node /app
 USER node
 EXPOSE 3000
 ENTRYPOINT ["dumb-init", "./docker-entrypoint.sh"]
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

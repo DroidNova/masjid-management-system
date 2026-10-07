@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:platform_core_frontend/features/super_admin/models/admin_user_model.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/users/widgets/assign_roles_dialog.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/users/widgets/update_user_status_dialog.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/widgets_common.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
+import 'package:masjid_core_frontend/features/super_admin/models/admin_user_model.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/assign_roles_dialog.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/widgets/update_user_status_dialog.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/widgets_common.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class AdminUserDetailScreen extends StatefulWidget {
   const AdminUserDetailScreen({
@@ -37,7 +37,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     _loadUser();
   }
 
-  Future<void> _loadUser({bool force = false}) {
+  Future<void> _loadUser() {
     final activeLoad = _activeLoad;
     if (activeLoad != null) return activeLoad;
     _activeLoad = _performLoadUser().whenComplete(() {
@@ -92,38 +92,38 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       body: _isLoading && user == null
           ? const LoadingView()
           : user == null
-              ? Center(child: Text(_errorMessage ?? 'Unable to load user.'))
-              : ListView(
-                  padding: const EdgeInsets.all(16),
+          ? Center(child: Text(_errorMessage ?? 'Unable to load user.'))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: <Widget>[
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(_errorMessage!),
+                  ),
+                AdminStatusChip(user.status),
+                InfoRow('Name', user.fullName),
+                InfoRow('Phone', user.phone),
+                InfoRow('Email', user.email),
+                InfoRow('Roles', user.roles.join(', ')),
+                InfoRow('Masjid', user.masjidName ?? user.masjidId),
+                InfoRow('Created', user.createdAt),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
                   children: <Widget>[
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(_errorMessage!),
-                      ),
-                    AdminStatusChip(user.status),
-                    InfoRow('Name', user.fullName),
-                    InfoRow('Phone', user.phone),
-                    InfoRow('Email', user.email),
-                    InfoRow('Roles', user.roles.join(', ')),
-                    InfoRow('Masjid', user.masjidName ?? user.masjidId),
-                    InfoRow('Created', user.createdAt),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      children: <Widget>[
-                        FilledButton(
-                          onPressed: () => _changeStatus(user),
-                          child: const Text('Change Status'),
-                        ),
-                        FilledButton(
-                          onPressed: () => _assignRoles(user),
-                          child: const Text('Assign Roles'),
-                        ),
-                      ],
+                    FilledButton(
+                      onPressed: () => _changeStatus(user),
+                      child: const Text('Change Status'),
+                    ),
+                    FilledButton(
+                      onPressed: () => _assignRoles(user),
+                      child: const Text('Assign Roles'),
                     ),
                   ],
                 ),
+              ],
+            ),
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_requests_screen.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/masjids/admin_masjids_screen.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/super_admin_dashboard_screen.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
-import 'package:platform_core_frontend/features/super_admin/presentation/super_admin_tab_controller.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_requests_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjids_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_dashboard_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_tab_controller.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
 
 class SuperAdminShellScreen extends StatefulWidget {
   const SuperAdminShellScreen({
@@ -25,8 +25,10 @@ class _SuperAdminShellScreenState extends State<SuperAdminShellScreen> {
   late int _selectedIndex = widget.initialIndex;
   late final AuthRepository _authRepository =
       widget.authRepository ?? AuthRepository();
-  late final List<Widget?> _pages =
-      List<Widget?>.filled(superAdminTabPaths.length, null);
+  late final List<Widget?> _pages = List<Widget?>.filled(
+    superAdminTabPaths.length,
+    null,
+  );
 
   @override
   void didUpdateWidget(covariant SuperAdminShellScreen oldWidget) {

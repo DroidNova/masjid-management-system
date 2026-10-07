@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/features/dashboard/data/dashboard_repository.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/dashboard_response.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/announcement_preview_card.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/finance_summary_card.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/imam_salary_card.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/masjid_header_card.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/namaz_time_card.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/project_summary_card.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/dashboard_repository.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/announcement_preview_card.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/finance_summary_card.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/imam_salary_card.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/masjid_header_card.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/namaz_time_card.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/project_summary_card.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({
@@ -23,9 +22,9 @@ class HomeDashboardScreen extends StatefulWidget {
     DashboardRepository? dashboardRepository,
     AuthRepository? authRepository,
     SessionStorage? sessionStorage,
-  })  : _dashboardRepository = dashboardRepository,
-        _authRepository = authRepository,
-        _sessionStorage = sessionStorage;
+  }) : _dashboardRepository = dashboardRepository,
+       _authRepository = authRepository,
+       _sessionStorage = sessionStorage;
 
   final DashboardRepository? _dashboardRepository;
   final AuthRepository? _authRepository;
@@ -54,8 +53,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifier =
-        AppDataRefreshBus.instance.notifierFor(AppDataScope.dashboard);
+    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
+      AppDataScope.dashboard,
+    );
     _refreshNotifier.addListener(_onRefreshRequested);
     _loadCurrentUser();
     _loadDashboard();
@@ -139,19 +139,29 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
             ? 'You are not assigned to any masjid yet.'
             : 'Unable to load dashboard',
         detail: _isNoMasjidError ? null : _errorMessage,
-        primaryButtonLabel: _isNoMasjidError ? 'Logout / Back to Login' : 'Retry',
-        onPrimaryPressed: _isNoMasjidError ? _logout : () => _loadDashboard(force: true),
+        primaryButtonLabel: _isNoMasjidError
+            ? 'Logout / Back to Login'
+            : 'Retry',
+        onPrimaryPressed: _isNoMasjidError
+            ? _logout
+            : () => _loadDashboard(force: true),
       );
     }
 
     final dashboard = _dashboard;
     final roles = _currentUser?.roles ?? const <String>[];
     final canUpdateNamazTime = PermissionHelper.canUpdateNamazTime(roles);
-    final canManageAnnouncements = PermissionHelper.canManageAnnouncements(roles);
+    final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
+      roles,
+    );
     final canManageFinance = PermissionHelper.canManageFinance(roles);
     final canManageProjects = PermissionHelper.canManageProjects(roles);
-    final canViewContributions = PermissionHelper.hasRoleInList(roles, PermissionHelper.member) ||
-        PermissionHelper.hasRoleInList(roles, PermissionHelper.committeeMember) ||
+    final canViewContributions =
+        PermissionHelper.hasRoleInList(roles, PermissionHelper.member) ||
+        PermissionHelper.hasRoleInList(
+          roles,
+          PermissionHelper.committeeMember,
+        ) ||
         PermissionHelper.hasRoleInList(roles, PermissionHelper.masjidAdmin);
     if (dashboard == null) {
       return _DashboardErrorView(
@@ -203,9 +213,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                         : null,
                   ),
                   const SizedBox(height: 12),
-                  FinanceSummaryCard(
-                    financeSummary: dashboard.financeSummary,
-                  ),
+                  FinanceSummaryCard(financeSummary: dashboard.financeSummary),
                   if (canManageFinance) ...<Widget>[
                     const SizedBox(height: 8),
                     Wrap(
@@ -213,7 +221,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                       runSpacing: 8,
                       children: <Widget>[
                         FilledButton.icon(
-                          onPressed: () => context.push('/finance/add-collection'),
+                          onPressed: () =>
+                              context.push('/finance/add-collection'),
                           icon: const Icon(Icons.add),
                           label: const Text('Add Collection'),
                         ),
@@ -238,9 +247,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  ImamSalaryCard(
-                    salarySummary: dashboard.imamSalarySummary,
-                  ),
+                  ImamSalaryCard(salarySummary: dashboard.imamSalarySummary),
                   if (canViewContributions) ...<Widget>[
                     const SizedBox(height: 12),
                     Card(
@@ -299,16 +306,13 @@ class _DashboardErrorView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (detail != null) ...<Widget>[
                   const SizedBox(height: 8),
-                  Text(
-                    detail!,
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(detail!, textAlign: TextAlign.center),
                 ],
                 const SizedBox(height: 20),
                 AppButton(

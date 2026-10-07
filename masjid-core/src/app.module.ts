@@ -37,18 +37,17 @@ const logLevel = process.env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug');
           res.setHeader('x-request-id', requestId);
           return requestId;
         },
-        transport:
-          !isProduction
-            ? {
-                target: 'pino-pretty',
-                options: {
-                  singleLine: true,
-                  colorize: true,
-                  translateTime: 'SYS:standard',
-                  ignore: 'pid,hostname',
-                },
-              }
-            : undefined,
+        transport: !isProduction
+          ? {
+              target: 'pino-pretty',
+              options: {
+                singleLine: true,
+                colorize: true,
+                translateTime: 'SYS:standard',
+                ignore: 'pid,hostname',
+              },
+            }
+          : undefined,
         redact: {
           paths: [
             'req.headers.authorization',

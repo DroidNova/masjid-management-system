@@ -1,17 +1,19 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/session/session_expired_handler.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/core/storage/token_storage.dart';
+import 'package:masjid_core_frontend/core/session/session_expired_handler.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/core/storage/token_storage.dart';
 
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Dio dio,
     TokenStorage? tokenStorage,
     SessionStorage? sessionStorage,
-  })  : _dio = dio,
-        _refreshDio = Dio(dio.options),
-        _tokenStorage = tokenStorage ?? TokenStorage(),
-        _sessionStorage = sessionStorage ?? SessionStorage();
+  }) : _dio = dio,
+       _refreshDio = Dio(dio.options),
+       _tokenStorage = tokenStorage ?? TokenStorage(),
+       _sessionStorage = sessionStorage ?? SessionStorage();
 
   final Dio _dio;
   final Dio _refreshDio;
@@ -56,7 +58,7 @@ class AuthInterceptor extends Interceptor {
       final newAccessToken = await _refreshAccessToken();
       if (newAccessToken == null || newAccessToken.isEmpty) {
         await _clearLocalSession();
-        SessionExpiredHandler.showDialogAndRedirect();
+        unawaited(SessionExpiredHandler.showDialogAndRedirect());
         handler.next(_sessionExpiredError(options));
         return;
       }
@@ -67,17 +69,14 @@ class AuthInterceptor extends Interceptor {
       final response = await _dio.fetch<dynamic>(
         options.copyWith(
           headers: headers,
-          extra: <String, dynamic>{
-            ...options.extra,
-            _retriedKey: true,
-          },
+          extra: <String, dynamic>{...options.extra, _retriedKey: true},
         ),
       );
 
       handler.resolve(response);
     } catch (_) {
       await _clearLocalSession();
-      SessionExpiredHandler.showDialogAndRedirect();
+      unawaited(SessionExpiredHandler.showDialogAndRedirect());
       handler.next(_sessionExpiredError(options));
     }
   }

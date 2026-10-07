@@ -21,8 +21,8 @@ class AppDataRefreshBus {
 
   final Map<AppDataScope, ValueNotifier<int>> _notifiers =
       <AppDataScope, ValueNotifier<int>>{
-    for (final scope in AppDataScope.values) scope: ValueNotifier<int>(0),
-  };
+        for (final scope in AppDataScope.values) scope: ValueNotifier<int>(0),
+      };
 
   ValueNotifier<int> notifierFor(AppDataScope scope) => _notifiers[scope]!;
 

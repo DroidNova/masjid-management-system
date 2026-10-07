@@ -13,7 +13,8 @@ class SuperAdminTabController extends InheritedWidget {
   final ValueChanged<int> onSelectTab;
 
   static SuperAdminTabController? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<SuperAdminTabController>();
+    return context
+        .dependOnInheritedWidgetOfExactType<SuperAdminTabController>();
   }
 
   @override

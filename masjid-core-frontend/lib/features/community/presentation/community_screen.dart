@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/features/community/data/community_repository.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/masjid_detail_model.dart';
-import 'package:platform_core_frontend/features/community/data/models/update_community_user_request.dart';
-import 'package:platform_core_frontend/features/community/presentation/widgets/community_section.dart';
-import 'package:platform_core_frontend/features/community/presentation/widgets/masjid_info_card.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:masjid_core_frontend/features/community/data/models/update_community_user_request.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/community_section.dart';
+import 'package:masjid_core_frontend/features/community/presentation/widgets/masjid_info_card.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({
@@ -22,9 +21,9 @@ class CommunityScreen extends StatefulWidget {
     CommunityRepository? communityRepository,
     AuthRepository? authRepository,
     SessionStorage? sessionStorage,
-  })  : _communityRepository = communityRepository,
-        _authRepository = authRepository,
-        _sessionStorage = sessionStorage;
+  }) : _communityRepository = communityRepository,
+       _authRepository = authRepository,
+       _sessionStorage = sessionStorage;
 
   final CommunityRepository? _communityRepository;
   final AuthRepository? _authRepository;
@@ -54,8 +53,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifier =
-        AppDataRefreshBus.instance.notifierFor(AppDataScope.community);
+    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
+      AppDataScope.community,
+    );
     _refreshNotifier.addListener(_onRefreshRequested);
     _loadCurrentUser();
     _loadCommunity();
@@ -165,7 +165,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
     if (result == null) return;
     try {
-      final updated = await _communityRepository.updateMasjidUser(user.id, result);
+      final updated = await _communityRepository.updateMasjidUser(
+        user.id,
+        result,
+      );
       if (!mounted) return;
       _replaceUser(updated);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -173,7 +176,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_cleanError(error))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_cleanError(error))));
     }
   }
 
@@ -190,7 +195,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
     if (result == null) return;
     try {
-      final updated = await _communityRepository.updateMasjidUserStatus(user.id, result);
+      final updated = await _communityRepository.updateMasjidUserStatus(
+        user.id,
+        result,
+      );
       if (!mounted) return;
       _replaceUser(updated);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +206,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_cleanError(error))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_cleanError(error))));
     }
   }
 
@@ -269,12 +279,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   children: <Widget>[
                     Text(
                       'Community',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
                     const Text('Masjid members and committee details'),
@@ -363,9 +369,9 @@ class _CommunityErrorView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (detail != null) ...<Widget>[
                   const SizedBox(height: 8),
@@ -382,27 +388,47 @@ class _CommunityErrorView extends StatelessWidget {
   }
 }
 
-
 class _EditCommunityUserDialog extends StatefulWidget {
   const _EditCommunityUserDialog({required this.user});
   final CommunityUserModel user;
   @override
-  State<_EditCommunityUserDialog> createState() => _EditCommunityUserDialogState();
+  State<_EditCommunityUserDialog> createState() =>
+      _EditCommunityUserDialogState();
 }
 
 class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name = TextEditingController(text: widget.user.fullName);
-  late final TextEditingController _phone = TextEditingController(text: widget.user.phone ?? '');
-  late final TextEditingController _email = TextEditingController(text: widget.user.email ?? '');
-  late final TextEditingController _fatherName = TextEditingController(text: widget.user.fatherName ?? '');
-  late final TextEditingController _age = TextEditingController(text: widget.user.age?.toString() ?? '');
-  late final TextEditingController _familyMemberCount = TextEditingController(text: widget.user.familyMemberCount?.toString() ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.user.fullName,
+  );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.user.phone ?? '',
+  );
+  late final TextEditingController _email = TextEditingController(
+    text: widget.user.email ?? '',
+  );
+  late final TextEditingController _fatherName = TextEditingController(
+    text: widget.user.fatherName ?? '',
+  );
+  late final TextEditingController _age = TextEditingController(
+    text: widget.user.age?.toString() ?? '',
+  );
+  late final TextEditingController _familyMemberCount = TextEditingController(
+    text: widget.user.familyMemberCount?.toString() ?? '',
+  );
   late String? _gender = widget.user.gender;
   late bool _isFamilyHead = widget.user.isFamilyHead;
 
   @override
-  void dispose() { _name.dispose(); _phone.dispose(); _email.dispose(); _fatherName.dispose(); _age.dispose(); _familyMemberCount.dispose(); super.dispose(); }
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _email.dispose();
+    _fatherName.dispose();
+    _age.dispose();
+    _familyMemberCount.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,23 +439,102 @@ class _EditCommunityUserDialogState extends State<_EditCommunityUserDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            TextFormField(controller: _name, decoration: const InputDecoration(labelText: 'Full name *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Full name is required' : null),
-            TextFormField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Phone is required' : null),
-            TextFormField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
-            TextFormField(controller: _fatherName, decoration: const InputDecoration(labelText: 'Father name *'), validator: (v) => (v?.trim().isEmpty ?? true) ? 'Father name is required' : null),
-            TextFormField(controller: _age, decoration: const InputDecoration(labelText: 'Age *'), keyboardType: TextInputType.number, inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly], validator: (v) { final age = int.tryParse(v?.trim() ?? ''); if (age == null) return 'Age is required'; if (age < 1 || age > 120) return 'Age must be between 1 and 120'; return null; }),
-            DropdownButtonFormField<String>(value: _gender, decoration: const InputDecoration(labelText: 'Gender *'), items: const <DropdownMenuItem<String>>[DropdownMenuItem(value: 'MALE', child: Text('Male')), DropdownMenuItem(value: 'FEMALE', child: Text('Female')), DropdownMenuItem(value: 'OTHER', child: Text('Other'))], onChanged: (value) => setState(() => _gender = value), validator: (value) => value == null ? 'Gender is required' : null),
-            if (widget.user.isMember) SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Is Family Head *'), value: _isFamilyHead, onChanged: (value) => setState(() => _isFamilyHead = value)),
-            if (widget.user.isMember && _isFamilyHead) TextFormField(controller: _familyMemberCount, decoration: const InputDecoration(labelText: 'Family Member Count'), keyboardType: TextInputType.number, inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]),
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Full name *'),
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? 'Full name is required' : null,
+            ),
+            TextFormField(
+              controller: _phone,
+              decoration: const InputDecoration(labelText: 'Phone *'),
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? 'Phone is required' : null,
+            ),
+            TextFormField(
+              controller: _email,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextFormField(
+              controller: _fatherName,
+              decoration: const InputDecoration(labelText: 'Father name *'),
+              validator: (v) => (v?.trim().isEmpty ?? true)
+                  ? 'Father name is required'
+                  : null,
+            ),
+            TextFormField(
+              controller: _age,
+              decoration: const InputDecoration(labelText: 'Age *'),
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              validator: (v) {
+                final age = int.tryParse(v?.trim() ?? '');
+                if (age == null) return 'Age is required';
+                if (age < 1 || age > 120) {
+                  return 'Age must be between 1 and 120';
+                }
+                return null;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: _gender,
+              decoration: const InputDecoration(labelText: 'Gender *'),
+              items: const <DropdownMenuItem<String>>[
+                DropdownMenuItem(value: 'MALE', child: Text('Male')),
+                DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+                DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+              ],
+              onChanged: (value) => setState(() => _gender = value),
+              validator: (value) => value == null ? 'Gender is required' : null,
+            ),
+            if (widget.user.isMember)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Is Family Head *'),
+                value: _isFamilyHead,
+                onChanged: (value) => setState(() => _isFamilyHead = value),
+              ),
+            if (widget.user.isMember && _isFamilyHead)
+              TextFormField(
+                controller: _familyMemberCount,
+                decoration: const InputDecoration(
+                  labelText: 'Family Member Count',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+              ),
           ],
         ),
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () {
-          if (!_formKey.currentState!.validate()) return;
-          Navigator.of(context).pop(UpdateCommunityUserRequest(fullName: _name.text, phone: _phone.text, email: _email.text, fatherName: _fatherName.text, age: int.parse(_age.text.trim()), gender: _gender!, isFamilyHead: widget.user.isMember ? _isFamilyHead : null, familyMemberCount: _familyMemberCount.text.trim().isEmpty ? null : int.parse(_familyMemberCount.text.trim())));
-        }, child: const Text('Save')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.of(context).pop(
+              UpdateCommunityUserRequest(
+                fullName: _name.text,
+                phone: _phone.text,
+                email: _email.text,
+                fatherName: _fatherName.text,
+                age: int.parse(_age.text.trim()),
+                gender: _gender!,
+                isFamilyHead: widget.user.isMember ? _isFamilyHead : null,
+                familyMemberCount: _familyMemberCount.text.trim().isEmpty
+                    ? null
+                    : int.parse(_familyMemberCount.text.trim()),
+              ),
+            );
+          },
+          child: const Text('Save'),
+        ),
       ],
     );
   }
@@ -444,19 +549,31 @@ class _StatusDialog extends StatefulWidget {
 
 class _StatusDialogState extends State<_StatusDialog> {
   static const _statuses = <String>['ACTIVE', 'INACTIVE', 'SUSPENDED'];
-  late String _status = _statuses.contains(widget.currentStatus) ? widget.currentStatus! : 'ACTIVE';
+  late String _status = _statuses.contains(widget.currentStatus)
+      ? widget.currentStatus!
+      : 'ACTIVE';
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Update status'),
       content: DropdownButtonFormField<String>(
-        value: _status,
-        items: _statuses.map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+        initialValue: _status,
+        items: _statuses
+            .map(
+              (status) => DropdownMenuItem(value: status, child: Text(status)),
+            )
+            .toList(),
         onChanged: (value) => setState(() => _status = value ?? _status),
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(context).pop(_status), child: const Text('Update')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_status),
+          child: const Text('Update'),
+        ),
       ],
     );
   }

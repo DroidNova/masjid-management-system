@@ -16,7 +16,10 @@ export class AuthUserDto {
   @ApiProperty({ example: 'ACTIVE' })
   status!: string;
 
-  @ApiProperty({ example: '7f2f58ad-02a7-43fb-9d7d-384047d41f25', nullable: true })
+  @ApiProperty({
+    example: '7f2f58ad-02a7-43fb-9d7d-384047d41f25',
+    nullable: true,
+  })
   masjidId!: string | null;
 
   @ApiProperty({ example: true })
@@ -42,7 +45,9 @@ export class AuthTokensDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access.token' })
   accessToken!: string;
 
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.token' })
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.token',
+  })
   refreshToken!: string;
 
   @ApiProperty({ example: 900 })

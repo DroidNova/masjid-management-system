@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/core/errors/error_message_helper.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/community/data/community_repository.dart';
-import 'package:platform_core_frontend/features/community/data/models/community_user_model.dart';
-import 'package:platform_core_frontend/features/contributions/data/contributions_repository.dart';
-import 'package:platform_core_frontend/features/contributions/models/collection_contribution_model.dart';
-import 'package:platform_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
-import 'package:platform_core_frontend/shared/utils/paginated_list_controller.dart';
-import 'package:platform_core_frontend/shared/widgets/app_date_field.dart';
-import 'package:platform_core_frontend/shared/widgets/app_phone_field.dart';
+import 'package:masjid_core_frontend/core/errors/error_message_helper.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
+import 'package:masjid_core_frontend/features/contributions/data/contributions_repository.dart';
+import 'package:masjid_core_frontend/features/contributions/models/collection_contribution_model.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
+import 'package:masjid_core_frontend/shared/utils/paginated_list_controller.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_date_field.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
 const List<String> _collectionTypes = <String>[
   'JUMMA_COLLECTION',
@@ -45,7 +45,7 @@ class _CollectionContributionsScreenState
   final ContributionsRepository _repository = ContributionsRepository();
   final ScrollController _scrollController = ScrollController();
   late final PaginatedListController<CollectionContributionModel>
-      _contributions;
+  _contributions;
 
   bool _canAdd = false;
   String? _paymentMode;
@@ -101,9 +101,8 @@ class _CollectionContributionsScreenState
   Future<void> _openAddContribution() async {
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => _CollectionContributionDialog(
-        repository: _repository,
-      ),
+      builder: (context) =>
+          _CollectionContributionDialog(repository: _repository),
     );
     if (saved == true) await _contributions.refresh();
   }
@@ -145,10 +144,7 @@ class _CollectionContributionsScreenState
                     initialValue: _collectionType,
                     decoration: const InputDecoration(labelText: 'Type'),
                     items: <DropdownMenuItem<String?>>[
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('All types'),
-                      ),
+                      const DropdownMenuItem<String?>(child: Text('All types')),
                       ..._collectionTypes.map(
                         (type) => DropdownMenuItem<String?>(
                           value: type,
@@ -168,10 +164,7 @@ class _CollectionContributionsScreenState
                     initialValue: _paymentMode,
                     decoration: const InputDecoration(labelText: 'Mode'),
                     items: const <DropdownMenuItem<String?>>[
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('All'),
-                      ),
+                      DropdownMenuItem<String?>(child: Text('All')),
                       DropdownMenuItem<String?>(
                         value: 'CASH',
                         child: Text('Cash'),
@@ -308,7 +301,6 @@ class _CollectionContributionDialogState
                   ),
                   items: <DropdownMenuItem<String?>>[
                     const DropdownMenuItem<String?>(
-                      value: null,
                       child: Text('External contributor'),
                     ),
                     ..._members.map(
@@ -438,9 +430,9 @@ class _CollectionContributionDialogState
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getReadableErrorMessage(error))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(getReadableErrorMessage(error))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

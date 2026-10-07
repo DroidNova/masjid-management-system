@@ -15,11 +15,7 @@ String? parseOptionalString(Object? value) {
   return parsed;
 }
 
-void addStringIfNotEmpty(
-  Map<String, dynamic> json,
-  String key,
-  String? value,
-) {
+void addStringIfNotEmpty(Map<String, dynamic> json, String key, String? value) {
   final trimmedValue = value?.trim();
   if (trimmedValue != null && trimmedValue.isNotEmpty) {
     json[key] = trimmedValue;

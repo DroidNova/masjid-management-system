@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/core/permissions/permission_helper.dart';
-import 'package:platform_core_frontend/core/refresh/app_data_refresh_bus.dart';
-import 'package:platform_core_frontend/core/storage/session_storage.dart';
-import 'package:platform_core_frontend/features/auth/data/auth_repository.dart';
-import 'package:platform_core_frontend/features/auth/data/models/app_user.dart';
-import 'package:platform_core_frontend/features/finance/data/finance_repository.dart';
-import 'package:platform_core_frontend/features/finance/data/models/collection_entry_model.dart';
-import 'package:platform_core_frontend/features/finance/data/models/expense_entry_model.dart';
-import 'package:platform_core_frontend/features/finance/data/models/finance_summary_model.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_empty_view.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_entry_tile.dart';
-import 'package:platform_core_frontend/features/finance/presentation/widgets/finance_summary_card.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
-import 'package:platform_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/refresh/app_data_refresh_bus.dart';
+import 'package:masjid_core_frontend/core/storage/session_storage.dart';
+import 'package:masjid_core_frontend/features/auth/data/auth_repository.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
+import 'package:masjid_core_frontend/features/finance/data/finance_repository.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/collection_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/expense_entry_model.dart';
+import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_empty_view.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_entry_tile.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_summary_card.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({
@@ -22,9 +21,9 @@ class FinanceScreen extends StatefulWidget {
     FinanceRepository? financeRepository,
     AuthRepository? authRepository,
     SessionStorage? sessionStorage,
-  })  : _financeRepository = financeRepository,
-        _authRepository = authRepository,
-        _sessionStorage = sessionStorage;
+  }) : _financeRepository = financeRepository,
+       _authRepository = authRepository,
+       _sessionStorage = sessionStorage;
 
   final FinanceRepository? _financeRepository;
   final AuthRepository? _authRepository;
@@ -56,8 +55,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifier =
-        AppDataRefreshBus.instance.notifierFor(AppDataScope.finance);
+    _refreshNotifier = AppDataRefreshBus.instance.notifierFor(
+      AppDataScope.finance,
+    );
     _refreshNotifier.addListener(_onRefreshRequested);
     _loadCurrentUser();
     _loadFinanceData();
@@ -203,22 +203,15 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         'View donations and contributor transactions',
                       ),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.push(
-                        '/finance/collection-contributions',
-                      ),
+                      onTap: () =>
+                          context.push('/finance/collection-contributions'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   SegmentedButton<int>(
                     segments: const <ButtonSegment<int>>[
-                      ButtonSegment<int>(
-                        value: 0,
-                        label: Text('Collections'),
-                      ),
-                      ButtonSegment<int>(
-                        value: 1,
-                        label: Text('Expenses'),
-                      ),
+                      ButtonSegment<int>(value: 0, label: Text('Collections')),
+                      ButtonSegment<int>(value: 1, label: Text('Expenses')),
                     ],
                     selected: <int>{_selectedTab},
                     onSelectionChanged: (selection) {
@@ -230,7 +223,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     _FinanceEntriesSection(
                       title: 'Collections',
                       buttonLabel: 'Add Collection',
-                      onAddPressed: canManageFinance ? _openAddCollection : null,
+                      onAddPressed: canManageFinance
+                          ? _openAddCollection
+                          : null,
                       emptyMessage: 'No collections added yet.',
                       children: _collections
                           .map(
@@ -276,7 +271,6 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 }
 
-
 class _ImamSalaryNavigationCard extends StatelessWidget {
   const _ImamSalaryNavigationCard({required this.subtitle});
 
@@ -305,8 +299,8 @@ class _ImamSalaryNavigationCard extends StatelessWidget {
                     Text(
                       'Imam Salary',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(subtitle),
@@ -351,8 +345,8 @@ class _FinanceEntriesSection extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (onAddPressed != null)
@@ -406,9 +400,9 @@ class _FinanceErrorView extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (detail != null) ...<Widget>[
                   const SizedBox(height: 8),

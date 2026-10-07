@@ -30,7 +30,9 @@ class UpdateCommunityUserRequest {
       if (familyMemberCount != null) 'familyMemberCount': familyMemberCount,
     };
     final trimmedEmail = email?.trim();
-    if (trimmedEmail != null && trimmedEmail.isNotEmpty) json['email'] = trimmedEmail;
+    if (trimmedEmail != null && trimmedEmail.isNotEmpty) {
+      json['email'] = trimmedEmail;
+    }
     return json;
   }
 }

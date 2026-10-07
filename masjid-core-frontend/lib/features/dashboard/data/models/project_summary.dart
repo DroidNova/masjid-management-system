@@ -1,4 +1,4 @@
-import 'package:platform_core_frontend/features/dashboard/data/models/model_parsing.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/model_parsing.dart';
 
 class ProjectsSummary {
   const ProjectsSummary({
@@ -12,9 +12,9 @@ class ProjectsSummary {
       activeProjectsCount: parseInt(json['activeProjectsCount']),
       latestProjects: projects is List<dynamic>
           ? projects
-              .whereType<Map<String, dynamic>>()
-              .map(ProjectPreview.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(ProjectPreview.fromJson)
+                .toList()
           : <ProjectPreview>[],
     );
   }

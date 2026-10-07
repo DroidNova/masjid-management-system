@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/announcement_model.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/create_announcement_request.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/update_announcement_request.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/create_announcement_request.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/update_announcement_request.dart';
 
 class AnnouncementsApi {
   AnnouncementsApi({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 

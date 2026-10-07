@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:platform_core_frontend/core/network/api_client.dart';
-import 'package:platform_core_frontend/features/projects/data/models/create_project_request.dart';
-import 'package:platform_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:platform_core_frontend/features/projects/data/models/update_project_request.dart';
+import 'package:masjid_core_frontend/core/network/api_client.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/create_project_request.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
+import 'package:masjid_core_frontend/features/projects/data/models/update_project_request.dart';
 
 class ProjectsApi {
   ProjectsApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
@@ -12,10 +12,9 @@ class ProjectsApi {
   Future<List<ProjectModel>> getProjects() async {
     try {
       final response = await _apiClient.dio.get<Object?>('/projects/my-masjid');
-      return _extractListData(response.data)
-          .whereType<Map<String, dynamic>>()
-          .map(ProjectModel.fromJson)
-          .toList();
+      return _extractListData(
+        response.data,
+      ).whereType<Map<String, dynamic>>().map(ProjectModel.fromJson).toList();
     } on DioException catch (error) {
       throw Exception(_readDioErrorMessage(error));
     }

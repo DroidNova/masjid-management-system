@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/imam_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/data/models/masjid_summary.dart';
-import 'package:platform_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/imam_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/masjid_summary.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/dashboard_format.dart';
 
 class MasjidHeaderCard extends StatelessWidget {
   const MasjidHeaderCard({
@@ -17,9 +17,13 @@ class MasjidHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = [masjid?.address, masjid?.locality, masjid?.district, masjid?.state, masjid?.country]
-        .where((item) => item != null && item.trim().isNotEmpty)
-        .join(', ');
+    final location = [
+      masjid?.address,
+      masjid?.locality,
+      masjid?.district,
+      masjid?.state,
+      masjid?.country,
+    ].where((item) => item != null && item.trim().isNotEmpty).join(', ');
 
     return Card(
       child: Padding(
@@ -30,16 +34,16 @@ class MasjidHeaderCard extends StatelessWidget {
             Text(
               'Assalamu Alaikum',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               masjid?.name ?? 'Your Masjid',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (location.isNotEmpty) ...<Widget>[
               const SizedBox(height: 6),

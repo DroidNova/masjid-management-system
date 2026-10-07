@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:platform_core_frontend/features/announcements/data/announcements_repository.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/announcement_model.dart';
-import 'package:platform_core_frontend/features/announcements/data/models/update_announcement_request.dart';
-import 'package:platform_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
-import 'package:platform_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/features/announcements/data/announcements_repository.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
+import 'package:masjid_core_frontend/features/announcements/data/models/update_announcement_request.dart';
+import 'package:masjid_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
+import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
 
 class EditAnnouncementScreen extends StatefulWidget {
   const EditAnnouncementScreen({
@@ -80,7 +80,9 @@ class _EditAnnouncementScreenState extends State<EditAnnouncementScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _cleanError(Object error) {
