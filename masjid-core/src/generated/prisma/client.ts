@@ -50,6 +50,16 @@ export type User = Prisma.UserModel
  */
 export type Role = Prisma.RoleModel
 /**
+ * Model Permission
+ * 
+ */
+export type Permission = Prisma.PermissionModel
+/**
+ * Model RolePermission
+ * 
+ */
+export type RolePermission = Prisma.RolePermissionModel
+/**
  * Model UserRole
  * 
  */
@@ -59,3 +69,59 @@ export type UserRole = Prisma.UserRoleModel
  * 
  */
 export type Session = Prisma.SessionModel
+/**
+ * Model Masjid
+ * 
+ */
+export type Masjid = Prisma.MasjidModel
+/**
+ * Model MasjidRegistrationRequest
+ * 
+ */
+export type MasjidRegistrationRequest = Prisma.MasjidRegistrationRequestModel
+/**
+ * Model NamazTime
+ * 
+ */
+export type NamazTime = Prisma.NamazTimeModel
+/**
+ * Model ImamSalary
+ * 
+ */
+export type ImamSalary = Prisma.ImamSalaryModel
+/**
+ * Model ImamSalaryMonth
+ * Ledger replacement for the legacy ImamSalary model. Legacy rows are retained
+ * unchanged; all new monthly family-head collection flows use this model.
+ */
+export type ImamSalaryMonth = Prisma.ImamSalaryMonthModel
+/**
+ * Model ImamSalaryAssignment
+ * 
+ */
+export type ImamSalaryAssignment = Prisma.ImamSalaryAssignmentModel
+/**
+ * Model ImamSalaryPayment
+ * 
+ */
+export type ImamSalaryPayment = Prisma.ImamSalaryPaymentModel
+/**
+ * Model Project
+ * 
+ */
+export type Project = Prisma.ProjectModel
+/**
+ * Model Announcement
+ * 
+ */
+export type Announcement = Prisma.AnnouncementModel
+/**
+ * Model Collection
+ * 
+ */
+export type Collection = Prisma.CollectionModel
+/**
+ * Model Expense
+ * 
+ */
+export type Expense = Prisma.ExpenseModel

@@ -20,8 +20,20 @@ export type UserModel = runtime.Types.Result.DefaultSelection<Prisma.$UserPayloa
 
 export type AggregateUser = {
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
+}
+
+export type UserAvgAggregateOutputType = {
+  age: number | null
+  familyMemberCount: number | null
+}
+
+export type UserSumAggregateOutputType = {
+  age: number | null
+  familyMemberCount: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -29,6 +41,12 @@ export type UserMinAggregateOutputType = {
   fullName: string | null
   email: string | null
   phone: string | null
+  fatherName: string | null
+  age: number | null
+  gender: $Enums.Gender | null
+  isFamilyHead: boolean | null
+  familyMemberCount: number | null
+  masjidId: string | null
   passwordHash: string | null
   status: $Enums.UserStatus | null
   isEmailVerified: boolean | null
@@ -42,6 +60,12 @@ export type UserMaxAggregateOutputType = {
   fullName: string | null
   email: string | null
   phone: string | null
+  fatherName: string | null
+  age: number | null
+  gender: $Enums.Gender | null
+  isFamilyHead: boolean | null
+  familyMemberCount: number | null
+  masjidId: string | null
   passwordHash: string | null
   status: $Enums.UserStatus | null
   isEmailVerified: boolean | null
@@ -55,6 +79,12 @@ export type UserCountAggregateOutputType = {
   fullName: number
   email: number
   phone: number
+  fatherName: number
+  age: number
+  gender: number
+  isFamilyHead: number
+  familyMemberCount: number
+  masjidId: number
   passwordHash: number
   status: number
   isEmailVerified: number
@@ -65,11 +95,27 @@ export type UserCountAggregateOutputType = {
 }
 
 
+export type UserAvgAggregateInputType = {
+  age?: true
+  familyMemberCount?: true
+}
+
+export type UserSumAggregateInputType = {
+  age?: true
+  familyMemberCount?: true
+}
+
 export type UserMinAggregateInputType = {
   id?: true
   fullName?: true
   email?: true
   phone?: true
+  fatherName?: true
+  age?: true
+  gender?: true
+  isFamilyHead?: true
+  familyMemberCount?: true
+  masjidId?: true
   passwordHash?: true
   status?: true
   isEmailVerified?: true
@@ -83,6 +129,12 @@ export type UserMaxAggregateInputType = {
   fullName?: true
   email?: true
   phone?: true
+  fatherName?: true
+  age?: true
+  gender?: true
+  isFamilyHead?: true
+  familyMemberCount?: true
+  masjidId?: true
   passwordHash?: true
   status?: true
   isEmailVerified?: true
@@ -96,6 +148,12 @@ export type UserCountAggregateInputType = {
   fullName?: true
   email?: true
   phone?: true
+  fatherName?: true
+  age?: true
+  gender?: true
+  isFamilyHead?: true
+  familyMemberCount?: true
+  masjidId?: true
   passwordHash?: true
   status?: true
   isEmailVerified?: true
@@ -143,6 +201,18 @@ export type UserAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: UserAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: UserSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: UserMinAggregateInputType
@@ -173,6 +243,8 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: UserCountAggregateInputType | true
+  _avg?: UserAvgAggregateInputType
+  _sum?: UserSumAggregateInputType
   _min?: UserMinAggregateInputType
   _max?: UserMaxAggregateInputType
 }
@@ -182,6 +254,12 @@ export type UserGroupByOutputType = {
   fullName: string
   email: string | null
   phone: string | null
+  fatherName: string | null
+  age: number | null
+  gender: $Enums.Gender | null
+  isFamilyHead: boolean
+  familyMemberCount: number | null
+  masjidId: string | null
   passwordHash: string
   status: $Enums.UserStatus
   isEmailVerified: boolean
@@ -189,6 +267,8 @@ export type UserGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
 }
@@ -216,6 +296,12 @@ export type UserWhereInput = {
   fullName?: Prisma.StringFilter<"User"> | string
   email?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringNullableFilter<"User"> | string | null
+  fatherName?: Prisma.StringNullableFilter<"User"> | string | null
+  age?: Prisma.IntNullableFilter<"User"> | number | null
+  gender?: Prisma.EnumGenderNullableFilter<"User"> | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFilter<"User"> | boolean
+  familyMemberCount?: Prisma.IntNullableFilter<"User"> | number | null
+  masjidId?: Prisma.UuidNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFilter<"User"> | boolean
@@ -224,6 +310,18 @@ export type UserWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userRoles?: Prisma.UserRoleListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  createdMasjids?: Prisma.MasjidListRelationFilter
+  imamOfMasjids?: Prisma.MasjidListRelationFilter
+  approvedMasjids?: Prisma.MasjidListRelationFilter
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestListRelationFilter
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestListRelationFilter
+  masjid?: Prisma.XOR<Prisma.MasjidNullableScalarRelationFilter, Prisma.MasjidWhereInput> | null
+  imamSalaries?: Prisma.ImamSalaryListRelationFilter
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentListRelationFilter
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentListRelationFilter
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentListRelationFilter
+  createdCollections?: Prisma.CollectionListRelationFilter
+  createdExpenses?: Prisma.ExpenseListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -231,6 +329,12 @@ export type UserOrderByWithRelationInput = {
   fullName?: Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  fatherName?: Prisma.SortOrderInput | Prisma.SortOrder
+  age?: Prisma.SortOrderInput | Prisma.SortOrder
+  gender?: Prisma.SortOrderInput | Prisma.SortOrder
+  isFamilyHead?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrderInput | Prisma.SortOrder
+  masjidId?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isEmailVerified?: Prisma.SortOrder
@@ -239,6 +343,18 @@ export type UserOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   userRoles?: Prisma.UserRoleOrderByRelationAggregateInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
+  createdMasjids?: Prisma.MasjidOrderByRelationAggregateInput
+  imamOfMasjids?: Prisma.MasjidOrderByRelationAggregateInput
+  approvedMasjids?: Prisma.MasjidOrderByRelationAggregateInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestOrderByRelationAggregateInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestOrderByRelationAggregateInput
+  masjid?: Prisma.MasjidOrderByWithRelationInput
+  imamSalaries?: Prisma.ImamSalaryOrderByRelationAggregateInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentOrderByRelationAggregateInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentOrderByRelationAggregateInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentOrderByRelationAggregateInput
+  createdCollections?: Prisma.CollectionOrderByRelationAggregateInput
+  createdExpenses?: Prisma.ExpenseOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -249,6 +365,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   fullName?: Prisma.StringFilter<"User"> | string
+  fatherName?: Prisma.StringNullableFilter<"User"> | string | null
+  age?: Prisma.IntNullableFilter<"User"> | number | null
+  gender?: Prisma.EnumGenderNullableFilter<"User"> | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFilter<"User"> | boolean
+  familyMemberCount?: Prisma.IntNullableFilter<"User"> | number | null
+  masjidId?: Prisma.UuidNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringFilter<"User"> | string
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFilter<"User"> | boolean
@@ -257,6 +379,18 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userRoles?: Prisma.UserRoleListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
+  createdMasjids?: Prisma.MasjidListRelationFilter
+  imamOfMasjids?: Prisma.MasjidListRelationFilter
+  approvedMasjids?: Prisma.MasjidListRelationFilter
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestListRelationFilter
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestListRelationFilter
+  masjid?: Prisma.XOR<Prisma.MasjidNullableScalarRelationFilter, Prisma.MasjidWhereInput> | null
+  imamSalaries?: Prisma.ImamSalaryListRelationFilter
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentListRelationFilter
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentListRelationFilter
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentListRelationFilter
+  createdCollections?: Prisma.CollectionListRelationFilter
+  createdExpenses?: Prisma.ExpenseListRelationFilter
 }, "id" | "email" | "phone">
 
 export type UserOrderByWithAggregationInput = {
@@ -264,6 +398,12 @@ export type UserOrderByWithAggregationInput = {
   fullName?: Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  fatherName?: Prisma.SortOrderInput | Prisma.SortOrder
+  age?: Prisma.SortOrderInput | Prisma.SortOrder
+  gender?: Prisma.SortOrderInput | Prisma.SortOrder
+  isFamilyHead?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrderInput | Prisma.SortOrder
+  masjidId?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isEmailVerified?: Prisma.SortOrder
@@ -271,8 +411,10 @@ export type UserOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
+  _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
+  _sum?: Prisma.UserSumOrderByAggregateInput
 }
 
 export type UserScalarWhereWithAggregatesInput = {
@@ -283,6 +425,12 @@ export type UserScalarWhereWithAggregatesInput = {
   fullName?: Prisma.StringWithAggregatesFilter<"User"> | string
   email?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  fatherName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  age?: Prisma.IntNullableWithAggregatesFilter<"User"> | number | null
+  gender?: Prisma.EnumGenderNullableWithAggregatesFilter<"User"> | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  familyMemberCount?: Prisma.IntNullableWithAggregatesFilter<"User"> | number | null
+  masjidId?: Prisma.UuidNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
@@ -296,6 +444,11 @@ export type UserCreateInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -304,6 +457,18 @@ export type UserCreateInput = {
   updatedAt?: Date | string
   userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -311,6 +476,12 @@ export type UserUncheckedCreateInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -319,6 +490,17 @@ export type UserUncheckedCreateInput = {
   updatedAt?: Date | string
   userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUpdateInput = {
@@ -326,6 +508,11 @@ export type UserUpdateInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -334,6 +521,18 @@ export type UserUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -341,6 +540,12 @@ export type UserUncheckedUpdateInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -349,6 +554,17 @@ export type UserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -356,6 +572,12 @@ export type UserCreateManyInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -369,6 +591,11 @@ export type UserUpdateManyMutationInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -382,6 +609,12 @@ export type UserUncheckedUpdateManyInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -395,6 +628,12 @@ export type UserCountOrderByAggregateInput = {
   fullName?: Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  fatherName?: Prisma.SortOrder
+  age?: Prisma.SortOrder
+  gender?: Prisma.SortOrder
+  isFamilyHead?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrder
+  masjidId?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isEmailVerified?: Prisma.SortOrder
@@ -403,11 +642,22 @@ export type UserCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type UserAvgOrderByAggregateInput = {
+  age?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrder
+}
+
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   fullName?: Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  fatherName?: Prisma.SortOrder
+  age?: Prisma.SortOrder
+  gender?: Prisma.SortOrder
+  isFamilyHead?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrder
+  masjidId?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isEmailVerified?: Prisma.SortOrder
@@ -421,6 +671,12 @@ export type UserMinOrderByAggregateInput = {
   fullName?: Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  fatherName?: Prisma.SortOrder
+  age?: Prisma.SortOrder
+  gender?: Prisma.SortOrder
+  isFamilyHead?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrder
+  masjidId?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isEmailVerified?: Prisma.SortOrder
@@ -429,9 +685,29 @@ export type UserMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type UserSumOrderByAggregateInput = {
+  age?: Prisma.SortOrder
+  familyMemberCount?: Prisma.SortOrder
+}
+
 export type UserScalarRelationFilter = {
   is?: Prisma.UserWhereInput
   isNot?: Prisma.UserWhereInput
+}
+
+export type UserNullableScalarRelationFilter = {
+  is?: Prisma.UserWhereInput | null
+  isNot?: Prisma.UserWhereInput | null
+}
+
+export type UserListRelationFilter = {
+  every?: Prisma.UserWhereInput
+  some?: Prisma.UserWhereInput
+  none?: Prisma.UserWhereInput
+}
+
+export type UserOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -442,12 +718,24 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
-export type EnumUserStatusFieldUpdateOperationsInput = {
-  set?: $Enums.UserStatus
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableEnumGenderFieldUpdateOperationsInput = {
+  set?: $Enums.Gender | null
 }
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type EnumUserStatusFieldUpdateOperationsInput = {
+  set?: $Enums.UserStatus
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -482,11 +770,226 @@ export type UserUpdateOneRequiredWithoutSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSessionsInput, Prisma.UserUpdateWithoutSessionsInput>, Prisma.UserUncheckedUpdateWithoutSessionsInput>
 }
 
+export type UserCreateNestedOneWithoutCreatedMasjidsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedMasjidsInput, Prisma.UserUncheckedCreateWithoutCreatedMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedMasjidsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutImamOfMasjidsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamOfMasjidsInput, Prisma.UserUncheckedCreateWithoutImamOfMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamOfMasjidsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutApprovedMasjidsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApprovedMasjidsInput, Prisma.UserUncheckedCreateWithoutApprovedMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApprovedMasjidsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedManyWithoutMasjidInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput> | Prisma.UserCreateWithoutMasjidInput[] | Prisma.UserUncheckedCreateWithoutMasjidInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidInput | Prisma.UserCreateOrConnectWithoutMasjidInput[]
+  createMany?: Prisma.UserCreateManyMasjidInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+}
+
+export type UserUncheckedCreateNestedManyWithoutMasjidInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput> | Prisma.UserCreateWithoutMasjidInput[] | Prisma.UserUncheckedCreateWithoutMasjidInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidInput | Prisma.UserCreateOrConnectWithoutMasjidInput[]
+  createMany?: Prisma.UserCreateManyMasjidInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+}
+
+export type UserUpdateOneWithoutCreatedMasjidsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedMasjidsInput, Prisma.UserUncheckedCreateWithoutCreatedMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedMasjidsInput
+  upsert?: Prisma.UserUpsertWithoutCreatedMasjidsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreatedMasjidsInput, Prisma.UserUpdateWithoutCreatedMasjidsInput>, Prisma.UserUncheckedUpdateWithoutCreatedMasjidsInput>
+}
+
+export type UserUpdateOneWithoutImamOfMasjidsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamOfMasjidsInput, Prisma.UserUncheckedCreateWithoutImamOfMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamOfMasjidsInput
+  upsert?: Prisma.UserUpsertWithoutImamOfMasjidsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutImamOfMasjidsInput, Prisma.UserUpdateWithoutImamOfMasjidsInput>, Prisma.UserUncheckedUpdateWithoutImamOfMasjidsInput>
+}
+
+export type UserUpdateOneWithoutApprovedMasjidsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApprovedMasjidsInput, Prisma.UserUncheckedCreateWithoutApprovedMasjidsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApprovedMasjidsInput
+  upsert?: Prisma.UserUpsertWithoutApprovedMasjidsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutApprovedMasjidsInput, Prisma.UserUpdateWithoutApprovedMasjidsInput>, Prisma.UserUncheckedUpdateWithoutApprovedMasjidsInput>
+}
+
+export type UserUpdateManyWithoutMasjidNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput> | Prisma.UserCreateWithoutMasjidInput[] | Prisma.UserUncheckedCreateWithoutMasjidInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidInput | Prisma.UserCreateOrConnectWithoutMasjidInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutMasjidInput | Prisma.UserUpsertWithWhereUniqueWithoutMasjidInput[]
+  createMany?: Prisma.UserCreateManyMasjidInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutMasjidInput | Prisma.UserUpdateWithWhereUniqueWithoutMasjidInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutMasjidInput | Prisma.UserUpdateManyWithWhereWithoutMasjidInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+}
+
+export type UserUncheckedUpdateManyWithoutMasjidNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput> | Prisma.UserCreateWithoutMasjidInput[] | Prisma.UserUncheckedCreateWithoutMasjidInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidInput | Prisma.UserCreateOrConnectWithoutMasjidInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutMasjidInput | Prisma.UserUpsertWithWhereUniqueWithoutMasjidInput[]
+  createMany?: Prisma.UserCreateManyMasjidInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutMasjidInput | Prisma.UserUpdateWithWhereUniqueWithoutMasjidInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutMasjidInput | Prisma.UserUpdateManyWithWhereWithoutMasjidInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+}
+
+export type UserCreateNestedOneWithoutMasjidRegistrationRequestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutMasjidRegistrationRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidRegistrationRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutReviewedMasjidRequestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedCreateWithoutReviewedMasjidRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewedMasjidRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutMasjidRegistrationRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutMasjidRegistrationRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMasjidRegistrationRequestsInput
+  upsert?: Prisma.UserUpsertWithoutMasjidRegistrationRequestsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMasjidRegistrationRequestsInput, Prisma.UserUpdateWithoutMasjidRegistrationRequestsInput>, Prisma.UserUncheckedUpdateWithoutMasjidRegistrationRequestsInput>
+}
+
+export type UserUpdateOneWithoutReviewedMasjidRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedCreateWithoutReviewedMasjidRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewedMasjidRequestsInput
+  upsert?: Prisma.UserUpsertWithoutReviewedMasjidRequestsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReviewedMasjidRequestsInput, Prisma.UserUpdateWithoutReviewedMasjidRequestsInput>, Prisma.UserUncheckedUpdateWithoutReviewedMasjidRequestsInput>
+}
+
+export type UserCreateNestedOneWithoutImamSalariesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalariesInput, Prisma.UserUncheckedCreateWithoutImamSalariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalariesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutImamSalariesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalariesInput, Prisma.UserUncheckedCreateWithoutImamSalariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalariesInput
+  upsert?: Prisma.UserUpsertWithoutImamSalariesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutImamSalariesInput, Prisma.UserUpdateWithoutImamSalariesInput>, Prisma.UserUncheckedUpdateWithoutImamSalariesInput>
+}
+
+export type UserCreateNestedOneWithoutImamSalaryAssignmentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryAssignmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalaryAssignmentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutImamSalaryAssignmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryAssignmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalaryAssignmentsInput
+  upsert?: Prisma.UserUpsertWithoutImamSalaryAssignmentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutImamSalaryAssignmentsInput, Prisma.UserUpdateWithoutImamSalaryAssignmentsInput>, Prisma.UserUncheckedUpdateWithoutImamSalaryAssignmentsInput>
+}
+
+export type UserCreateNestedOneWithoutImamSalaryPaymentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalaryPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutCollectedSalaryPaymentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutCollectedSalaryPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCollectedSalaryPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutImamSalaryPaymentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutImamSalaryPaymentsInput
+  upsert?: Prisma.UserUpsertWithoutImamSalaryPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutImamSalaryPaymentsInput, Prisma.UserUpdateWithoutImamSalaryPaymentsInput>, Prisma.UserUncheckedUpdateWithoutImamSalaryPaymentsInput>
+}
+
+export type UserUpdateOneRequiredWithoutCollectedSalaryPaymentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutCollectedSalaryPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCollectedSalaryPaymentsInput
+  upsert?: Prisma.UserUpsertWithoutCollectedSalaryPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCollectedSalaryPaymentsInput, Prisma.UserUpdateWithoutCollectedSalaryPaymentsInput>, Prisma.UserUncheckedUpdateWithoutCollectedSalaryPaymentsInput>
+}
+
+export type UserCreateNestedOneWithoutCreatedCollectionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedCollectionsInput, Prisma.UserUncheckedCreateWithoutCreatedCollectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedCollectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutCreatedCollectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedCollectionsInput, Prisma.UserUncheckedCreateWithoutCreatedCollectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedCollectionsInput
+  upsert?: Prisma.UserUpsertWithoutCreatedCollectionsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreatedCollectionsInput, Prisma.UserUpdateWithoutCreatedCollectionsInput>, Prisma.UserUncheckedUpdateWithoutCreatedCollectionsInput>
+}
+
+export type UserCreateNestedOneWithoutCreatedExpensesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedExpensesInput, Prisma.UserUncheckedCreateWithoutCreatedExpensesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedExpensesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutCreatedExpensesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedExpensesInput, Prisma.UserUncheckedCreateWithoutCreatedExpensesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedExpensesInput
+  upsert?: Prisma.UserUpsertWithoutCreatedExpensesInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreatedExpensesInput, Prisma.UserUpdateWithoutCreatedExpensesInput>, Prisma.UserUncheckedUpdateWithoutCreatedExpensesInput>
+}
+
 export type UserCreateWithoutUserRolesInput = {
   id?: string
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -494,6 +997,18 @@ export type UserCreateWithoutUserRolesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutUserRolesInput = {
@@ -501,6 +1016,12 @@ export type UserUncheckedCreateWithoutUserRolesInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -508,6 +1029,17 @@ export type UserUncheckedCreateWithoutUserRolesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutUserRolesInput = {
@@ -531,6 +1063,11 @@ export type UserUpdateWithoutUserRolesInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -538,6 +1075,18 @@ export type UserUpdateWithoutUserRolesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutUserRolesInput = {
@@ -545,6 +1094,12 @@ export type UserUncheckedUpdateWithoutUserRolesInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -552,6 +1107,17 @@ export type UserUncheckedUpdateWithoutUserRolesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -559,6 +1125,11 @@ export type UserCreateWithoutSessionsInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -566,6 +1137,18 @@ export type UserCreateWithoutSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -573,6 +1156,12 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   fullName: string
   email?: string | null
   phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
   passwordHash: string
   status?: $Enums.UserStatus
   isEmailVerified?: boolean
@@ -580,6 +1169,17 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -603,6 +1203,11 @@ export type UserUpdateWithoutSessionsInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -610,6 +1215,18 @@ export type UserUpdateWithoutSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -617,6 +1234,12 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -624,6 +1247,1765 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutCreatedMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutCreatedMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutCreatedMasjidsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedMasjidsInput, Prisma.UserUncheckedCreateWithoutCreatedMasjidsInput>
+}
+
+export type UserCreateWithoutImamOfMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutImamOfMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutImamOfMasjidsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamOfMasjidsInput, Prisma.UserUncheckedCreateWithoutImamOfMasjidsInput>
+}
+
+export type UserCreateWithoutApprovedMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutApprovedMasjidsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutApprovedMasjidsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutApprovedMasjidsInput, Prisma.UserUncheckedCreateWithoutApprovedMasjidsInput>
+}
+
+export type UserCreateWithoutMasjidInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutMasjidInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutMasjidInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput>
+}
+
+export type UserCreateManyMasjidInputEnvelope = {
+  data: Prisma.UserCreateManyMasjidInput | Prisma.UserCreateManyMasjidInput[]
+  skipDuplicates?: boolean
+}
+
+export type UserUpsertWithoutCreatedMasjidsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCreatedMasjidsInput, Prisma.UserUncheckedUpdateWithoutCreatedMasjidsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedMasjidsInput, Prisma.UserUncheckedCreateWithoutCreatedMasjidsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCreatedMasjidsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCreatedMasjidsInput, Prisma.UserUncheckedUpdateWithoutCreatedMasjidsInput>
+}
+
+export type UserUpdateWithoutCreatedMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCreatedMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithoutImamOfMasjidsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutImamOfMasjidsInput, Prisma.UserUncheckedUpdateWithoutImamOfMasjidsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamOfMasjidsInput, Prisma.UserUncheckedCreateWithoutImamOfMasjidsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutImamOfMasjidsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutImamOfMasjidsInput, Prisma.UserUncheckedUpdateWithoutImamOfMasjidsInput>
+}
+
+export type UserUpdateWithoutImamOfMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutImamOfMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithoutApprovedMasjidsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutApprovedMasjidsInput, Prisma.UserUncheckedUpdateWithoutApprovedMasjidsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutApprovedMasjidsInput, Prisma.UserUncheckedCreateWithoutApprovedMasjidsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutApprovedMasjidsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutApprovedMasjidsInput, Prisma.UserUncheckedUpdateWithoutApprovedMasjidsInput>
+}
+
+export type UserUpdateWithoutApprovedMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutApprovedMasjidsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithWhereUniqueWithoutMasjidInput = {
+  where: Prisma.UserWhereUniqueInput
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMasjidInput, Prisma.UserUncheckedUpdateWithoutMasjidInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMasjidInput, Prisma.UserUncheckedCreateWithoutMasjidInput>
+}
+
+export type UserUpdateWithWhereUniqueWithoutMasjidInput = {
+  where: Prisma.UserWhereUniqueInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMasjidInput, Prisma.UserUncheckedUpdateWithoutMasjidInput>
+}
+
+export type UserUpdateManyWithWhereWithoutMasjidInput = {
+  where: Prisma.UserScalarWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateManyMutationInput, Prisma.UserUncheckedUpdateManyWithoutMasjidInput>
+}
+
+export type UserScalarWhereInput = {
+  AND?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  OR?: Prisma.UserScalarWhereInput[]
+  NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  id?: Prisma.UuidFilter<"User"> | string
+  fullName?: Prisma.StringFilter<"User"> | string
+  email?: Prisma.StringNullableFilter<"User"> | string | null
+  phone?: Prisma.StringNullableFilter<"User"> | string | null
+  fatherName?: Prisma.StringNullableFilter<"User"> | string | null
+  age?: Prisma.IntNullableFilter<"User"> | number | null
+  gender?: Prisma.EnumGenderNullableFilter<"User"> | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFilter<"User"> | boolean
+  familyMemberCount?: Prisma.IntNullableFilter<"User"> | number | null
+  masjidId?: Prisma.UuidNullableFilter<"User"> | string | null
+  passwordHash?: Prisma.StringFilter<"User"> | string
+  status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFilter<"User"> | boolean
+  isPhoneVerified?: Prisma.BoolFilter<"User"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+}
+
+export type UserCreateWithoutMasjidRegistrationRequestsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutMasjidRegistrationRequestsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutMasjidRegistrationRequestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutMasjidRegistrationRequestsInput>
+}
+
+export type UserCreateWithoutReviewedMasjidRequestsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutReviewedMasjidRequestsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutReviewedMasjidRequestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedCreateWithoutReviewedMasjidRequestsInput>
+}
+
+export type UserUpsertWithoutMasjidRegistrationRequestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedUpdateWithoutMasjidRegistrationRequestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedCreateWithoutMasjidRegistrationRequestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMasjidRegistrationRequestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMasjidRegistrationRequestsInput, Prisma.UserUncheckedUpdateWithoutMasjidRegistrationRequestsInput>
+}
+
+export type UserUpdateWithoutMasjidRegistrationRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMasjidRegistrationRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithoutReviewedMasjidRequestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedUpdateWithoutReviewedMasjidRequestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedCreateWithoutReviewedMasjidRequestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutReviewedMasjidRequestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutReviewedMasjidRequestsInput, Prisma.UserUncheckedUpdateWithoutReviewedMasjidRequestsInput>
+}
+
+export type UserUpdateWithoutReviewedMasjidRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutReviewedMasjidRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutImamSalariesInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutImamSalariesInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutImamSalariesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalariesInput, Prisma.UserUncheckedCreateWithoutImamSalariesInput>
+}
+
+export type UserUpsertWithoutImamSalariesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutImamSalariesInput, Prisma.UserUncheckedUpdateWithoutImamSalariesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalariesInput, Prisma.UserUncheckedCreateWithoutImamSalariesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutImamSalariesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutImamSalariesInput, Prisma.UserUncheckedUpdateWithoutImamSalariesInput>
+}
+
+export type UserUpdateWithoutImamSalariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutImamSalariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutImamSalaryAssignmentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutImamSalaryAssignmentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutImamSalaryAssignmentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryAssignmentsInput>
+}
+
+export type UserUpsertWithoutImamSalaryAssignmentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedUpdateWithoutImamSalaryAssignmentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryAssignmentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutImamSalaryAssignmentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutImamSalaryAssignmentsInput, Prisma.UserUncheckedUpdateWithoutImamSalaryAssignmentsInput>
+}
+
+export type UserUpdateWithoutImamSalaryAssignmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutImamSalaryAssignmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutImamSalaryPaymentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutImamSalaryPaymentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutImamSalaryPaymentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryPaymentsInput>
+}
+
+export type UserCreateWithoutCollectedSalaryPaymentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutCollectedSalaryPaymentsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutCollectedSalaryPaymentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutCollectedSalaryPaymentsInput>
+}
+
+export type UserUpsertWithoutImamSalaryPaymentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedUpdateWithoutImamSalaryPaymentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutImamSalaryPaymentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutImamSalaryPaymentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutImamSalaryPaymentsInput, Prisma.UserUncheckedUpdateWithoutImamSalaryPaymentsInput>
+}
+
+export type UserUpdateWithoutImamSalaryPaymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutImamSalaryPaymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUpsertWithoutCollectedSalaryPaymentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedUpdateWithoutCollectedSalaryPaymentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedCreateWithoutCollectedSalaryPaymentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCollectedSalaryPaymentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCollectedSalaryPaymentsInput, Prisma.UserUncheckedUpdateWithoutCollectedSalaryPaymentsInput>
+}
+
+export type UserUpdateWithoutCollectedSalaryPaymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCollectedSalaryPaymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutCreatedCollectionsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdExpenses?: Prisma.ExpenseCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutCreatedCollectionsInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdExpenses?: Prisma.ExpenseUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutCreatedCollectionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedCollectionsInput, Prisma.UserUncheckedCreateWithoutCreatedCollectionsInput>
+}
+
+export type UserUpsertWithoutCreatedCollectionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCreatedCollectionsInput, Prisma.UserUncheckedUpdateWithoutCreatedCollectionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedCollectionsInput, Prisma.UserUncheckedCreateWithoutCreatedCollectionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCreatedCollectionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCreatedCollectionsInput, Prisma.UserUncheckedUpdateWithoutCreatedCollectionsInput>
+}
+
+export type UserUpdateWithoutCreatedCollectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCreatedCollectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutCreatedExpensesInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestCreateNestedManyWithoutReviewedByInput
+  masjid?: Prisma.MasjidCreateNestedOneWithoutUsersInput
+  imamSalaries?: Prisma.ImamSalaryCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserUncheckedCreateWithoutCreatedExpensesInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  masjidId?: string | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  createdMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutCreatedByInput
+  imamOfMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutImamUserInput
+  approvedMasjids?: Prisma.MasjidUncheckedCreateNestedManyWithoutApprovedByInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedCreateNestedManyWithoutImamInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedCreateNestedManyWithoutMemberInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutMemberInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedCreateNestedManyWithoutCollectedByInput
+  createdCollections?: Prisma.CollectionUncheckedCreateNestedManyWithoutCreatedByInput
+}
+
+export type UserCreateOrConnectWithoutCreatedExpensesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedExpensesInput, Prisma.UserUncheckedCreateWithoutCreatedExpensesInput>
+}
+
+export type UserUpsertWithoutCreatedExpensesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCreatedExpensesInput, Prisma.UserUncheckedUpdateWithoutCreatedExpensesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedExpensesInput, Prisma.UserUncheckedCreateWithoutCreatedExpensesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCreatedExpensesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCreatedExpensesInput, Prisma.UserUncheckedUpdateWithoutCreatedExpensesInput>
+}
+
+export type UserUpdateWithoutCreatedExpensesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  masjid?: Prisma.MasjidUpdateOneWithoutUsersNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCreatedExpensesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  masjidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateManyMasjidInput = {
+  id?: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  fatherName?: string | null
+  age?: number | null
+  gender?: $Enums.Gender | null
+  isFamilyHead?: boolean
+  familyMemberCount?: number | null
+  passwordHash: string
+  status?: $Enums.UserStatus
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type UserUpdateWithoutMasjidInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMasjidInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  createdMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutCreatedByNestedInput
+  imamOfMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutImamUserNestedInput
+  approvedMasjids?: Prisma.MasjidUncheckedUpdateManyWithoutApprovedByNestedInput
+  masjidRegistrationRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedMasjidRequests?: Prisma.MasjidRegistrationRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  imamSalaries?: Prisma.ImamSalaryUncheckedUpdateManyWithoutImamNestedInput
+  imamSalaryAssignments?: Prisma.ImamSalaryAssignmentUncheckedUpdateManyWithoutMemberNestedInput
+  imamSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutMemberNestedInput
+  collectedSalaryPayments?: Prisma.ImamSalaryPaymentUncheckedUpdateManyWithoutCollectedByNestedInput
+  createdCollections?: Prisma.CollectionUncheckedUpdateManyWithoutCreatedByNestedInput
+  createdExpenses?: Prisma.ExpenseUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserUncheckedUpdateManyWithoutMasjidInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fatherName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  age?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  gender?: Prisma.NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
+  isFamilyHead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  familyMemberCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isEmailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPhoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -634,11 +3016,33 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
 export type UserCountOutputType = {
   userRoles: number
   sessions: number
+  createdMasjids: number
+  imamOfMasjids: number
+  approvedMasjids: number
+  masjidRegistrationRequests: number
+  reviewedMasjidRequests: number
+  imamSalaries: number
+  imamSalaryAssignments: number
+  imamSalaryPayments: number
+  collectedSalaryPayments: number
+  createdCollections: number
+  createdExpenses: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userRoles?: boolean | UserCountOutputTypeCountUserRolesArgs
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs
+  createdMasjids?: boolean | UserCountOutputTypeCountCreatedMasjidsArgs
+  imamOfMasjids?: boolean | UserCountOutputTypeCountImamOfMasjidsArgs
+  approvedMasjids?: boolean | UserCountOutputTypeCountApprovedMasjidsArgs
+  masjidRegistrationRequests?: boolean | UserCountOutputTypeCountMasjidRegistrationRequestsArgs
+  reviewedMasjidRequests?: boolean | UserCountOutputTypeCountReviewedMasjidRequestsArgs
+  imamSalaries?: boolean | UserCountOutputTypeCountImamSalariesArgs
+  imamSalaryAssignments?: boolean | UserCountOutputTypeCountImamSalaryAssignmentsArgs
+  imamSalaryPayments?: boolean | UserCountOutputTypeCountImamSalaryPaymentsArgs
+  collectedSalaryPayments?: boolean | UserCountOutputTypeCountCollectedSalaryPaymentsArgs
+  createdCollections?: boolean | UserCountOutputTypeCountCreatedCollectionsArgs
+  createdExpenses?: boolean | UserCountOutputTypeCountCreatedExpensesArgs
 }
 
 /**
@@ -665,12 +3069,95 @@ export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.SessionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCreatedMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MasjidWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountImamOfMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MasjidWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountApprovedMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MasjidWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountMasjidRegistrationRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MasjidRegistrationRequestWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountReviewedMasjidRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MasjidRegistrationRequestWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountImamSalariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ImamSalaryWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountImamSalaryAssignmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ImamSalaryAssignmentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountImamSalaryPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ImamSalaryPaymentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCollectedSalaryPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ImamSalaryPaymentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCreatedCollectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CollectionWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCreatedExpensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ExpenseWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   fullName?: boolean
   email?: boolean
   phone?: boolean
+  fatherName?: boolean
+  age?: boolean
+  gender?: boolean
+  isFamilyHead?: boolean
+  familyMemberCount?: boolean
+  masjidId?: boolean
   passwordHash?: boolean
   status?: boolean
   isEmailVerified?: boolean
@@ -679,6 +3166,18 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   userRoles?: boolean | Prisma.User$userRolesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  createdMasjids?: boolean | Prisma.User$createdMasjidsArgs<ExtArgs>
+  imamOfMasjids?: boolean | Prisma.User$imamOfMasjidsArgs<ExtArgs>
+  approvedMasjids?: boolean | Prisma.User$approvedMasjidsArgs<ExtArgs>
+  masjidRegistrationRequests?: boolean | Prisma.User$masjidRegistrationRequestsArgs<ExtArgs>
+  reviewedMasjidRequests?: boolean | Prisma.User$reviewedMasjidRequestsArgs<ExtArgs>
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
+  imamSalaries?: boolean | Prisma.User$imamSalariesArgs<ExtArgs>
+  imamSalaryAssignments?: boolean | Prisma.User$imamSalaryAssignmentsArgs<ExtArgs>
+  imamSalaryPayments?: boolean | Prisma.User$imamSalaryPaymentsArgs<ExtArgs>
+  collectedSalaryPayments?: boolean | Prisma.User$collectedSalaryPaymentsArgs<ExtArgs>
+  createdCollections?: boolean | Prisma.User$createdCollectionsArgs<ExtArgs>
+  createdExpenses?: boolean | Prisma.User$createdExpensesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -687,12 +3186,19 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   fullName?: boolean
   email?: boolean
   phone?: boolean
+  fatherName?: boolean
+  age?: boolean
+  gender?: boolean
+  isFamilyHead?: boolean
+  familyMemberCount?: boolean
+  masjidId?: boolean
   passwordHash?: boolean
   status?: boolean
   isEmailVerified?: boolean
   isPhoneVerified?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -700,12 +3206,19 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   fullName?: boolean
   email?: boolean
   phone?: boolean
+  fatherName?: boolean
+  age?: boolean
+  gender?: boolean
+  isFamilyHead?: boolean
+  familyMemberCount?: boolean
+  masjidId?: boolean
   passwordHash?: boolean
   status?: boolean
   isEmailVerified?: boolean
   isPhoneVerified?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -713,6 +3226,12 @@ export type UserSelectScalar = {
   fullName?: boolean
   email?: boolean
   phone?: boolean
+  fatherName?: boolean
+  age?: boolean
+  gender?: boolean
+  isFamilyHead?: boolean
+  familyMemberCount?: boolean
+  masjidId?: boolean
   passwordHash?: boolean
   status?: boolean
   isEmailVerified?: boolean
@@ -721,26 +3240,60 @@ export type UserSelectScalar = {
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "phone" | "passwordHash" | "status" | "isEmailVerified" | "isPhoneVerified" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "phone" | "fatherName" | "age" | "gender" | "isFamilyHead" | "familyMemberCount" | "masjidId" | "passwordHash" | "status" | "isEmailVerified" | "isPhoneVerified" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userRoles?: boolean | Prisma.User$userRolesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  createdMasjids?: boolean | Prisma.User$createdMasjidsArgs<ExtArgs>
+  imamOfMasjids?: boolean | Prisma.User$imamOfMasjidsArgs<ExtArgs>
+  approvedMasjids?: boolean | Prisma.User$approvedMasjidsArgs<ExtArgs>
+  masjidRegistrationRequests?: boolean | Prisma.User$masjidRegistrationRequestsArgs<ExtArgs>
+  reviewedMasjidRequests?: boolean | Prisma.User$reviewedMasjidRequestsArgs<ExtArgs>
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
+  imamSalaries?: boolean | Prisma.User$imamSalariesArgs<ExtArgs>
+  imamSalaryAssignments?: boolean | Prisma.User$imamSalaryAssignmentsArgs<ExtArgs>
+  imamSalaryPayments?: boolean | Prisma.User$imamSalaryPaymentsArgs<ExtArgs>
+  collectedSalaryPayments?: boolean | Prisma.User$collectedSalaryPaymentsArgs<ExtArgs>
+  createdCollections?: boolean | Prisma.User$createdCollectionsArgs<ExtArgs>
+  createdExpenses?: boolean | Prisma.User$createdExpensesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
+}
+export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  masjid?: boolean | Prisma.User$masjidArgs<ExtArgs>
+}
 
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
     userRoles: Prisma.$UserRolePayload<ExtArgs>[]
     sessions: Prisma.$SessionPayload<ExtArgs>[]
+    createdMasjids: Prisma.$MasjidPayload<ExtArgs>[]
+    imamOfMasjids: Prisma.$MasjidPayload<ExtArgs>[]
+    approvedMasjids: Prisma.$MasjidPayload<ExtArgs>[]
+    masjidRegistrationRequests: Prisma.$MasjidRegistrationRequestPayload<ExtArgs>[]
+    reviewedMasjidRequests: Prisma.$MasjidRegistrationRequestPayload<ExtArgs>[]
+    masjid: Prisma.$MasjidPayload<ExtArgs> | null
+    imamSalaries: Prisma.$ImamSalaryPayload<ExtArgs>[]
+    imamSalaryAssignments: Prisma.$ImamSalaryAssignmentPayload<ExtArgs>[]
+    imamSalaryPayments: Prisma.$ImamSalaryPaymentPayload<ExtArgs>[]
+    collectedSalaryPayments: Prisma.$ImamSalaryPaymentPayload<ExtArgs>[]
+    createdCollections: Prisma.$CollectionPayload<ExtArgs>[]
+    createdExpenses: Prisma.$ExpensePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     fullName: string
     email: string | null
     phone: string | null
+    fatherName: string | null
+    age: number | null
+    gender: $Enums.Gender | null
+    isFamilyHead: boolean
+    familyMemberCount: number | null
+    masjidId: string | null
     passwordHash: string
     status: $Enums.UserStatus
     isEmailVerified: boolean
@@ -1143,6 +3696,18 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   userRoles<T extends Prisma.User$userRolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userRolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserRolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  createdMasjids<T extends Prisma.User$createdMasjidsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdMasjidsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MasjidPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  imamOfMasjids<T extends Prisma.User$imamOfMasjidsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$imamOfMasjidsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MasjidPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  approvedMasjids<T extends Prisma.User$approvedMasjidsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$approvedMasjidsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MasjidPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  masjidRegistrationRequests<T extends Prisma.User$masjidRegistrationRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$masjidRegistrationRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MasjidRegistrationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reviewedMasjidRequests<T extends Prisma.User$reviewedMasjidRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewedMasjidRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MasjidRegistrationRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  masjid<T extends Prisma.User$masjidArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$masjidArgs<ExtArgs>>): Prisma.Prisma__MasjidClient<runtime.Types.Result.GetResult<Prisma.$MasjidPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  imamSalaries<T extends Prisma.User$imamSalariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$imamSalariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImamSalaryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  imamSalaryAssignments<T extends Prisma.User$imamSalaryAssignmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$imamSalaryAssignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImamSalaryAssignmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  imamSalaryPayments<T extends Prisma.User$imamSalaryPaymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$imamSalaryPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImamSalaryPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  collectedSalaryPayments<T extends Prisma.User$collectedSalaryPaymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$collectedSalaryPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImamSalaryPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  createdCollections<T extends Prisma.User$createdCollectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdCollectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CollectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  createdExpenses<T extends Prisma.User$createdExpensesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdExpensesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExpensePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1176,6 +3741,12 @@ export interface UserFieldRefs {
   readonly fullName: Prisma.FieldRef<"User", 'String'>
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
+  readonly fatherName: Prisma.FieldRef<"User", 'String'>
+  readonly age: Prisma.FieldRef<"User", 'Int'>
+  readonly gender: Prisma.FieldRef<"User", 'Gender'>
+  readonly isFamilyHead: Prisma.FieldRef<"User", 'Boolean'>
+  readonly familyMemberCount: Prisma.FieldRef<"User", 'Int'>
+  readonly masjidId: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly status: Prisma.FieldRef<"User", 'UserStatus'>
   readonly isEmailVerified: Prisma.FieldRef<"User", 'Boolean'>
@@ -1436,6 +4007,10 @@ export type UserCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    */
   data: Prisma.UserCreateManyInput | Prisma.UserCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1506,6 +4081,10 @@ export type UserUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many Users to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1620,6 +4199,289 @@ export type User$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.SessionScalarFieldEnum | Prisma.SessionScalarFieldEnum[]
+}
+
+/**
+ * User.createdMasjids
+ */
+export type User$createdMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Masjid
+   */
+  select?: Prisma.MasjidSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Masjid
+   */
+  omit?: Prisma.MasjidOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidInclude<ExtArgs> | null
+  where?: Prisma.MasjidWhereInput
+  orderBy?: Prisma.MasjidOrderByWithRelationInput | Prisma.MasjidOrderByWithRelationInput[]
+  cursor?: Prisma.MasjidWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MasjidScalarFieldEnum | Prisma.MasjidScalarFieldEnum[]
+}
+
+/**
+ * User.imamOfMasjids
+ */
+export type User$imamOfMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Masjid
+   */
+  select?: Prisma.MasjidSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Masjid
+   */
+  omit?: Prisma.MasjidOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidInclude<ExtArgs> | null
+  where?: Prisma.MasjidWhereInput
+  orderBy?: Prisma.MasjidOrderByWithRelationInput | Prisma.MasjidOrderByWithRelationInput[]
+  cursor?: Prisma.MasjidWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MasjidScalarFieldEnum | Prisma.MasjidScalarFieldEnum[]
+}
+
+/**
+ * User.approvedMasjids
+ */
+export type User$approvedMasjidsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Masjid
+   */
+  select?: Prisma.MasjidSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Masjid
+   */
+  omit?: Prisma.MasjidOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidInclude<ExtArgs> | null
+  where?: Prisma.MasjidWhereInput
+  orderBy?: Prisma.MasjidOrderByWithRelationInput | Prisma.MasjidOrderByWithRelationInput[]
+  cursor?: Prisma.MasjidWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MasjidScalarFieldEnum | Prisma.MasjidScalarFieldEnum[]
+}
+
+/**
+ * User.masjidRegistrationRequests
+ */
+export type User$masjidRegistrationRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MasjidRegistrationRequest
+   */
+  select?: Prisma.MasjidRegistrationRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MasjidRegistrationRequest
+   */
+  omit?: Prisma.MasjidRegistrationRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidRegistrationRequestInclude<ExtArgs> | null
+  where?: Prisma.MasjidRegistrationRequestWhereInput
+  orderBy?: Prisma.MasjidRegistrationRequestOrderByWithRelationInput | Prisma.MasjidRegistrationRequestOrderByWithRelationInput[]
+  cursor?: Prisma.MasjidRegistrationRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MasjidRegistrationRequestScalarFieldEnum | Prisma.MasjidRegistrationRequestScalarFieldEnum[]
+}
+
+/**
+ * User.reviewedMasjidRequests
+ */
+export type User$reviewedMasjidRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MasjidRegistrationRequest
+   */
+  select?: Prisma.MasjidRegistrationRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MasjidRegistrationRequest
+   */
+  omit?: Prisma.MasjidRegistrationRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidRegistrationRequestInclude<ExtArgs> | null
+  where?: Prisma.MasjidRegistrationRequestWhereInput
+  orderBy?: Prisma.MasjidRegistrationRequestOrderByWithRelationInput | Prisma.MasjidRegistrationRequestOrderByWithRelationInput[]
+  cursor?: Prisma.MasjidRegistrationRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MasjidRegistrationRequestScalarFieldEnum | Prisma.MasjidRegistrationRequestScalarFieldEnum[]
+}
+
+/**
+ * User.masjid
+ */
+export type User$masjidArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Masjid
+   */
+  select?: Prisma.MasjidSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Masjid
+   */
+  omit?: Prisma.MasjidOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MasjidInclude<ExtArgs> | null
+  where?: Prisma.MasjidWhereInput
+}
+
+/**
+ * User.imamSalaries
+ */
+export type User$imamSalariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ImamSalary
+   */
+  select?: Prisma.ImamSalarySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ImamSalary
+   */
+  omit?: Prisma.ImamSalaryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ImamSalaryInclude<ExtArgs> | null
+  where?: Prisma.ImamSalaryWhereInput
+  orderBy?: Prisma.ImamSalaryOrderByWithRelationInput | Prisma.ImamSalaryOrderByWithRelationInput[]
+  cursor?: Prisma.ImamSalaryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ImamSalaryScalarFieldEnum | Prisma.ImamSalaryScalarFieldEnum[]
+}
+
+/**
+ * User.imamSalaryAssignments
+ */
+export type User$imamSalaryAssignmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ImamSalaryAssignment
+   */
+  select?: Prisma.ImamSalaryAssignmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ImamSalaryAssignment
+   */
+  omit?: Prisma.ImamSalaryAssignmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ImamSalaryAssignmentInclude<ExtArgs> | null
+  where?: Prisma.ImamSalaryAssignmentWhereInput
+  orderBy?: Prisma.ImamSalaryAssignmentOrderByWithRelationInput | Prisma.ImamSalaryAssignmentOrderByWithRelationInput[]
+  cursor?: Prisma.ImamSalaryAssignmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ImamSalaryAssignmentScalarFieldEnum | Prisma.ImamSalaryAssignmentScalarFieldEnum[]
+}
+
+/**
+ * User.imamSalaryPayments
+ */
+export type User$imamSalaryPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ImamSalaryPayment
+   */
+  select?: Prisma.ImamSalaryPaymentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ImamSalaryPayment
+   */
+  omit?: Prisma.ImamSalaryPaymentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ImamSalaryPaymentInclude<ExtArgs> | null
+  where?: Prisma.ImamSalaryPaymentWhereInput
+  orderBy?: Prisma.ImamSalaryPaymentOrderByWithRelationInput | Prisma.ImamSalaryPaymentOrderByWithRelationInput[]
+  cursor?: Prisma.ImamSalaryPaymentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ImamSalaryPaymentScalarFieldEnum | Prisma.ImamSalaryPaymentScalarFieldEnum[]
+}
+
+/**
+ * User.collectedSalaryPayments
+ */
+export type User$collectedSalaryPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ImamSalaryPayment
+   */
+  select?: Prisma.ImamSalaryPaymentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ImamSalaryPayment
+   */
+  omit?: Prisma.ImamSalaryPaymentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ImamSalaryPaymentInclude<ExtArgs> | null
+  where?: Prisma.ImamSalaryPaymentWhereInput
+  orderBy?: Prisma.ImamSalaryPaymentOrderByWithRelationInput | Prisma.ImamSalaryPaymentOrderByWithRelationInput[]
+  cursor?: Prisma.ImamSalaryPaymentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ImamSalaryPaymentScalarFieldEnum | Prisma.ImamSalaryPaymentScalarFieldEnum[]
+}
+
+/**
+ * User.createdCollections
+ */
+export type User$createdCollectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Collection
+   */
+  select?: Prisma.CollectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Collection
+   */
+  omit?: Prisma.CollectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CollectionInclude<ExtArgs> | null
+  where?: Prisma.CollectionWhereInput
+  orderBy?: Prisma.CollectionOrderByWithRelationInput | Prisma.CollectionOrderByWithRelationInput[]
+  cursor?: Prisma.CollectionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CollectionScalarFieldEnum | Prisma.CollectionScalarFieldEnum[]
+}
+
+/**
+ * User.createdExpenses
+ */
+export type User$createdExpensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Expense
+   */
+  select?: Prisma.ExpenseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Expense
+   */
+  omit?: Prisma.ExpenseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExpenseInclude<ExtArgs> | null
+  where?: Prisma.ExpenseWhereInput
+  orderBy?: Prisma.ExpenseOrderByWithRelationInput | Prisma.ExpenseOrderByWithRelationInput[]
+  cursor?: Prisma.ExpenseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ExpenseScalarFieldEnum | Prisma.ExpenseScalarFieldEnum[]
 }
 
 /**
