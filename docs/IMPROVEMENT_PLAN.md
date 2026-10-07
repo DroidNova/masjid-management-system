@@ -4,6 +4,16 @@ Written 2026-10-07 after a full audit of `masjid-core` (NestJS + Prisma) and `ma
 This file is the working plan. Each milestone is done in one or more chat sessions directly on `main`.
 Update the checkboxes and the status table as work lands.
 
+## Checkpoint (read this first in a new session)
+
+Last updated 2026-10-07.
+
+- **Done:** M0 Hygiene (commit `301c235` and the CI fix after it). Both apps lint, build, and test clean. CI runs on every push to `main`.
+- **Next:** M1 Backend security foundation. Start with `@nestjs/config` + zod validation and the env-driven dev auth (`AUTH_DEV_MODE`, `AUTH_DEV_OTP=1111`, `AUTH_DEV_PASSWORD=123456`), then the `OtpChallenge` table, then `auth/password/change`, then refresh-token rework.
+- **Model:** from M1 onward the owner runs sessions on Claude Opus 5.5 to save usage. Keep each session to one milestone or less.
+- **How to work:** commit directly on `main`, push when green, tick the checkboxes below, update this checkpoint at the end of every session, and finish with a short plain-language summary of what changed.
+- **Known debt carried forward:** about 200 ESLint `no-unsafe-*` warnings in the backend are downgraded until M3. `PermissionHelper` in the app still branches on role names until M4.
+
 ## 1. What the app is
 
 A management system for masjids in villages and cities (example: the masjid in Barota village).
@@ -265,8 +275,8 @@ Still open:
 
 | Milestone | Status | Notes |
 |---|---|---|
-| M0 Hygiene | not started | |
-| M1 Backend security | not started | |
+| M0 Hygiene | done 2026-10-07 | commit `301c235`; `no-unsafe-*` lint rules are warnings until M3 |
+| M1 Backend security | next | |
 | M2 Access model | not started | |
 | M3 Backend structure | not started | |
 | M4 Flutter foundation | not started | |

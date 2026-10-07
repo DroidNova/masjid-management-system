@@ -16,6 +16,12 @@ jobs:
     defaults:
       run:
         working-directory: masjid-core
+    env:
+      # prisma.config.ts requires DATABASE_URL to be defined even for
+      # `prisma generate`, which never connects. Nothing in CI uses a database.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      JWT_ACCESS_SECRET: ci-access-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
