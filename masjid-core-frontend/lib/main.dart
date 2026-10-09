@@ -12,8 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Date names for AppFormat (Indian English).
-  await initializeDateFormatting('en_IN');
+  // Date names for AppFormat (Indian English, Hindi, Urdu).
+  await initializeDateFormatting();
 
   _registerFontLicenses();
 

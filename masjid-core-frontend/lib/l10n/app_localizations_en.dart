@@ -15,9 +15,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loading => 'Loading…';
 
   @override
-  String get retry => 'Retry';
-
-  @override
   String get logout => 'Logout';
 
   @override
@@ -1193,4 +1190,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeMessage => 'Welcome message';
+
+  @override
+  String get errorAlreadyExists => 'This is already saved.';
+
+  @override
+  String get errorAlreadyInMasjid => 'This person is already in this masjid.';
+
+  @override
+  String get errorCheckInput =>
+      'Something you typed is not right. Please check and try again.';
+
+  @override
+  String get errorEmailTaken => 'This email is already used by someone else.';
+
+  @override
+  String get errorInAnotherMasjid =>
+      'This phone number is already in another masjid. They must leave that masjid first.';
+
+  @override
+  String get errorLoginAgain => 'Please log in again.';
+
+  @override
+  String get errorMasjidNotApproved => 'This masjid is not approved yet.';
+
+  @override
+  String get errorNotFound => 'This was not found. It may have been removed.';
+
+  @override
+  String get errorPhoneOtherPerson =>
+      'This phone number belongs to someone with other details.';
+
+  @override
+  String get errorRequestDecided =>
+      'This request was already approved or rejected.';
+
+  @override
+  String get errorSalaryMonthStarted =>
+      'Salary for this month has already started.';
 }

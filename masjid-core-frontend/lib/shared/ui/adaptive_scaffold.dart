@@ -81,11 +81,15 @@ class AdaptiveScaffold extends StatelessWidget {
     final pinnedIndex = destinations.length - 1;
     final pinnedSelected = selectedIndex == pinnedIndex;
 
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+
     return Scaffold(
       body: Row(
         children: <Widget>[
+          // The rail sits on the start side: right in Urdu.
           SafeArea(
-            right: false,
+            left: !rtl,
+            right: rtl,
             child: NavigationRail(
               extended: extended,
               minExtendedWidth: 264,

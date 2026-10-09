@@ -15,9 +15,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get loading => 'लोड हो रहा है…';
 
   @override
-  String get retry => 'फिर कोशिश करें';
-
-  @override
   String get logout => 'लॉग आउट';
 
   @override
@@ -1189,4 +1186,41 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get welcomeMessage => 'स्वागत संदेश';
+
+  @override
+  String get errorAlreadyExists => 'यह पहले से सेव है।';
+
+  @override
+  String get errorAlreadyInMasjid => 'यह व्यक्ति पहले से इस मस्जिद में है।';
+
+  @override
+  String get errorCheckInput =>
+      'आपने जो लिखा उसमें कुछ गलत है। जाँच कर फिर से कोशिश करें।';
+
+  @override
+  String get errorEmailTaken => 'यह ईमेल पहले से किसी और का है।';
+
+  @override
+  String get errorInAnotherMasjid =>
+      'यह फ़ोन नंबर पहले से दूसरी मस्जिद में है। उन्हें पहले वह मस्जिद छोड़नी होगी।';
+
+  @override
+  String get errorLoginAgain => 'कृपया फिर से लॉग इन करें।';
+
+  @override
+  String get errorMasjidNotApproved => 'यह मस्जिद अभी मंज़ूर नहीं हुई है।';
+
+  @override
+  String get errorNotFound => 'यह नहीं मिला। शायद हटा दिया गया है।';
+
+  @override
+  String get errorPhoneOtherPerson =>
+      'यह फ़ोन नंबर किसी और जानकारी वाले व्यक्ति का है।';
+
+  @override
+  String get errorRequestDecided => 'इस अर्ज़ी पर पहले ही फ़ैसला हो चुका है।';
+
+  @override
+  String get errorSalaryMonthStarted =>
+      'इस महीने की तनख्वाह पहले ही शुरू हो चुकी है।';
 }

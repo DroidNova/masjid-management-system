@@ -112,12 +112,6 @@ abstract class AppLocalizations {
   /// **'Loading…'**
   String get loading;
 
-  /// No description provided for @retry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get retry;
-
   /// No description provided for @logout.
   ///
   /// In en, this message translates to:
@@ -2271,6 +2265,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome message'**
   String get welcomeMessage;
+
+  /// No description provided for @errorAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'This is already saved.'**
+  String get errorAlreadyExists;
+
+  /// No description provided for @errorAlreadyInMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'This person is already in this masjid.'**
+  String get errorAlreadyInMasjid;
+
+  /// No description provided for @errorCheckInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Something you typed is not right. Please check and try again.'**
+  String get errorCheckInput;
+
+  /// No description provided for @errorEmailTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already used by someone else.'**
+  String get errorEmailTaken;
+
+  /// No description provided for @errorInAnotherMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone number is already in another masjid. They must leave that masjid first.'**
+  String get errorInAnotherMasjid;
+
+  /// No description provided for @errorLoginAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in again.'**
+  String get errorLoginAgain;
+
+  /// No description provided for @errorMasjidNotApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'This masjid is not approved yet.'**
+  String get errorMasjidNotApproved;
+
+  /// No description provided for @errorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This was not found. It may have been removed.'**
+  String get errorNotFound;
+
+  /// No description provided for @errorPhoneOtherPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone number belongs to someone with other details.'**
+  String get errorPhoneOtherPerson;
+
+  /// No description provided for @errorRequestDecided.
+  ///
+  /// In en, this message translates to:
+  /// **'This request was already approved or rejected.'**
+  String get errorRequestDecided;
+
+  /// No description provided for @errorSalaryMonthStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary for this month has already started.'**
+  String get errorSalaryMonthStarted;
 }
 
 class _AppLocalizationsDelegate

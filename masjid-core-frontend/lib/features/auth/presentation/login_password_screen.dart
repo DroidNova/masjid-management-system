@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
@@ -96,7 +97,7 @@ class _LoginPasswordScreenState extends ConsumerState<LoginPasswordScreen> {
                   ScreenHeader(
                     icon: AppIcons.password,
                     title: l10n.yourPassword,
-                    subtitle: widget.phone,
+                    subtitle: AppFormat.phone(widget.phone),
                   ),
                   TextField(
                     controller: _passwordController,

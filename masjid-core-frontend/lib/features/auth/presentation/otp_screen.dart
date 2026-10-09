@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
@@ -129,7 +130,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ScreenHeader(
                   icon: AppIcons.code,
                   title: l10n.enterCode,
-                  subtitle: l10n.codeSentTo(widget.phone),
+                  subtitle: l10n.codeSentTo(AppFormat.phone(widget.phone)),
                 ),
                 CodeBoxes(
                   length: _otpLength,

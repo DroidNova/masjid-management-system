@@ -219,7 +219,7 @@ final List<RouteBase> _routes = <RouteBase>[
       final phone = extra?['phone'];
 
       if (phone == null || phone.isEmpty) {
-        return const _MissingLoginDataScreen();
+        return const NotFoundView();
       }
 
       return LoginPasswordScreen(phone: phone);
@@ -236,7 +236,7 @@ final List<RouteBase> _routes = <RouteBase>[
           phone.isEmpty ||
           challengeId == null ||
           challengeId.isEmpty) {
-        return const _MissingLoginDataScreen();
+        return const NotFoundView();
       }
 
       return OtpScreen(
@@ -327,7 +327,7 @@ final List<RouteBase> _routes = <RouteBase>[
       final month = int.tryParse(state.pathParameters['month'] ?? '');
       final year = int.tryParse(state.pathParameters['year'] ?? '');
       if (month == null || year == null || month < 1 || month > 12) {
-        return const _InvalidRouteParametersScreen();
+        return const NotFoundView();
       }
       return ImamSalaryPaymentHistoryScreen(month: month, year: year);
     },
@@ -590,17 +590,6 @@ Widget _superAdminOnly(Widget child) => PermissionGate(
   child: child,
 );
 
-class _InvalidRouteParametersScreen extends StatelessWidget {
-  const _InvalidRouteParametersScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Invalid contribution period.')),
-    );
-  }
-}
-
 Map<String, String>? _readExtraMap(Object? extra) {
   if (extra is Map<String, String>) return extra;
   if (extra is Map<String, dynamic>) {
@@ -608,35 +597,4 @@ Map<String, String>? _readExtraMap(Object? extra) {
   }
 
   return null;
-}
-
-class _MissingLoginDataScreen extends StatelessWidget {
-  const _MissingLoginDataScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const Text(
-                'Login information is missing. Please start again.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => context.go('/login-phone'),
-                child: const Text('Back to Login'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

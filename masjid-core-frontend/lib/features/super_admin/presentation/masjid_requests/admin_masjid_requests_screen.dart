@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/admin_parts.dart';
@@ -78,7 +79,10 @@ class _AdminMasjidRequestsScreenState
         title: item.masjidName,
         lines: <String>[
           placeLine(<String?>[item.locality, item.district, item.state]),
-          placeLine(<String?>[item.requesterName, item.requesterPhone]),
+          placeLine(<String?>[
+            item.requesterName,
+            AppFormat.phoneOrNull(item.requesterPhone),
+          ]),
         ],
         status: item.status,
         selected: picked?.id == item.id,

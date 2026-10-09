@@ -18,10 +18,10 @@ class AuthUnknown extends AuthState {
 }
 
 class AuthSignedOut extends AuthState {
-  const AuthSignedOut({this.message});
+  const AuthSignedOut({this.sessionExpired = false});
 
-  /// Shown once after logout, e.g. "Your session has expired".
-  final String? message;
+  /// The server ended the session: the app says so once, in its language.
+  final bool sessionExpired;
 }
 
 class AuthSignedIn extends AuthState {
@@ -117,9 +117,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> handleSessionExpired() async {
     await ref.read(sessionStorageProvider).clearUser();
     if (state is AuthSignedIn) {
-      state = const AuthSignedOut(
-        message: 'Your session has expired. Please login again.',
-      );
+      state = const AuthSignedOut(sessionExpired: true);
     } else if (state is AuthUnknown) {
       state = const AuthSignedOut();
     }

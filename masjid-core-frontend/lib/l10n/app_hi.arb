@@ -2,7 +2,6 @@
   "@@locale": "hi",
   "appTitle": "मस्जिद",
   "loading": "लोड हो रहा है…",
-  "retry": "फिर कोशिश करें",
   "logout": "लॉग आउट",
   "notAllowedTitle": "अनुमति नहीं",
   "notAllowedMessage": "आपको यह काम करने की अनुमति नहीं है।",
@@ -361,5 +360,16 @@
   "sentOn": "भेजने की तारीख़",
   "statusChanged": "स्थिति बदल गई",
   "statusSuspended": "रोका गया",
-  "welcomeMessage": "स्वागत संदेश"
+  "welcomeMessage": "स्वागत संदेश",
+  "errorAlreadyExists": "यह पहले से सेव है।",
+  "errorAlreadyInMasjid": "यह व्यक्ति पहले से इस मस्जिद में है।",
+  "errorCheckInput": "आपने जो लिखा उसमें कुछ गलत है। जाँच कर फिर से कोशिश करें।",
+  "errorEmailTaken": "यह ईमेल पहले से किसी और का है।",
+  "errorInAnotherMasjid": "यह फ़ोन नंबर पहले से दूसरी मस्जिद में है। उन्हें पहले वह मस्जिद छोड़नी होगी।",
+  "errorLoginAgain": "कृपया फिर से लॉग इन करें।",
+  "errorMasjidNotApproved": "यह मस्जिद अभी मंज़ूर नहीं हुई है।",
+  "errorNotFound": "यह नहीं मिला। शायद हटा दिया गया है।",
+  "errorPhoneOtherPerson": "यह फ़ोन नंबर किसी और जानकारी वाले व्यक्ति का है।",
+  "errorRequestDecided": "इस अर्ज़ी पर पहले ही फ़ैसला हो चुका है।",
+  "errorSalaryMonthStarted": "इस महीने की तनख्वाह पहले ही शुरू हो चुकी है।"
 }

@@ -159,7 +159,7 @@ void main() {
 
     final state = container.read(authControllerProvider);
     expect(state, isA<AuthSignedOut>());
-    expect((state as AuthSignedOut).message, contains('expired'));
+    expect((state as AuthSignedOut).sessionExpired, isTrue);
     expect(sessions.user, isNull);
   });
 

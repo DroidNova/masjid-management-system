@@ -61,7 +61,7 @@ class _MoneyEntryScreenState extends ConsumerState<MoneyEntryScreen> {
     setState(() => _error = null);
 
     final note = _note.text.trim();
-    final day = DateFormat('yyyy-MM-dd').format(_date);
+    final day = DateFormat('yyyy-MM-dd', 'en').format(_date);
     final controller = ref.read(financeEntryControllerProvider.notifier);
     final saved = widget.isExpense
         ? await controller.addExpense(

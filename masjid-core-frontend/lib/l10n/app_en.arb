@@ -5,7 +5,6 @@
     "description": "App name shown in the window title and splash screen."
   },
   "loading": "Loading…",
-  "retry": "Retry",
   "logout": "Logout",
   "notAllowedTitle": "Not allowed",
   "notAllowedMessage": "You do not have permission to perform this action.",
@@ -591,5 +590,16 @@
   "sentOn": "Sent on",
   "statusChanged": "Status changed",
   "statusSuspended": "Suspended",
-  "welcomeMessage": "Welcome message"
+  "welcomeMessage": "Welcome message",
+  "errorAlreadyExists": "This is already saved.",
+  "errorAlreadyInMasjid": "This person is already in this masjid.",
+  "errorCheckInput": "Something you typed is not right. Please check and try again.",
+  "errorEmailTaken": "This email is already used by someone else.",
+  "errorInAnotherMasjid": "This phone number is already in another masjid. They must leave that masjid first.",
+  "errorLoginAgain": "Please log in again.",
+  "errorMasjidNotApproved": "This masjid is not approved yet.",
+  "errorNotFound": "This was not found. It may have been removed.",
+  "errorPhoneOtherPerson": "This phone number belongs to someone with other details.",
+  "errorRequestDecided": "This request was already approved or rejected.",
+  "errorSalaryMonthStarted": "Salary for this month has already started."
 }

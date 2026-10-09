@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
@@ -167,7 +168,7 @@ class _Content extends ConsumerWidget {
             InfoLine(
               icon: AppIcons.phone,
               label: l10n.phone,
-              value: user.phone,
+              value: AppFormat.phoneOrNull(user.phone),
             ),
             InfoLine(
               icon: AppIcons.email,

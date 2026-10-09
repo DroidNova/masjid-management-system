@@ -53,7 +53,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
   }
 
   static String? _day(DateTime? date) =>
-      date == null ? null : DateFormat('yyyy-MM-dd').format(date);
+      date == null ? null : DateFormat('yyyy-MM-dd', 'en').format(date);
 
   Future<void> _pick({required bool start}) async {
     final current = start ? _start : _end;

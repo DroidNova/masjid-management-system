@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_form_controller.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_validators.dart';
@@ -492,7 +493,10 @@ class _MasjidRequestFormScreenState
         ),
         _ReviewCard(
           icon: AppIcons.imam,
-          lines: <String>[draft.imamName.trim(), draft.imamPhone.normalized],
+          lines: <String>[
+            draft.imamName.trim(),
+            AppFormat.phone(draft.imamPhone.normalized),
+          ],
           onEdit: () => _flowKey.currentState?.goTo(_imamStep),
         ),
         _ReviewCard(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
@@ -98,7 +99,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         leading: PersonAvatar(name: item.fullName),
         title: item.fullName.isEmpty ? l10n.roleMember : item.fullName,
         lines: <String>[
-          placeLine(<String?>[item.phone, item.email]),
+          placeLine(<String?>[AppFormat.phoneOrNull(item.phone), item.email]),
           placeLine(<String?>[
             ...item.roles.map((role) => adminRoleLabel(l10n, role)),
             item.masjidName,

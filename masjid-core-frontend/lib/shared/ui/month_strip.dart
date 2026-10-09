@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 
 /// Months as a row of chips, this month first, then going back: swipe and
@@ -34,7 +35,7 @@ class MonthStrip extends StatelessWidget {
     if (!months.any((m) => m.month == month && m.year == year)) {
       months.add(DateTime(year, month));
     }
-    final format = DateFormat('MMM y', 'en_IN');
+    final format = DateFormat('MMM y', AppFormat.dateLocale);
 
     return SizedBox(
       height: 56,

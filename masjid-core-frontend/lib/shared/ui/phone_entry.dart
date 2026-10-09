@@ -107,7 +107,7 @@ class PhoneEntry extends StatelessWidget {
                     excludeSemantics: true,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: Text(
                         empty ? '00000 00000' : format(digits),
                         style: textTheme.headlineMedium?.copyWith(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' show Intl;
 import 'package:masjid_core_frontend/app/router.dart';
 import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
@@ -18,9 +19,14 @@ class MasjidCoreApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Tell the user why they were signed out (e.g. session expired).
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
-      if (next is AuthSignedOut && next.message != null) {
-        rootScaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(content: Text(next.message!)),
+      final messenger = rootScaffoldMessengerKey.currentState;
+      if (next is AuthSignedOut && next.sessionExpired && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(messenger.context).errorLoginAgain,
+            ),
+          ),
         );
       }
     });
@@ -34,10 +40,14 @@ class MasjidCoreApp extends ConsumerWidget {
       // Null follows the device language until the person picks one.
       locale: language?.locale,
       theme: AppTheme.light(languageCode: language?.code ?? 'en'),
-      builder: (context, child) => _TextSize(
-        largeText: settings.largeText,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        // Month names in AppFormat follow the language on screen.
+        Intl.defaultLocale = Localizations.localeOf(context).languageCode;
+        return _TextSize(
+          largeText: settings.largeText,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       routerConfig: ref.watch(routerProvider),
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       localizationsDelegates: const <LocalizationsDelegate<Object>>[

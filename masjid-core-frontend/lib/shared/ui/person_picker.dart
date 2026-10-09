@@ -154,7 +154,7 @@ class _PersonPickerBodyState extends State<_PersonPickerBody> {
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: const EdgeInsetsDirectional.fromSTEB(
             AppSpace.l,
             AppSpace.s,
             AppSpace.s,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_request_model.dart';
@@ -189,7 +190,7 @@ class _Content extends ConsumerWidget {
             InfoLine(
               icon: AppIcons.phone,
               label: l10n.phone,
-              value: r.contactNo,
+              value: AppFormat.phoneOrNull(r.contactNo),
             ),
             InfoLine(
               icon: AppIcons.announcements,
@@ -220,7 +221,7 @@ class _Content extends ConsumerWidget {
             InfoLine(
               icon: AppIcons.phone,
               label: l10n.phone,
-              value: r.requesterPhone,
+              value: AppFormat.phoneOrNull(r.requesterPhone),
             ),
             InfoLine(
               icon: AppIcons.email,
@@ -241,7 +242,7 @@ class _Content extends ConsumerWidget {
             InfoLine(
               icon: AppIcons.phone,
               label: l10n.phone,
-              value: r.imamPhone,
+              value: AppFormat.phoneOrNull(r.imamPhone),
             ),
             InfoLine(
               icon: AppIcons.email,
@@ -273,7 +274,10 @@ class _Content extends ConsumerWidget {
               InfoLine(
                 icon: AppIcons.person,
                 label: member.name ?? '',
-                value: placeLine(<String?>[member.phone, member.fatherName]),
+                value: placeLine(<String?>[
+                  AppFormat.phoneOrNull(member.phone),
+                  member.fatherName,
+                ]),
               ),
           ],
         ),

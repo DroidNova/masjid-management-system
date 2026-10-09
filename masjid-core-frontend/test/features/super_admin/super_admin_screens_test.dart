@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_list_filter.dart';
@@ -277,7 +278,10 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('+919876543212, Ibrahim'), findsOneWidget);
+      expect(
+        find.text('${AppFormat.phone('+919876543212')}, Ibrahim'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('approve that hits USER_IN_ANOTHER_MASJID shows the message', (
