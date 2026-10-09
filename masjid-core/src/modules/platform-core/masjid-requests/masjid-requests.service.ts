@@ -115,6 +115,13 @@ export class MasjidRequestsService {
       normalizePhone(imamPhone),
       committeeMembers,
     );
+    await this.assertPhonesFreeForRequest([
+      { name: imamName.trim(), phone: normalizePhone(imamPhone) },
+      ...committeeMembers.map((member) => ({
+        name: member.name ?? '',
+        phone: member.phone ?? '',
+      })),
+    ]);
 
     const masjidName = dto.masjidName.trim();
     this.logger.debug({
@@ -683,6 +690,39 @@ export class MasjidRequestsService {
         ERROR_CODES.USER_IN_ANOTHER_MASJID,
       );
     }
+  }
+
+  /**
+   * Refuses a request whose imam or committee member phone already belongs
+   * to a masjid, so the applicant fixes it now instead of the super admin
+   * hitting it on approval. Names come from the request, never from the
+   * other masjid's records.
+   */
+  private async assertPhonesFreeForRequest(
+    people: Array<{ name: string; phone: string }>,
+  ): Promise<void> {
+    const taken = await this.prisma.user.findMany({
+      where: {
+        masjidId: { not: null },
+        phone: {
+          in: people.flatMap((person) => getPhoneSearchVariants(person.phone)),
+        },
+      },
+      select: { phone: true },
+    });
+    const takenPhones = new Set(
+      taken.flatMap((user) => (user.phone ? [normalizePhone(user.phone)] : [])),
+    );
+    const conflicts = people.filter((person) => takenPhones.has(person.phone));
+    if (!conflicts.length) return;
+
+    const names = conflicts.map((person) => `${person.name} (${person.phone})`);
+    throw new ApiException(
+      `${names.join(', ')} ${conflicts.length === 1 ? 'is' : 'are'} already registered with a different masjid. Please change the phone number.`,
+      HttpStatus.CONFLICT,
+      ERROR_CODES.USER_IN_ANOTHER_MASJID,
+      { phones: conflicts.map((person) => person.phone) },
+    );
   }
 
   private isIndia(country: string): boolean {

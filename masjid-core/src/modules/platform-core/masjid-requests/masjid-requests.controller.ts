@@ -56,7 +56,8 @@ export class MasjidRequestsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Submit a public masjid registration request',
-    description: 'Public endpoint. No bearer token is required.',
+    description:
+      'Public endpoint. No bearer token is required. Imam or committee member phone already in a masjid: 409 USER_IN_ANOTHER_MASJID (message names them as entered on the request; errors.phones lists the numbers).',
   })
   @ApiBody({ type: CreateMasjidRequestDto })
   @ApiResponse({

@@ -17,6 +17,9 @@ function matches(row: Row, where: Where = {}): boolean {
     if (condition && typeof condition === 'object' && 'in' in condition) {
       return (condition.in as unknown[]).includes(row[key]);
     }
+    if (condition && typeof condition === 'object' && 'not' in condition) {
+      return row[key] !== condition.not;
+    }
     return row[key] === condition;
   });
 }
@@ -30,6 +33,11 @@ function createFakePrisma() {
 
   const prisma: Row = {
     masjidRegistrationRequest: {
+      create: async ({ data }: { data: Row }) => {
+        const row: Row = { id: `req-${requests.length + 1}`, ...data };
+        requests.push(row);
+        return { ...row };
+      },
       findUnique: async ({ where }: { where: Where }) => {
         const row = requests.find((r) => r.id === where.id);
         return row ? { ...row } : null;
@@ -357,5 +365,54 @@ describe('MasjidRequestsService approval', () => {
       service.updateStatus('req-1', reject, admin),
       'MASJID_REQUEST_ALREADY_REJECTED',
     );
+  });
+});
+
+describe('MasjidRequestsService submission', () => {
+  const submission = {
+    requesterName: 'Requester',
+    requesterPhone: '+919800000009',
+    masjidName: 'Jama Masjid',
+    country: 'India',
+    locality: 'Old Town',
+    district: 'Bhopal',
+    state: 'MP',
+    address: 'Main road',
+    imamName: 'Imam Sahab',
+    imamPhone: IMAM_PHONE,
+    imamAddress: 'Near masjid',
+    imamFatherName: 'Father',
+    imamAge: 45,
+    imamGender: 'MALE',
+    committeeMembers: [
+      { name: 'Member One', phone: CM1_PHONE },
+      { name: 'Member Two', phone: CM2_PHONE },
+    ],
+  } as never;
+
+  it('refuses a phone that already belongs to a masjid, naming the person from the request', async () => {
+    const { service, requests, users } = setup();
+    users.push({
+      id: 'busy',
+      fullName: 'Name In Other Masjid',
+      phone: CM2_PHONE,
+      masjidId: 'other-masjid',
+    });
+
+    await expect(service.create(submission)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        errorCode: 'USER_IN_ANOTHER_MASJID',
+        message: expect.stringContaining(`Member Two (${CM2_PHONE})`),
+      }),
+    });
+    expect(requests).toHaveLength(0);
+  });
+
+  it('accepts a phone whose account has no masjid', async () => {
+    const { service, requests, users } = setup();
+    users.push({ id: 'free', phone: IMAM_PHONE, masjidId: null });
+
+    await service.create(submission);
+    expect(requests).toHaveLength(1);
   });
 });
