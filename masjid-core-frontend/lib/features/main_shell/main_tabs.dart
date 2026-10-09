@@ -38,7 +38,7 @@ enum MainTab {
 
   /// These pages still draw their own top bar (until their redesign phase),
   /// so the frame leaves its own out.
-  bool get hasOwnAppBar => this == news || this == myPayments;
+  bool get hasOwnAppBar => this == myPayments;
 }
 
 /// The tabs a person sees, decided by permissions (never role names), with

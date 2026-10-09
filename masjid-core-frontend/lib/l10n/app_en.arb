@@ -265,5 +265,31 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addFirstNews": "Add the first news",
+  "addNews": "Add news",
+  "changed": "Changed",
+  "delete": "Delete",
+  "deleteNewsPoint": "Nobody will see this news any more.",
+  "deleteNewsQuestion": "Delete this news?",
+  "dictationTip": "Tip: tap the microphone on your keyboard to speak instead of typing.",
+  "editNews": "Edit news",
+  "friday": "Friday",
+  "leaveWithoutSaving": "Leave without saving?",
+  "leaveWithoutSavingConfirm": "Leave",
+  "minusFiveMinutes": "5 minutes earlier",
+  "newLabel": "New",
+  "newsDeleted": "News deleted",
+  "newsLoadFailed": "Unable to load news",
+  "newsMessage": "Message",
+  "newsPublished": "News published",
+  "newsTitle": "Title",
+  "noNewsYet": "No news yet",
+  "noteOptional": "Note (optional)",
+  "plusFiveMinutes": "5 minutes later",
+  "readMore": "Read more",
+  "saved": "Saved",
+  "setTime": "Set time",
+  "showLess": "Show less",
+  "timesSaved": "Times saved"
 }

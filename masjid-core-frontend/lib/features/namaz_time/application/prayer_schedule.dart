@@ -100,3 +100,20 @@ NextPrayer? nextPrayer(NamazTimeSummary? times, DateTime now) {
   final at = first.on(tomorrow);
   return NextPrayer(prayer: first, at: at, until: at.difference(now));
 }
+
+/// The stored form of a time, as the server's examples show it: "05:00 PM".
+/// Always English AM/PM, whatever the app's language, so every device
+/// reads it back the same way.
+String formatNamazTime(TimeOfDay time) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+  return '${hour.toString().padLeft(2, '0')}:$minute $period';
+}
+
+/// [time] moved by [minutes], wrapping around midnight.
+TimeOfDay shiftTime(TimeOfDay time, int minutes) {
+  final total = (time.hour * 60 + time.minute + minutes) % (24 * 60);
+  final wrapped = total < 0 ? total + 24 * 60 : total;
+  return TimeOfDay(hour: wrapped ~/ 60, minute: wrapped % 60);
+}

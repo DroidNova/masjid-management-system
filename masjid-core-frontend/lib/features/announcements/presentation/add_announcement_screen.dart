@@ -1,77 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/announcements/application/announcements_controller.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/create_announcement_request.dart';
-import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_form_body.dart';
+import 'package:masjid_core_frontend/features/announcements/presentation/widgets/news_form.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-class AddAnnouncementScreen extends ConsumerStatefulWidget {
+/// Writes a new piece of news; it is visible to everyone once saved.
+class AddAnnouncementScreen extends ConsumerWidget {
   const AddAnnouncementScreen({super.key});
 
-  @override
-  ConsumerState<AddAnnouncementScreen> createState() =>
-      _AddAnnouncementScreenState();
-}
-
-class _AddAnnouncementScreenState extends ConsumerState<AddAnnouncementScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _messageController = TextEditingController();
-
-  bool _isActive = true;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final controller = ref.read(announcementFormControllerProvider.notifier);
-    final saved = await controller.create(
-      CreateAnnouncementRequest.fromForm(
-        title: _titleController.text,
-        message: _messageController.text,
-        isActive: _isActive,
-      ),
+  Future<void> _save(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    String message,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final saved = await ref
+        .read(announcementFormControllerProvider.notifier)
+        .create(
+          CreateAnnouncementRequest.fromForm(
+            title: title,
+            message: message,
+            isActive: true,
+          ),
+        );
+    if (!saved || !context.mounted) return;
+    await showSuccess(
+      context,
+      title: l10n.newsPublished,
+      icon: AppIcons.announcements,
     );
-    if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    if (!saved) {
-      final error = ref.read(announcementFormControllerProvider).error;
-      if (error != null) {
-        messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
-      }
-      return;
-    }
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Announcement added successfully.')),
-    );
-    context.pop(true);
+    if (context.mounted) context.pop(true);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final saveState = ref.watch(announcementFormControllerProvider);
-    final error = saveState.error;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(announcementFormControllerProvider);
+    final error = state.error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Announcement')),
-      body: AnnouncementFormBody(
-        formKey: _formKey,
-        titleController: _titleController,
-        messageController: _messageController,
-        isActive: _isActive,
-        onActiveChanged: (value) => setState(() => _isActive = value),
-        validator: requiredAnnouncementField,
-        buttonLabel: 'Save Announcement',
-        isSubmitting: saveState.isLoading,
-        onSubmit: _submit,
-        titleError: fieldError(error, 'title'),
-        messageError: fieldError(error, 'message'),
+      appBar: AppBar(title: Text(l10n.addNews)),
+      body: SafeArea(
+        top: false,
+        child: NewsForm(
+          saving: state.isLoading,
+          error: error == null ? null : errorText(l10n, error),
+          onSave: (title, message) => _save(context, ref, title, message),
+        ),
       ),
     );
   }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/announcements/application/announcements_controller.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/update_announcement_request.dart';
-import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_form_body.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/announcements/presentation/widgets/news_form.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-/// Edits one announcement. [announcement] (route `extra`, from the list) is
-/// used as is; from a fresh URL it is loaded by [announcementId].
+/// Edits one piece of news. [announcement] (route `extra`, from the list)
+/// is used as is; from a fresh URL it is loaded by [announcementId].
 class EditAnnouncementScreen extends ConsumerWidget {
   const EditAnnouncementScreen({
     super.key,
@@ -21,170 +21,67 @@ class EditAnnouncementScreen extends ConsumerWidget {
   final String announcementId;
   final AnnouncementModel? announcement;
 
+  Future<void> _save(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    String message,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final saved = await ref
+        .read(announcementFormControllerProvider.notifier)
+        .updateAnnouncement(
+          announcementId,
+          UpdateAnnouncementRequest.fromForm(
+            title: title,
+            message: message,
+            isActive: true,
+          ),
+        );
+    if (!saved || !context.mounted) return;
+    await showSuccess(context, title: l10n.saved, icon: AppIcons.edit);
+    if (context.mounted) context.pop(true);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final passed = announcement;
-    if (passed != null) {
-      // Opened from the list: it is already up to date, no request needed.
-      return Scaffold(
-        appBar: AppBar(title: const Text('Edit Announcement')),
-        body: _EditAnnouncementForm(
-          announcementId: announcementId,
-          initial: passed,
-        ),
-      );
-    }
-
-    final loaded = ref.watch(announcementByIdProvider(announcementId));
+    // Opened from the list: already up to date, no request needed.
+    final loaded = passed == null
+        ? ref.watch(announcementByIdProvider(announcementId))
+        : AsyncData<AnnouncementModel>(passed);
     final current = loaded.valueOrNull;
+    final saveState = ref.watch(announcementFormControllerProvider);
+    final saveError = saveState.error;
 
-    Widget body;
+    final Widget body;
     if (current != null) {
-      body = _EditAnnouncementForm(
-        announcementId: announcementId,
-        initial: current,
+      body = NewsForm(
+        initialTitle: current.title,
+        initialMessage: current.message,
+        saving: saveState.isLoading,
+        error: saveError == null ? null : errorText(l10n, saveError),
+        onSave: (title, message) => _save(context, ref, title, message),
       );
     } else if (loaded.hasError) {
-      body = _EditAnnouncementError(
-        message: userMessage(loaded.error!),
-        onRetry: () => ref.invalidate(announcementByIdProvider(announcementId)),
+      body = EmptyState(
+        icon: AppIcons.problem,
+        tone: AppTones.problem,
+        title: errorText(l10n, loaded.error!),
+        actionLabel: l10n.tryAgain,
+        onAction: () =>
+            ref.invalidate(announcementByIdProvider(announcementId)),
       );
     } else {
-      body = const LoadingView();
+      body = const SingleChildScrollView(
+        child: PageBody.form(child: SkeletonList(itemCount: 2)),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Announcement')),
-      body: body,
-    );
-  }
-}
-
-class _EditAnnouncementForm extends ConsumerStatefulWidget {
-  const _EditAnnouncementForm({
-    required this.announcementId,
-    required this.initial,
-  });
-
-  final String announcementId;
-  final AnnouncementModel initial;
-
-  @override
-  ConsumerState<_EditAnnouncementForm> createState() =>
-      _EditAnnouncementFormState();
-}
-
-class _EditAnnouncementFormState extends ConsumerState<_EditAnnouncementForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _messageController = TextEditingController();
-
-  bool _isActive = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fill(widget.initial);
-  }
-
-  @override
-  void didUpdateWidget(covariant _EditAnnouncementForm oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // The real data replaced the preview: take it, unless the user has
-    // already started editing.
-    final old = oldWidget.initial;
-    final untouched =
-        _titleController.text == old.title &&
-        _messageController.text == old.message &&
-        _isActive == old.isActive;
-    if (widget.initial != old && untouched) _fill(widget.initial);
-  }
-
-  void _fill(AnnouncementModel announcement) {
-    _titleController.text = announcement.title;
-    _messageController.text = announcement.message;
-    _isActive = announcement.isActive;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final controller = ref.read(announcementFormControllerProvider.notifier);
-    final saved = await controller.updateAnnouncement(
-      widget.announcementId,
-      UpdateAnnouncementRequest.fromForm(
-        title: _titleController.text,
-        message: _messageController.text,
-        isActive: _isActive,
-      ),
-    );
-    if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    if (!saved) {
-      final error = ref.read(announcementFormControllerProvider).error;
-      if (error != null) {
-        messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
-      }
-      return;
-    }
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Announcement updated successfully.')),
-    );
-    context.pop(true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final saveState = ref.watch(announcementFormControllerProvider);
-    final error = saveState.error;
-
-    return AnnouncementFormBody(
-      formKey: _formKey,
-      titleController: _titleController,
-      messageController: _messageController,
-      isActive: _isActive,
-      onActiveChanged: (value) => setState(() => _isActive = value),
-      validator: requiredAnnouncementField,
-      buttonLabel: 'Update Announcement',
-      isSubmitting: saveState.isLoading,
-      onSubmit: _submit,
-      titleError: fieldError(error, 'title'),
-      messageError: fieldError(error, 'message'),
-    );
-  }
-}
-
-class _EditAnnouncementError extends StatelessWidget {
-  const _EditAnnouncementError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            AppButton(label: 'Retry', onPressed: onRetry),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('Back'),
-            ),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: Text(l10n.editNews)),
+      body: SafeArea(top: false, child: body),
     );
   }
 }

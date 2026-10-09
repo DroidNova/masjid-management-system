@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/core/settings/speaker.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
@@ -100,6 +103,58 @@ Future<ProviderContainer> pumpUi(
       ),
     ),
   );
+  await tester.pumpAndSettle();
+  return container;
+}
+
+/// Opens [page] on top of a plain "Home" page (so `context.pop()` and the
+/// back button work), with the app's localizations and providers. Routes
+/// [extraRoutes] (path → page) are there too, for screens that navigate.
+Future<ProviderContainer> pumpRouted(
+  WidgetTester tester,
+  Widget page, {
+  List<Override> overrides = const <Override>[],
+  Map<String, Widget> extraRoutes = const <String, Widget>{},
+  Size size = const Size(420, 1400),
+  Locale locale = const Locale('en'),
+  Map<String, Object> prefs = const <String, Object>{},
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final container = ProviderContainer(
+    overrides: <Override>[
+      ...await testAppOverrides(prefs: prefs),
+      ...overrides,
+    ],
+  );
+  addTearDown(container.dispose);
+  final router = GoRouter(
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(body: Text('Home')),
+      ),
+      GoRoute(path: '/page', builder: (_, _) => page),
+      for (final route in extraRoutes.entries)
+        GoRoute(path: route.key, builder: (_, _) => route.value),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(
+        routerConfig: router,
+        locale: locale,
+        theme: AppTheme.light(languageCode: locale.languageCode),
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    ),
+  );
+  unawaited(router.push('/page'));
   await tester.pumpAndSettle();
   return container;
 }

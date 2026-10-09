@@ -16,7 +16,9 @@ class AnnouncementsApi {
   }) async {
     final data = await _apiClient.get<Map<String, dynamic>>(
       '/announcements/my-masjid',
-      query: <String, dynamic>{'page': page, 'limit': limit},
+      // Only visible news: "delete" marks an announcement inactive, and it
+      // must disappear for everyone (the Home screen filters the same way).
+      query: <String, dynamic>{'page': page, 'limit': limit, 'isActive': true},
     );
     return PageResult.fromJson(data, AnnouncementModel.fromJson);
   }

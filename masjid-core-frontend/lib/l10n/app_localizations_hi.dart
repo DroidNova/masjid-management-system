@@ -565,4 +565,83 @@ class AppLocalizationsHi extends AppLocalizations {
   String youLeft(String masjid) {
     return 'आपने $masjid छोड़ दी';
   }
+
+  @override
+  String get addFirstNews => 'पहली खबर जोड़ें';
+
+  @override
+  String get addNews => 'खबर जोड़ें';
+
+  @override
+  String get changed => 'बदला गया';
+
+  @override
+  String get delete => 'हटाएँ';
+
+  @override
+  String get deleteNewsPoint => 'यह खबर अब किसी को नहीं दिखेगी।';
+
+  @override
+  String get deleteNewsQuestion => 'यह खबर हटाएँ?';
+
+  @override
+  String get dictationTip =>
+      'सुझाव: लिखने की जगह बोलने के लिए कीबोर्ड पर माइक दबाएँ।';
+
+  @override
+  String get editNews => 'खबर बदलें';
+
+  @override
+  String get friday => 'जुमे का दिन';
+
+  @override
+  String get leaveWithoutSaving => 'बिना सहेजे जाएँ?';
+
+  @override
+  String get leaveWithoutSavingConfirm => 'जाएँ';
+
+  @override
+  String get minusFiveMinutes => '5 मिनट पहले';
+
+  @override
+  String get newLabel => 'नई';
+
+  @override
+  String get newsDeleted => 'खबर हटा दी गई';
+
+  @override
+  String get newsLoadFailed => 'खबरें लोड नहीं हो सकीं';
+
+  @override
+  String get newsMessage => 'संदेश';
+
+  @override
+  String get newsPublished => 'खबर लग गई';
+
+  @override
+  String get newsTitle => 'शीर्षक';
+
+  @override
+  String get noNewsYet => 'अभी कोई खबर नहीं';
+
+  @override
+  String get noteOptional => 'नोट (ज़रूरी नहीं)';
+
+  @override
+  String get plusFiveMinutes => '5 मिनट बाद';
+
+  @override
+  String get readMore => 'और पढ़ें';
+
+  @override
+  String get saved => 'सहेज लिया';
+
+  @override
+  String get setTime => 'समय चुनें';
+
+  @override
+  String get showLess => 'कम दिखाएँ';
+
+  @override
+  String get timesSaved => 'समय सहेज लिए';
 }

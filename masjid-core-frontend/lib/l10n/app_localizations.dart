@@ -1143,6 +1143,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You left {masjid}'**
   String youLeft(String masjid);
+
+  /// No description provided for @addFirstNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the first news'**
+  String get addFirstNews;
+
+  /// No description provided for @addNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Add news'**
+  String get addNews;
+
+  /// No description provided for @changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed'**
+  String get changed;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deleteNewsPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody will see this news any more.'**
+  String get deleteNewsPoint;
+
+  /// No description provided for @deleteNewsQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this news?'**
+  String get deleteNewsQuestion;
+
+  /// No description provided for @dictationTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: tap the microphone on your keyboard to speak instead of typing.'**
+  String get dictationTip;
+
+  /// No description provided for @editNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit news'**
+  String get editNews;
+
+  /// No description provided for @friday.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get friday;
+
+  /// No description provided for @leaveWithoutSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without saving?'**
+  String get leaveWithoutSaving;
+
+  /// No description provided for @leaveWithoutSavingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveWithoutSavingConfirm;
+
+  /// No description provided for @minusFiveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes earlier'**
+  String get minusFiveMinutes;
+
+  /// No description provided for @newLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newLabel;
+
+  /// No description provided for @newsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'News deleted'**
+  String get newsDeleted;
+
+  /// No description provided for @newsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load news'**
+  String get newsLoadFailed;
+
+  /// No description provided for @newsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get newsMessage;
+
+  /// No description provided for @newsPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'News published'**
+  String get newsPublished;
+
+  /// No description provided for @newsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get newsTitle;
+
+  /// No description provided for @noNewsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No news yet'**
+  String get noNewsYet;
+
+  /// No description provided for @noteOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get noteOptional;
+
+  /// No description provided for @plusFiveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes later'**
+  String get plusFiveMinutes;
+
+  /// No description provided for @readMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get readMore;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @setTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Set time'**
+  String get setTime;
+
+  /// No description provided for @showLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLess;
+
+  /// No description provided for @timesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Times saved'**
+  String get timesSaved;
 }
 
 class _AppLocalizationsDelegate

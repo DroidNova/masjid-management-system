@@ -1,10 +1,7 @@
 // mocktail needs `when(() => mock.call())` closures, not tear-offs.
 // ignore_for_file: unnecessary_lambdas
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/announcements/data/announcements_repository.dart';
@@ -13,36 +10,30 @@ import 'package:masjid_core_frontend/features/announcements/data/models/update_a
 import 'package:masjid_core_frontend/features/announcements/presentation/edit_announcement_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../shared/ui/ui_test_helpers.dart';
+
 class _MockAnnouncementsRepository extends Mock
     implements AnnouncementsRepository {}
 
-const _server = AnnouncementModel(
+class _FakeUpdate extends Fake implements UpdateAnnouncementRequest {}
+
+const _eid = AnnouncementModel(
   id: 'a1',
-  title: 'Server title',
-  message: 'Server message',
+  title: 'Eid namaz',
+  message: 'Eid namaz at 7 AM.',
 );
 
 Future<void> _pump(
   WidgetTester tester,
   AnnouncementsRepository repository, {
-  AnnouncementModel? preview,
-}) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        announcementsRepositoryProvider.overrideWithValue(repository),
-      ],
-      child: MaterialApp(
-        home: EditAnnouncementScreen(
-          announcementId: 'a1',
-          announcement: preview,
-        ),
-      ),
-    ),
-  );
-}
+  AnnouncementModel? passed,
+}) => pumpRouted(
+  tester,
+  EditAnnouncementScreen(announcementId: 'a1', announcement: passed),
+  overrides: [announcementsRepositoryProvider.overrideWithValue(repository)],
+);
 
-String _fieldText(WidgetTester tester, String label) => tester
+String _field(WidgetTester tester, String label) => tester
     .widget<EditableText>(
       find.descendant(
         of: find.widgetWithText(TextFormField, label),
@@ -53,50 +44,33 @@ String _fieldText(WidgetTester tester, String label) => tester
     .text;
 
 void main() {
-  late _MockAnnouncementsRepository repository;
+  setUpAll(() => registerFallbackValue(_FakeUpdate()));
 
-  setUpAll(() => registerFallbackValue(const UpdateAnnouncementRequest()));
-  setUp(() => repository = _MockAnnouncementsRepository());
+  testWidgets('opened from the list: uses that news, no request', (
+    tester,
+  ) async {
+    final repository = _MockAnnouncementsRepository();
+    await _pump(tester, repository, passed: _eid);
+
+    expect(_field(tester, 'Title'), 'Eid namaz');
+    expect(_field(tester, 'Message'), 'Eid namaz at 7 AM.');
+    verifyNever(() => repository.getAnnouncement(any()));
+  });
 
   testWidgets('from a fresh URL: loads by id, then shows the form', (
     tester,
   ) async {
-    final response = Completer<AnnouncementModel>();
-    when(
-      () => repository.getAnnouncement('a1'),
-    ).thenAnswer((_) => response.future);
+    final repository = _MockAnnouncementsRepository();
+    when(() => repository.getAnnouncement('a1')).thenAnswer((_) async => _eid);
 
     await _pump(tester, repository);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    response.complete(_server);
-    await tester.pumpAndSettle();
-
-    expect(_fieldText(tester, 'Title *'), 'Server title');
-    expect(_fieldText(tester, 'Message *'), 'Server message');
+    expect(_field(tester, 'Title'), 'Eid namaz');
+    verify(() => repository.getAnnouncement('a1')).called(1);
   });
 
-  testWidgets('opened from the list: uses that announcement, no request', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      repository,
-      preview: const AnnouncementModel(
-        id: 'a1',
-        title: 'Old title',
-        message: 'Old message',
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(_fieldText(tester, 'Title *'), 'Old title');
-    expect(_fieldText(tester, 'Message *'), 'Old message');
-    verifyNever(() => repository.getAnnouncement(any()));
-  });
-
-  testWidgets('shows the error when the announcement cannot be loaded', (
-    tester,
-  ) async {
+  testWidgets('a failed load shows why and offers Try again', (tester) async {
+    final repository = _MockAnnouncementsRepository();
     when(() => repository.getAnnouncement('a1')).thenThrow(
       const ApiException(
         message: 'Announcement not found',
@@ -106,38 +80,55 @@ void main() {
     );
 
     await _pump(tester, repository);
-    await tester.pumpAndSettle();
 
     expect(find.text('Announcement not found'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
   });
 
-  testWidgets('shows server validation errors under the fields', (
+  testWidgets('saving sends the change (kept visible) and goes back', (
     tester,
   ) async {
+    final repository = _MockAnnouncementsRepository();
     when(
-      () => repository.getAnnouncement('a1'),
-    ).thenAnswer((_) async => _server);
-    when(() => repository.updateAnnouncement('a1', any())).thenThrow(
+      () => repository.updateAnnouncement(any(), any()),
+    ).thenAnswer((_) async => _eid);
+    await _pump(tester, repository, passed: _eid);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Title'),
+      'Eid namaz moved',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    final request =
+        verify(
+              () => repository.updateAnnouncement('a1', captureAny()),
+            ).captured.single
+            as UpdateAnnouncementRequest;
+    expect(request.title, 'Eid namaz moved');
+    expect(request.isActive, isTrue);
+    expect(find.text('Saved'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('a refused save shows the server reason', (tester) async {
+    final repository = _MockAnnouncementsRepository();
+    when(() => repository.updateAnnouncement(any(), any())).thenThrow(
       const ApiException(
-        message: 'Validation failed',
-        code: ApiErrorCodes.validation,
+        message: 'Title must be 150 characters or less',
+        code: 'VALIDATION_ERROR',
         statusCode: 400,
-        fieldErrors: <String, List<String>>{
-          'title': <String>['title must be shorter than 150 characters'],
-        },
       ),
     );
+    await _pump(tester, repository, passed: _eid);
 
-    await _pump(tester, repository);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Update Announcement'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('title must be shorter than 150 characters'),
-      findsOneWidget,
-    );
-    expect(find.text('Validation failed'), findsOneWidget);
+    expect(find.text('Title must be 150 characters or less'), findsOneWidget);
+    expect(find.text('Home'), findsNothing);
   });
 }

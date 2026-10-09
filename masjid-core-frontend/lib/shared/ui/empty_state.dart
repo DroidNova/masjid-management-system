@@ -30,6 +30,11 @@ class EmptyState extends StatelessWidget {
     final detail = message;
     final label = actionLabel;
     final buttonIcon = actionIcon;
+    // The button takes the section's colour (News amber, Projects purple);
+    // neutral and problem pages keep the main green.
+    final buttonStyle = tone == AppTones.neutral || tone == AppTones.problem
+        ? null
+        : FilledButton.styleFrom(backgroundColor: tone.color);
 
     return Center(
       child: SingleChildScrollView(
@@ -59,8 +64,13 @@ class EmptyState extends StatelessWidget {
               if (label != null && onAction != null) ...<Widget>[
                 const SizedBox(height: AppSpace.xl),
                 buttonIcon == null
-                    ? FilledButton(onPressed: onAction, child: Text(label))
+                    ? FilledButton(
+                        style: buttonStyle,
+                        onPressed: onAction,
+                        child: Text(label),
+                      )
                     : FilledButton.icon(
+                        style: buttonStyle,
                         onPressed: onAction,
                         icon: Icon(buttonIcon),
                         label: Text(label),

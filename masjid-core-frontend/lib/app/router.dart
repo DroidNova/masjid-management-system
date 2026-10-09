@@ -312,7 +312,7 @@ final List<RouteBase> _routes = <RouteBase>[
 
   GoRoute(
     path: '/announcements',
-    builder: (context, state) => const AnnouncementsScreen(),
+    builder: (context, state) => const AnnouncementsScreen(showAppBar: true),
   ),
   GoRoute(
     path: '/announcements/add',

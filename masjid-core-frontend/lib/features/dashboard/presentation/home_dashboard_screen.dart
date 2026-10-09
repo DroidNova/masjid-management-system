@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/features/announcements/application/news_seen.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/announcement_summary.dart';
@@ -66,6 +67,14 @@ class _HomeContent extends ConsumerWidget {
     final canUpdateTimes = PermissionHelper.canUpdateNamazTime(permissions);
     final finance = dashboard.financeSummary;
     final news = dashboard.latestAnnouncements;
+    // Latest news this person has not opened yet (a count on the tile).
+    final lastSeen = ref.watch(newsLastSeenProvider);
+    final unseenNews = news
+        .where(
+          (item) =>
+              isNewNews(DateTime.tryParse(item.createdAt ?? ''), lastSeen),
+        )
+        .length;
 
     final hero = NextNamazCard(
       times: dashboard.namazTime,
@@ -107,6 +116,9 @@ class _HomeContent extends ConsumerWidget {
                             label: action.label,
                             tone: action.tone,
                             onTap: action.onTap,
+                            badge: action.icon == AppIcons.announcements
+                                ? unseenNews
+                                : null,
                           ),
                         )
                         .toList(),

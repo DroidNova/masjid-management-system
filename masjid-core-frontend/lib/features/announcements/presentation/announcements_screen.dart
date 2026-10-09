@@ -1,108 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/pagination/paged_controller.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/announcements/application/announcements_controller.dart';
+import 'package:masjid_core_frontend/features/announcements/application/news_seen.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_card.dart';
-import 'package:masjid_core_frontend/features/announcements/presentation/widgets/announcement_empty_view.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-/// Announcements being deleted (their buttons are off meanwhile).
-final _deletingIdsProvider = StateProvider<Set<String>>(
-  (ref) => const <String>{},
-);
+/// News (announcements), newest first: amber cards with a speaker button
+/// and a "New" mark for what this person has not seen yet. People who may
+/// manage news get an Add button and edit / delete on each card.
+///
+/// The News tab shows it inside the app frame; [showAppBar] is for the
+/// stand-alone page (`/announcements`).
+class AnnouncementsScreen extends ConsumerStatefulWidget {
+  const AnnouncementsScreen({super.key, this.showAppBar = false});
 
-class AnnouncementsScreen extends ConsumerWidget {
-  const AnnouncementsScreen({super.key});
+  final bool showAppBar;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final announcementsState = ref.watch(announcementsControllerProvider);
+  ConsumerState<AnnouncementsScreen> createState() =>
+      _AnnouncementsScreenState();
+}
 
-    return announcementsState.when(
+class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
+  /// What was "seen" when the screen opened: the marks stay for this visit
+  /// even though opening the list counts as seeing it.
+  late final DateTime? _seenBefore;
+
+  @override
+  void initState() {
+    super.initState();
+    // Read before this visit is recorded below.
+    _seenBefore = ref.read(newsLastSeenProvider);
+    // Opening the list (and every reload while open) counts as seeing it,
+    // including a list that was already loaded before.
+    ref.listenManual(announcementsControllerProvider, (_, next) {
+      final items = next.valueOrNull?.items;
+      if (items != null) _markSeen(items);
+    }, fireImmediately: true);
+  }
+
+  void _markSeen(List<AnnouncementModel> items) {
+    final newest = items
+        .map((item) => item.createdAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(
+          null,
+          (latest, date) =>
+              latest == null || date.isAfter(latest) ? date : latest,
+        );
+    if (newest != null) {
+      ref.read(newsLastSeenProvider.notifier).markSeen(newest);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final canManage = PermissionHelper.canManageAnnouncements(
+      ref.watch(currentPermissionsProvider),
+    );
+    final news = ref.watch(announcementsControllerProvider);
+
+    final body = news.when(
       // Keep showing the list while it reloads after a change.
       skipLoadingOnReload: true,
-      loading: () => const LoadingView(),
+      loading: () => const SingleChildScrollView(
+        child: PageBody.form(child: SkeletonList()),
+      ),
       error: (error, _) {
-        if (error is ApiException && error.isUnauthorized) {
-          return _AnnouncementErrorView(
-            message: 'Session expired. Please login again.',
-            buttonLabel: 'Back to Login',
-            // The router sends the user to the login page.
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).signOut(),
-          );
-        }
         final noMasjid =
             error is ApiException &&
             error.code == ApiErrorCodes.userMasjidNotAssigned;
-        return _AnnouncementErrorView(
-          message: noMasjid
-              ? 'You are not assigned to any masjid yet.'
-              : 'Unable to load announcements.',
-          detail: noMasjid ? null : userMessage(error),
-          onPressed: () => ref.invalidate(announcementsControllerProvider),
+        return EmptyState(
+          icon: noMasjid ? AppIcons.mosque : AppIcons.problem,
+          tone: noMasjid ? AppTones.neutral : AppTones.problem,
+          title: noMasjid ? l10n.noMasjidAssigned : l10n.newsLoadFailed,
+          actionLabel: noMasjid ? null : l10n.tryAgain,
+          onAction: () => ref.invalidate(announcementsControllerProvider),
         );
       },
-      data: (state) => _AnnouncementsList(state: state),
+      data: (state) => _NewsList(
+        state: state,
+        canManage: canManage,
+        seenBefore: _seenBefore,
+      ),
+    );
+
+    return Scaffold(
+      appBar: widget.showAppBar ? AppBar(title: Text(l10n.tabNews)) : null,
+      floatingActionButton: canManage
+          ? FloatingActionButton.extended(
+              backgroundColor: AppTones.news.color,
+              foregroundColor: Colors.white,
+              onPressed: () => context.push('/announcements/add'),
+              icon: const Icon(AppIcons.add),
+              label: Text(l10n.addNews),
+            )
+          : null,
+      body: body,
     );
   }
 }
 
-class _AnnouncementsList extends ConsumerWidget {
-  const _AnnouncementsList({required this.state});
+class _NewsList extends ConsumerWidget {
+  const _NewsList({
+    required this.state,
+    required this.canManage,
+    required this.seenBefore,
+  });
 
   final PagedState<AnnouncementModel> state;
+  final bool canManage;
+  final DateTime? seenBefore;
 
-  Future<void> _deleteAnnouncement(
+  Future<void> _delete(
     BuildContext context,
     WidgetRef ref,
-    AnnouncementModel announcement,
+    AnnouncementModel item,
   ) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Announcement'),
-        content: const Text(
-          'Are you sure you want to delete this announcement?',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (shouldDelete != true || !context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final deleting = ref.read(_deletingIdsProvider.notifier);
-    if (deleting.state.contains(announcement.id)) return;
-    deleting.state = <String>{...deleting.state, announcement.id};
-    try {
-      await ref
+    final l10n = AppLocalizations.of(context);
+    final deleted = await showDangerDialog(
+      context,
+      title: l10n.deleteNewsQuestion,
+      subject: item.title,
+      confirmLabel: l10n.delete,
+      confirmIcon: AppIcons.delete,
+      points: <DangerPoint>[
+        DangerPoint(icon: AppIcons.people, text: l10n.deleteNewsPoint),
+      ],
+      onConfirm: () => ref
           .read(announcementsControllerProvider.notifier)
-          .deactivate(announcement.id);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Announcement deleted successfully.')),
-      );
-      // Stay busy until the reloaded list replaces this item.
-      await ref.read(announcementsControllerProvider.future);
-    } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(userMessage(error))));
-    } finally {
-      deleting.state = <String>{...deleting.state}..remove(announcement.id);
+          .deactivate(item.id),
+    );
+    if (deleted && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.newsDeleted)));
     }
   }
 
@@ -116,151 +157,84 @@ class _AnnouncementsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canManageAnnouncements = PermissionHelper.canManageAnnouncements(
-      ref.watch(currentPermissionsProvider),
-    );
-    final announcements = state.items;
+    final l10n = AppLocalizations.of(context);
+    final items = state.items;
     final controller = ref.read(announcementsControllerProvider.notifier);
-    final deletingIds = ref.watch(_deletingIdsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Announcements')),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: controller.refresh,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) => _onScroll(notification, ref),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          'Announcements',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Important updates for your masjid community',
-                        ),
-                        const SizedBox(height: 16),
-                        if (canManageAnnouncements) ...<Widget>[
-                          AppButton(
-                            label: 'Add Announcement',
-                            onPressed: () => context.push('/announcements/add'),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (announcements.isEmpty)
-                          const AnnouncementEmptyView()
-                        else
-                          ...announcements.map(
-                            (announcement) => AnnouncementCard(
-                              announcement: announcement,
-                              deleting: deletingIds.contains(announcement.id),
-                              onEdit: canManageAnnouncements
-                                  ? () => context.push(
-                                      '/announcements/${announcement.id}/edit',
-                                      extra: announcement,
-                                    )
-                                  : null,
-                              onDelete: canManageAnnouncements
-                                  ? () => _deleteAnnouncement(
-                                      context,
-                                      ref,
-                                      announcement,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        if (state.loadingMore)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        if (state.loadMoreError != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Column(
-                              children: <Widget>[
-                                Text(
-                                  userMessage(state.loadMoreError!),
-                                  textAlign: TextAlign.center,
-                                ),
-                                TextButton(
-                                  onPressed: controller.loadMore,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    if (items.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: controller.refresh,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: EmptyState(
+                icon: AppIcons.announcements,
+                tone: AppTones.news,
+                title: l10n.noNewsYet,
+                actionLabel: canManage ? l10n.addFirstNews : null,
+                actionIcon: AppIcons.add,
+                onAction: () => context.push('/announcements/add'),
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
+      );
+    }
 
-class _AnnouncementErrorView extends StatelessWidget {
-  const _AnnouncementErrorView({
-    required this.message,
-    required this.onPressed,
-    this.detail,
-    this.buttonLabel = 'Retry',
-  });
-
-  final String message;
-  final String? detail;
-  final String buttonLabel;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Announcements')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Icon(
-                  Icons.campaign_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                if (detail != null) ...<Widget>[
-                  const SizedBox(height: 8),
-                  Text(detail!, textAlign: TextAlign.center),
-                ],
-                const SizedBox(height: 20),
-                AppButton(label: buttonLabel, onPressed: onPressed),
-              ],
-            ),
-          ),
+    final loadMoreError = state.loadMoreError;
+    return RefreshIndicator(
+      onRefresh: controller.refresh,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) => _onScroll(notification, ref),
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          // Room for the Add button at the bottom.
+          padding: EdgeInsets.only(bottom: canManage ? 96 : AppSpace.xl),
+          itemCount: items.length + 1,
+          itemBuilder: (context, index) {
+            if (index == items.length) {
+              if (state.loadingMore) {
+                return const Padding(
+                  padding: EdgeInsets.all(AppSpace.l),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (loadMoreError != null) {
+                return PageBody.form(
+                  child: MessageBanner(
+                    text: errorText(l10n, loadMoreError),
+                    action: TextButton(
+                      onPressed: controller.loadMore,
+                      child: Text(l10n.tryAgain),
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            }
+            final item = items[index];
+            return PageBody.form(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.l,
+                AppSpace.s,
+                AppSpace.l,
+                AppSpace.s,
+              ),
+              child: AnnouncementCard(
+                announcement: item,
+                isNew: isNewNews(item.createdAt, seenBefore),
+                onEdit: canManage
+                    ? () => context.push(
+                        '/announcements/${item.id}/edit',
+                        extra: item,
+                      )
+                    : null,
+                onDelete: canManage ? () => _delete(context, ref, item) : null,
+              ),
+            );
+          },
         ),
       ),
     );

@@ -567,4 +567,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String youLeft(String masjid) {
     return 'You left $masjid';
   }
+
+  @override
+  String get addFirstNews => 'Add the first news';
+
+  @override
+  String get addNews => 'Add news';
+
+  @override
+  String get changed => 'Changed';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deleteNewsPoint => 'Nobody will see this news any more.';
+
+  @override
+  String get deleteNewsQuestion => 'Delete this news?';
+
+  @override
+  String get dictationTip =>
+      'Tip: tap the microphone on your keyboard to speak instead of typing.';
+
+  @override
+  String get editNews => 'Edit news';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get leaveWithoutSaving => 'Leave without saving?';
+
+  @override
+  String get leaveWithoutSavingConfirm => 'Leave';
+
+  @override
+  String get minusFiveMinutes => '5 minutes earlier';
+
+  @override
+  String get newLabel => 'New';
+
+  @override
+  String get newsDeleted => 'News deleted';
+
+  @override
+  String get newsLoadFailed => 'Unable to load news';
+
+  @override
+  String get newsMessage => 'Message';
+
+  @override
+  String get newsPublished => 'News published';
+
+  @override
+  String get newsTitle => 'Title';
+
+  @override
+  String get noNewsYet => 'No news yet';
+
+  @override
+  String get noteOptional => 'Note (optional)';
+
+  @override
+  String get plusFiveMinutes => '5 minutes later';
+
+  @override
+  String get readMore => 'Read more';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get setTime => 'Set time';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
+  String get timesSaved => 'Times saved';
 }
