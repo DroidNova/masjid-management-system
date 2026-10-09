@@ -761,4 +761,199 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whoGave => 'Who gave?';
+
+  @override
+  String get aboutProjectOptional => 'About the project (optional)';
+
+  @override
+  String get addFirstProject => 'Add the first project';
+
+  @override
+  String get addProject => 'Add project';
+
+  @override
+  String get amountPerFamilyHelp => 'How much each family pays this month.';
+
+  @override
+  String get cancelProject => 'Cancel project';
+
+  @override
+  String get cancelProjectPoint =>
+      'The project stops. Money already given stays recorded.';
+
+  @override
+  String get cancelProjectQuestion => 'Cancel this project?';
+
+  @override
+  String get collected => 'Collected';
+
+  @override
+  String get datesAndStatus => 'Dates and status';
+
+  @override
+  String get due => 'Due';
+
+  @override
+  String get editProject => 'Edit project';
+
+  @override
+  String get endDate => 'End';
+
+  @override
+  String get endDateOptional => 'End date (optional)';
+
+  @override
+  String get families => 'Families';
+
+  @override
+  String get moneyNeeded => 'Money needed';
+
+  @override
+  String get moneyNeededHelp =>
+      'The total the project needs. Leave it empty if not known.';
+
+  @override
+  String get mySalary => 'My salary payments';
+
+  @override
+  String get noFamiliesYet => 'No families yet';
+
+  @override
+  String get noPaymentsYet => 'No payments yet';
+
+  @override
+  String get noProjectsYet => 'No projects yet';
+
+  @override
+  String get noSalaryHistory => 'No salary payments yet';
+
+  @override
+  String get payments => 'Payments';
+
+  @override
+  String get projectAdded => 'Project added';
+
+  @override
+  String get projectCancelled => 'Cancelled';
+
+  @override
+  String get projectCancelledDone => 'Project cancelled';
+
+  @override
+  String get projectCompleted => 'Completed';
+
+  @override
+  String get projectName => 'Project name';
+
+  @override
+  String get projectOngoing => 'Ongoing';
+
+  @override
+  String get projectPlanned => 'Planned';
+
+  @override
+  String get raiseAmount => 'Raise amount';
+
+  @override
+  String get salaryMonthStarted => 'Salary month started';
+
+  @override
+  String get salaryNotPaid => 'Not paid';
+
+  @override
+  String get salaryNotStarted => 'This month\'s salary is not started';
+
+  @override
+  String get salaryPaid => 'Paid';
+
+  @override
+  String get salaryPartlyPaid => 'Part paid';
+
+  @override
+  String get salaryPaymentSaved => 'Payment saved';
+
+  @override
+  String get searchProjects => 'Search projects';
+
+  @override
+  String get startDate => 'Start';
+
+  @override
+  String get startDateOptional => 'Start date (optional)';
+
+  @override
+  String get startSalaryMonth => 'Start month';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String amountCanOnlyGoUp(String amount) {
+    return 'The amount can only go up (now $amount).';
+  }
+
+  @override
+  String collectedOf(String collected, String target) {
+    return '$collected of $target';
+  }
+
+  @override
+  String collectedSoFar(String amount) {
+    return '$amount collected';
+  }
+
+  @override
+  String notPaidCount(int count) {
+    return '$count not paid';
+  }
+
+  @override
+  String outOf(String amount) {
+    return 'of $amount';
+  }
+
+  @override
+  String paidCount(int count) {
+    return '$count paid';
+  }
+
+  @override
+  String paidOutOf(String paid, String expected) {
+    return 'Paid $paid of $expected';
+  }
+
+  @override
+  String partlyPaidCount(int count) {
+    return '$count part paid';
+  }
+
+  @override
+  String payMoreThanDue(String amount) {
+    return 'This is more than what is due ($amount).';
+  }
+
+  @override
+  String perFamily(String amount) {
+    return '$amount per family';
+  }
+
+  @override
+  String salarySpoken(String collected, String expected, String due) {
+    return 'Imam salary: $collected collected of $expected. $due still to pay.';
+  }
+
+  @override
+  String spent(String amount) {
+    return '$amount spent';
+  }
+
+  @override
+  String stillNeeded(String amount) {
+    return '$amount still needed';
+  }
+
+  @override
+  String stillToPay(String amount) {
+    return '$amount still to pay';
+  }
 }

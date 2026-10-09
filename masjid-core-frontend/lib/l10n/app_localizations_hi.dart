@@ -759,4 +759,197 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get whoGave => 'किसने दिया?';
+
+  @override
+  String get aboutProjectOptional => 'काम के बारे में (ज़रूरी नहीं)';
+
+  @override
+  String get addFirstProject => 'पहला काम जोड़ें';
+
+  @override
+  String get addProject => 'काम जोड़ें';
+
+  @override
+  String get amountPerFamilyHelp => 'इस महीने हर परिवार कितना देगा।';
+
+  @override
+  String get cancelProject => 'काम रद्द करें';
+
+  @override
+  String get cancelProjectPoint => 'काम रुक जाएगा। दिया गया पैसा दर्ज रहेगा।';
+
+  @override
+  String get cancelProjectQuestion => 'यह काम रद्द करें?';
+
+  @override
+  String get collected => 'जमा हुआ';
+
+  @override
+  String get datesAndStatus => 'तारीख़ें और हालत';
+
+  @override
+  String get due => 'बाकी';
+
+  @override
+  String get editProject => 'काम बदलें';
+
+  @override
+  String get endDate => 'अंत';
+
+  @override
+  String get endDateOptional => 'खत्म होने की तारीख़ (ज़रूरी नहीं)';
+
+  @override
+  String get families => 'परिवार';
+
+  @override
+  String get moneyNeeded => 'कितना पैसा चाहिए';
+
+  @override
+  String get moneyNeededHelp => 'काम के लिए कुल रकम। पता न हो तो खाली छोड़ें।';
+
+  @override
+  String get mySalary => 'मेरा तनख़्वाह भुगतान';
+
+  @override
+  String get noFamiliesYet => 'अभी कोई परिवार नहीं';
+
+  @override
+  String get noPaymentsYet => 'अभी कोई भुगतान नहीं';
+
+  @override
+  String get noProjectsYet => 'अभी कोई काम नहीं';
+
+  @override
+  String get noSalaryHistory => 'अभी कोई तनख़्वाह भुगतान नहीं';
+
+  @override
+  String get payments => 'भुगतान';
+
+  @override
+  String get projectAdded => 'काम जुड़ गया';
+
+  @override
+  String get projectCancelled => 'रद्द';
+
+  @override
+  String get projectCancelledDone => 'काम रद्द हो गया';
+
+  @override
+  String get projectCompleted => 'पूरा';
+
+  @override
+  String get projectName => 'काम का नाम';
+
+  @override
+  String get projectOngoing => 'चल रहा है';
+
+  @override
+  String get projectPlanned => 'योजना में';
+
+  @override
+  String get raiseAmount => 'रकम बढ़ाएँ';
+
+  @override
+  String get salaryMonthStarted => 'तनख़्वाह का महीना शुरू हुआ';
+
+  @override
+  String get salaryNotPaid => 'नहीं दिया';
+
+  @override
+  String get salaryNotStarted => 'इस महीने की तनख़्वाह शुरू नहीं हुई';
+
+  @override
+  String get salaryPaid => 'दे दिया';
+
+  @override
+  String get salaryPartlyPaid => 'कुछ दिया';
+
+  @override
+  String get salaryPaymentSaved => 'भुगतान सहेज लिया';
+
+  @override
+  String get searchProjects => 'काम खोजें';
+
+  @override
+  String get startDate => 'शुरू';
+
+  @override
+  String get startDateOptional => 'शुरू की तारीख़ (ज़रूरी नहीं)';
+
+  @override
+  String get startSalaryMonth => 'महीना शुरू करें';
+
+  @override
+  String get status => 'हालत';
+
+  @override
+  String amountCanOnlyGoUp(String amount) {
+    return 'रकम सिर्फ़ बढ़ सकती है (अभी $amount)।';
+  }
+
+  @override
+  String collectedOf(String collected, String target) {
+    return '$target में से $collected';
+  }
+
+  @override
+  String collectedSoFar(String amount) {
+    return '$amount जमा हुए';
+  }
+
+  @override
+  String notPaidCount(int count) {
+    return '$count ने नहीं दिया';
+  }
+
+  @override
+  String outOf(String amount) {
+    return '$amount में से';
+  }
+
+  @override
+  String paidCount(int count) {
+    return '$count ने दिया';
+  }
+
+  @override
+  String paidOutOf(String paid, String expected) {
+    return '$expected में से $paid दिया';
+  }
+
+  @override
+  String partlyPaidCount(int count) {
+    return '$count ने कुछ दिया';
+  }
+
+  @override
+  String payMoreThanDue(String amount) {
+    return 'यह बाकी रकम ($amount) से ज़्यादा है।';
+  }
+
+  @override
+  String perFamily(String amount) {
+    return 'हर परिवार $amount';
+  }
+
+  @override
+  String salarySpoken(String collected, String expected, String due) {
+    return 'इमाम की तनख़्वाह: $expected में से $collected जमा हुए। $due बाकी है।';
+  }
+
+  @override
+  String spent(String amount) {
+    return '$amount खर्च हुए';
+  }
+
+  @override
+  String stillNeeded(String amount) {
+    return '$amount और चाहिए';
+  }
+
+  @override
+  String stillToPay(String amount) {
+    return '$amount बाकी है';
+  }
 }

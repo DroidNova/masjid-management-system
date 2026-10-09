@@ -24,6 +24,8 @@ import 'package:masjid_core_frontend/features/projects/data/models/project_model
 import 'package:masjid_core_frontend/features/projects/data/projects_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../shared/ui/ui_test_helpers.dart';
+
 class _MockRepository extends Mock implements ContributionsRepository {}
 
 class _MockProjectsRepository extends Mock implements ProjectsRepository {}
@@ -185,23 +187,16 @@ void main() {
       ),
     ).thenAnswer((_) async => _page(<ProjectContribution>[]));
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          contributionsRepositoryProvider.overrideWithValue(repository),
-          authControllerProvider.overrideWith(_SignedIn.new),
-        ],
-        child: const MaterialApp(
-          home: ProjectContributionsScreen(
-            projectId: 'p1',
-            projectTitle: 'Roof',
-          ),
-        ),
-      ),
+    await pumpUi(
+      tester,
+      const ProjectContributionsScreen(projectId: 'p1', projectTitle: 'Roof'),
+      overrides: [
+        contributionsRepositoryProvider.overrideWithValue(repository),
+        authControllerProvider.overrideWith(_SignedIn.new),
+      ],
     );
-    await tester.pumpAndSettle();
 
-    expect(find.text('Roof Contributions'), findsOneWidget);
+    expect(find.text('Givers · Roof'), findsOneWidget);
     verifyNever(() => repository.getProjectTitle(any()));
   });
 

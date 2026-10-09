@@ -1527,6 +1527,336 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Who gave?'**
   String get whoGave;
+
+  /// No description provided for @aboutProjectOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'About the project (optional)'**
+  String get aboutProjectOptional;
+
+  /// No description provided for @addFirstProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the first project'**
+  String get addFirstProject;
+
+  /// No description provided for @addProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Add project'**
+  String get addProject;
+
+  /// No description provided for @amountPerFamilyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How much each family pays this month.'**
+  String get amountPerFamilyHelp;
+
+  /// No description provided for @cancelProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel project'**
+  String get cancelProject;
+
+  /// No description provided for @cancelProjectPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'The project stops. Money already given stays recorded.'**
+  String get cancelProjectPoint;
+
+  /// No description provided for @cancelProjectQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this project?'**
+  String get cancelProjectQuestion;
+
+  /// No description provided for @collected.
+  ///
+  /// In en, this message translates to:
+  /// **'Collected'**
+  String get collected;
+
+  /// No description provided for @datesAndStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates and status'**
+  String get datesAndStatus;
+
+  /// No description provided for @due.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get due;
+
+  /// No description provided for @editProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit project'**
+  String get editProject;
+
+  /// No description provided for @endDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get endDate;
+
+  /// No description provided for @endDateOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'End date (optional)'**
+  String get endDateOptional;
+
+  /// No description provided for @families.
+  ///
+  /// In en, this message translates to:
+  /// **'Families'**
+  String get families;
+
+  /// No description provided for @moneyNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Money needed'**
+  String get moneyNeeded;
+
+  /// No description provided for @moneyNeededHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The total the project needs. Leave it empty if not known.'**
+  String get moneyNeededHelp;
+
+  /// No description provided for @mySalary.
+  ///
+  /// In en, this message translates to:
+  /// **'My salary payments'**
+  String get mySalary;
+
+  /// No description provided for @noFamiliesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No families yet'**
+  String get noFamiliesYet;
+
+  /// No description provided for @noPaymentsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments yet'**
+  String get noPaymentsYet;
+
+  /// No description provided for @noProjectsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet'**
+  String get noProjectsYet;
+
+  /// No description provided for @noSalaryHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No salary payments yet'**
+  String get noSalaryHistory;
+
+  /// No description provided for @payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get payments;
+
+  /// No description provided for @projectAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Project added'**
+  String get projectAdded;
+
+  /// No description provided for @projectCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get projectCancelled;
+
+  /// No description provided for @projectCancelledDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Project cancelled'**
+  String get projectCancelledDone;
+
+  /// No description provided for @projectCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get projectCompleted;
+
+  /// No description provided for @projectName.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get projectName;
+
+  /// No description provided for @projectOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get projectOngoing;
+
+  /// No description provided for @projectPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get projectPlanned;
+
+  /// No description provided for @raiseAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Raise amount'**
+  String get raiseAmount;
+
+  /// No description provided for @salaryMonthStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary month started'**
+  String get salaryMonthStarted;
+
+  /// No description provided for @salaryNotPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not paid'**
+  String get salaryNotPaid;
+
+  /// No description provided for @salaryNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'This month\'s salary is not started'**
+  String get salaryNotStarted;
+
+  /// No description provided for @salaryPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get salaryPaid;
+
+  /// No description provided for @salaryPartlyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Part paid'**
+  String get salaryPartlyPaid;
+
+  /// No description provided for @salaryPaymentSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment saved'**
+  String get salaryPaymentSaved;
+
+  /// No description provided for @searchProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get searchProjects;
+
+  /// No description provided for @startDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startDate;
+
+  /// No description provided for @startDateOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date (optional)'**
+  String get startDateOptional;
+
+  /// No description provided for @startSalaryMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Start month'**
+  String get startSalaryMonth;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @amountCanOnlyGoUp.
+  ///
+  /// In en, this message translates to:
+  /// **'The amount can only go up (now {amount}).'**
+  String amountCanOnlyGoUp(String amount);
+
+  /// No description provided for @collectedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{collected} of {target}'**
+  String collectedOf(String collected, String target);
+
+  /// No description provided for @collectedSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} collected'**
+  String collectedSoFar(String amount);
+
+  /// No description provided for @notPaidCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} not paid'**
+  String notPaidCount(int count);
+
+  /// No description provided for @outOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of {amount}'**
+  String outOf(String amount);
+
+  /// No description provided for @paidCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} paid'**
+  String paidCount(int count);
+
+  /// No description provided for @paidOutOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid {paid} of {expected}'**
+  String paidOutOf(String paid, String expected);
+
+  /// No description provided for @partlyPaidCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} part paid'**
+  String partlyPaidCount(int count);
+
+  /// No description provided for @payMoreThanDue.
+  ///
+  /// In en, this message translates to:
+  /// **'This is more than what is due ({amount}).'**
+  String payMoreThanDue(String amount);
+
+  /// No description provided for @perFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} per family'**
+  String perFamily(String amount);
+
+  /// No description provided for @salarySpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Imam salary: {collected} collected of {expected}. {due} still to pay.'**
+  String salarySpoken(String collected, String expected, String due);
+
+  /// No description provided for @spent.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} spent'**
+  String spent(String amount);
+
+  /// No description provided for @stillNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} still needed'**
+  String stillNeeded(String amount);
+
+  /// No description provided for @stillToPay.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} still to pay'**
+  String stillToPay(String amount);
 }
 
 class _AppLocalizationsDelegate

@@ -2,7 +2,6 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
@@ -22,6 +21,8 @@ import 'package:masjid_core_frontend/features/contributions/presentation/imam_sa
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 class _MockRepository extends Mock implements ContributionsRepository {}
 
@@ -53,19 +54,15 @@ Future<void> _pump(
   Widget screen, {
   List<String> permissions = const <String>[],
 }) async {
-  tester.view.physicalSize = const Size(1000, 2000);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        contributionsRepositoryProvider.overrideWithValue(repository),
-        authControllerProvider.overrideWith(() => _SignedIn(permissions)),
-      ],
-      child: MaterialApp(home: screen),
-    ),
+  await pumpUi(
+    tester,
+    screen,
+    size: const Size(1000, 2000),
+    overrides: [
+      contributionsRepositoryProvider.overrideWithValue(repository),
+      authControllerProvider.overrideWith(() => _SignedIn(permissions)),
+    ],
   );
-  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -129,12 +126,11 @@ void main() {
         permissions: const <String>[AppPermissions.contributionsRead],
       );
 
-      expect(find.text('New Roof Contributions'), findsOneWidget);
+      expect(find.text('Givers · New Roof'), findsOneWidget);
       expect(find.text('Ahmed Khan'), findsOneWidget);
-      expect(find.text('₹1,500'), findsOneWidget);
-      expect(find.text('Collected by Committee One'), findsOneWidget);
+      expect(find.text('+₹1,500'), findsOneWidget);
       // contributions.read only: no add button.
-      expect(find.text('Add Contribution'), findsNothing);
+      expect(find.text('Add giver'), findsNothing);
     });
 
     testWidgets('shows the server message when the list fails', (tester) async {
@@ -160,7 +156,7 @@ void main() {
       );
 
       expect(find.text('Project not found'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
   });
 

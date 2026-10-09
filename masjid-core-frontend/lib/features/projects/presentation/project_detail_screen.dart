@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/projects/application/project_detail_controller.dart';
 import 'package:masjid_core_frontend/features/projects/application/project_editor_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
-import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_progress_bar.dart';
-import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_status_chip.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_card.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// One project: a progress ring with collected / target, what is left and
+/// spent, the description and dates, its givers, and (for managers) edit
+/// and cancel. [initialProject] (from the list) shows at once; the project
+/// is loaded by [projectId] either way, so the numbers are current.
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({
     super.key,
@@ -21,199 +24,285 @@ class ProjectDetailScreen extends ConsumerWidget {
   });
 
   final String projectId;
-
-  /// From the list (route `extra`): shown instantly while the project loads.
   final ProjectModel? initialProject;
+
+  Future<void> _cancel(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectModel project,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final editor = ref.read(projectEditorControllerProvider.notifier);
+    final cancelled = await showDangerDialog(
+      context,
+      title: l10n.cancelProjectQuestion,
+      subject: project.title,
+      confirmLabel: l10n.cancelProject,
+      confirmIcon: Icons.block_rounded,
+      points: <DangerPoint>[
+        DangerPoint(icon: AppIcons.projects, text: l10n.cancelProjectPoint),
+      ],
+      onConfirm: () async {
+        if (!await editor.deleteProject(project.id)) {
+          throw ref.read(projectEditorControllerProvider).error ??
+              StateError('cancel failed');
+        }
+      },
+    );
+    if (cancelled && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.projectCancelledDone)));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final projectState = ref.watch(projectDetailProvider(projectId));
+    final l10n = AppLocalizations.of(context);
+    // Kept alive so a failed cancel's error can be read and shown.
+    ref.listen(projectEditorControllerProvider, (_, _) {});
+    final state = ref.watch(projectDetailProvider(projectId));
     final preview = initialProject?.id == projectId ? initialProject : null;
+    final project = state.valueOrNull ?? preview;
+    final permissions = ref.watch(currentPermissionsProvider);
 
     final Widget body;
-    if (projectState.hasError && !projectState.isLoading) {
-      body = _DetailError(
-        message: userMessage(projectState.error!),
-        onRetry: () => ref.invalidate(projectDetailProvider(projectId)),
+    if (project != null) {
+      body = _Details(
+        project: project,
+        canManage: PermissionHelper.canManageProjects(permissions),
+        canRecord: PermissionHelper.canRecordContributions(permissions),
+        onCancel: () => _cancel(context, ref, project),
+        onRefresh: () =>
+            ref.read(projectDetailProvider(projectId).notifier).refresh(),
+      );
+    } else if (state.hasError) {
+      body = EmptyState(
+        icon: AppIcons.problem,
+        tone: AppTones.problem,
+        title: errorText(l10n, state.error!),
+        actionLabel: l10n.tryAgain,
+        onAction: () => ref.invalidate(projectDetailProvider(projectId)),
       );
     } else {
-      final project = projectState.valueOrNull ?? preview;
-      body = project == null
-          ? const LoadingView()
-          : RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(projectDetailProvider(projectId).notifier).refresh(),
-              child: _ProjectDetailBody(project: project),
-            );
+      body = const SingleChildScrollView(
+        child: PageBody.form(child: SkeletonList(itemCount: 3)),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Project Details')),
-      body: body,
+      appBar: AppBar(title: Text(project?.title ?? l10n.tabProjects)),
+      body: SafeArea(top: false, child: body),
     );
   }
 }
 
-class _ProjectDetailBody extends ConsumerWidget {
-  const _ProjectDetailBody({required this.project});
+class _Details extends StatelessWidget {
+  const _Details({
+    required this.project,
+    required this.canManage,
+    required this.canRecord,
+    required this.onCancel,
+    required this.onRefresh,
+  });
 
   final ProjectModel project;
-
-  Future<void> _deleteProject(BuildContext context, WidgetRef ref) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Project'),
-        content: const Text('Are you sure you want to delete this project?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (shouldDelete != true || !context.mounted) return;
-
-    final ok = await ref
-        .read(projectEditorControllerProvider.notifier)
-        .deleteProject(project.id);
-    if (!context.mounted) return;
-    final error = ref.read(projectEditorControllerProvider).error;
-    if (!ok && error == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok ? 'Project deleted successfully.' : userMessage(error!),
-        ),
-      ),
-    );
-    if (ok) context.pop(true);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final canManageProjects = PermissionHelper.canManageProjects(
-      ref.watch(currentPermissionsProvider),
-    );
-    final isDeleting = ref.watch(projectEditorControllerProvider).isLoading;
-    final description = project.description;
-    final startDate = project.startDate;
-    final endDate = project.endDate;
-    final createdAt = project.createdAt;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            project.title,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        ProjectStatusChip(status: project.status),
-                      ],
-                    ),
-                    if (description != null) ...<Widget>[
-                      const SizedBox(height: 12),
-                      Text(description),
-                    ],
-                    const SizedBox(height: 16),
-                    Text('Target: ${AppFormat.rupees(project.targetAmount)}'),
-                    Text(
-                      'Collected: ${AppFormat.rupees(project.collectedAmount)}',
-                    ),
-                    Text('Spent: ${AppFormat.rupees(project.spentAmount)}'),
-                    const SizedBox(height: 16),
-                    ProjectProgressBar(
-                      progressPercentage: project.progressPercentage,
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      label: 'View Contributions',
-                      isOutlined: true,
-                      onPressed: () => context.push(
-                        '/projects/${project.id}/contributions',
-                        extra: project.title,
-                      ),
-                    ),
-                    const Divider(height: 28),
-                    Text(
-                      'Start Date: '
-                      '${startDate == null ? 'Not set' : AppFormat.date(startDate)}',
-                    ),
-                    Text(
-                      'End Date: '
-                      '${endDate == null ? 'Not set' : AppFormat.date(endDate)}',
-                    ),
-                    Text(
-                      'Created: '
-                      '${createdAt == null ? '-' : AppFormat.dateTime(createdAt)}',
-                    ),
-                    if (canManageProjects) ...<Widget>[
-                      const SizedBox(height: 20),
-                      AppButton(
-                        label: 'Edit Project',
-                        onPressed: () => context.push(
-                          '/projects/${project.id}/edit',
-                          extra: project,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      AppButton(
-                        label: 'Delete / Cancel Project',
-                        isOutlined: true,
-                        isLoading: isDeleting,
-                        onPressed: () => _deleteProject(context, ref),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailError extends StatelessWidget {
-  const _DetailError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
+  final bool canManage;
+  final bool canRecord;
+  final VoidCallback onCancel;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            AppButton(label: 'Retry', onPressed: onRetry),
-          ],
-        ),
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final (_, statusIcon, statusLabel) = projectStatusLook(
+      l10n,
+      project.status,
+    );
+    final description = project.description?.trim() ?? '';
+    final hasTarget = project.targetAmount > 0;
+    final collected = AppFormat.rupees(project.collectedAmount);
+    final white = textTheme.bodyLarge?.copyWith(color: Colors.white);
+    final start = project.startDate;
+    final end = project.endDate;
+    final cancelled = project.status == 'CANCELLED';
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: <Widget>[
+          PageBody.form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                HeroCard(
+                  tone: AppTones.projects,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Icon(statusIcon, size: 20),
+                          const SizedBox(width: AppSpace.xs),
+                          Expanded(child: Text(statusLabel, style: white)),
+                          ReadAloudButton(
+                            text: hasTarget
+                                ? '${project.title}. ${l10n.collectedOf(collected, AppFormat.rupees(project.targetAmount))}'
+                                : '${project.title}. ${l10n.collectedSoFar(collected)}',
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpace.s),
+                      Row(
+                        children: <Widget>[
+                          if (hasTarget) ...<Widget>[
+                            ProgressRing(
+                              value: projectShare(project),
+                              size: 96,
+                            ),
+                            const SizedBox(width: AppSpace.l),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(l10n.collected, style: white),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: AmountText(
+                                    project.collectedAmount,
+                                    size: AmountSize.large,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (hasTarget)
+                                  Text(
+                                    l10n.outOf(
+                                      AppFormat.rupees(project.targetAmount),
+                                    ),
+                                    style: white,
+                                  ),
+                                if (hasTarget && project.remainingAmount > 0)
+                                  Text(
+                                    l10n.stillNeeded(
+                                      AppFormat.rupees(project.remainingAmount),
+                                    ),
+                                    style: textTheme.titleSmall?.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (project.spentAmount > 0) ...<Widget>[
+                        const SizedBox(height: AppSpace.m),
+                        Row(
+                          children: <Widget>[
+                            const Icon(AppIcons.moneyOut, size: 20),
+                            const SizedBox(width: AppSpace.xs),
+                            Expanded(
+                              child: Text(
+                                l10n.spent(
+                                  AppFormat.rupees(project.spentAmount),
+                                ),
+                                style: white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (description.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: AppSpace.l),
+                  Text(description, style: textTheme.bodyLarge),
+                ],
+                if (start != null || end != null) ...<Widget>[
+                  const SizedBox(height: AppSpace.m),
+                  Row(
+                    children: <Widget>[
+                      const Icon(
+                        AppIcons.calendar,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: AppSpace.s),
+                      Expanded(
+                        child: Text(
+                          <String>[
+                            if (start != null) AppFormat.date(start),
+                            if (end != null) AppFormat.date(end),
+                          ].join('  →  '),
+                          style: textTheme.bodyLarge,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpace.xl),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTones.projects.color,
+                  ),
+                  onPressed: () => context.push(
+                    '/projects/${project.id}/contributions',
+                    extra: project.title,
+                  ),
+                  icon: const Icon(AppIcons.zakat),
+                  label: Text(l10n.givers),
+                ),
+                if (canRecord && !cancelled) ...<Widget>[
+                  const SizedBox(height: AppSpace.m),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      Uri(
+                        path: '/contributions/new',
+                        queryParameters: <String, String>{
+                          'project': project.id,
+                        },
+                      ).toString(),
+                    ),
+                    icon: const Icon(AppIcons.add),
+                    label: Text(l10n.addGiver),
+                  ),
+                ],
+                if (canManage) ...<Widget>[
+                  const SizedBox(height: AppSpace.m),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/projects/${project.id}/edit',
+                      extra: project,
+                    ),
+                    icon: const Icon(AppIcons.edit),
+                    label: Text(l10n.editProject),
+                  ),
+                  if (!cancelled) ...<Widget>[
+                    const SizedBox(height: AppSpace.xxl),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTones.danger.color,
+                        side: BorderSide(
+                          color: AppTones.danger.color,
+                          width: 2,
+                        ),
+                      ),
+                      onPressed: onCancel,
+                      icon: const Icon(Icons.block_rounded),
+                      label: Text(l10n.cancelProject),
+                    ),
+                  ],
+                ],
+                const SizedBox(height: AppSpace.xl),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

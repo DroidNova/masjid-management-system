@@ -329,5 +329,170 @@
   "someoneElse": "Not a member",
   "whatFor": "What for?",
   "whatKind": "What kind?",
-  "whoGave": "Who gave?"
+  "whoGave": "Who gave?",
+  "aboutProjectOptional": "About the project (optional)",
+  "addFirstProject": "Add the first project",
+  "addProject": "Add project",
+  "amountPerFamilyHelp": "How much each family pays this month.",
+  "cancelProject": "Cancel project",
+  "cancelProjectPoint": "The project stops. Money already given stays recorded.",
+  "cancelProjectQuestion": "Cancel this project?",
+  "collected": "Collected",
+  "datesAndStatus": "Dates and status",
+  "due": "Due",
+  "editProject": "Edit project",
+  "endDate": "End",
+  "endDateOptional": "End date (optional)",
+  "families": "Families",
+  "moneyNeeded": "Money needed",
+  "moneyNeededHelp": "The total the project needs. Leave it empty if not known.",
+  "mySalary": "My salary payments",
+  "noFamiliesYet": "No families yet",
+  "noPaymentsYet": "No payments yet",
+  "noProjectsYet": "No projects yet",
+  "noSalaryHistory": "No salary payments yet",
+  "payments": "Payments",
+  "projectAdded": "Project added",
+  "projectCancelled": "Cancelled",
+  "projectCancelledDone": "Project cancelled",
+  "projectCompleted": "Completed",
+  "projectName": "Project name",
+  "projectOngoing": "Ongoing",
+  "projectPlanned": "Planned",
+  "raiseAmount": "Raise amount",
+  "salaryMonthStarted": "Salary month started",
+  "salaryNotPaid": "Not paid",
+  "salaryNotStarted": "This month's salary is not started",
+  "salaryPaid": "Paid",
+  "salaryPartlyPaid": "Part paid",
+  "salaryPaymentSaved": "Payment saved",
+  "searchProjects": "Search projects",
+  "startDate": "Start",
+  "startDateOptional": "Start date (optional)",
+  "startSalaryMonth": "Start month",
+  "status": "Status",
+  "amountCanOnlyGoUp": "The amount can only go up (now {amount}).",
+  "@amountCanOnlyGoUp": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "collectedOf": "{collected} of {target}",
+  "@collectedOf": {
+    "placeholders": {
+      "collected": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "collectedSoFar": "{amount} collected",
+  "@collectedSoFar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "notPaidCount": "{count} not paid",
+  "@notPaidCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "outOf": "of {amount}",
+  "@outOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paidCount": "{count} paid",
+  "@paidCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "paidOutOf": "Paid {paid} of {expected}",
+  "@paidOutOf": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "partlyPaidCount": "{count} part paid",
+  "@partlyPaidCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "payMoreThanDue": "This is more than what is due ({amount}).",
+  "@payMoreThanDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "perFamily": "{amount} per family",
+  "@perFamily": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "salarySpoken": "Imam salary: {collected} collected of {expected}. {due} still to pay.",
+  "@salarySpoken": {
+    "placeholders": {
+      "collected": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "spent": "{amount} spent",
+  "@spent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stillNeeded": "{amount} still needed",
+  "@stillNeeded": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stillToPay": "{amount} still to pay",
+  "@stillToPay": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

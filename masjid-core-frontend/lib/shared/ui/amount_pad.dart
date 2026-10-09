@@ -56,6 +56,14 @@ class AmountPad extends StatelessWidget {
     return '$current$key';
   }
 
+  /// [amount] as the pad types it: "500" for 500.0, "500.5" for 500.5, and
+  /// empty for zero (so the pad starts blank).
+  static String textOf(double amount) {
+    if (amount <= 0) return '';
+    if (amount.truncateToDouble() == amount) return amount.toStringAsFixed(0);
+    return amount.toStringAsFixed(2).replaceFirst(RegExp(r'0$'), '');
+  }
+
   /// The amount, or null when nothing (or only zero) is entered.
   static num? parse(String value) {
     final cleaned = value.endsWith('.')
