@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/salary_validation.dart';
 
@@ -67,7 +66,7 @@ void main() {
   test('invalidInput reads like a server validation error', () {
     final error = invalidInput('amount', 'Too much');
     expect(error.code, ApiErrorCodes.validation);
-    expect(userMessage(error), 'Too much');
-    expect(fieldError(error, 'amount'), 'Too much');
+    expect(error.message, 'Too much');
+    expect(error.fieldErrors['amount'], <String>['Too much']);
   });
 }

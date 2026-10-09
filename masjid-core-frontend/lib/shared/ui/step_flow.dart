@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
 import 'package:masjid_core_frontend/shared/ui/responsive.dart';
@@ -86,9 +86,11 @@ class StepFlowState extends State<StepFlow> {
       await widget.onFinish();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(userMessage(error))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorText(AppLocalizations.of(context), error)),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);

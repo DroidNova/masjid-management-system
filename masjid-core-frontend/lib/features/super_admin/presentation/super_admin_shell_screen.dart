@@ -26,8 +26,8 @@ class SuperAdminShellScreen extends StatelessWidget {
 
     return AdaptiveScaffold(
       destinations: <AppDestination>[
-        AppDestination(icon: Icons.dashboard_rounded, label: labels[0]),
-        AppDestination(icon: Icons.pending_actions_rounded, label: labels[1]),
+        AppDestination(icon: AppIcons.dashboard, label: labels[0]),
+        AppDestination(icon: AppIcons.requests, label: labels[1]),
         AppDestination(icon: AppIcons.mosque, label: labels[2]),
         AppDestination(icon: AppIcons.people, label: labels[3]),
         AppDestination(icon: AppIcons.profile, label: labels[4]),
@@ -36,10 +36,7 @@ class SuperAdminShellScreen extends StatelessWidget {
       onSelected: (tab) =>
           navigationShell.goBranch(tab, initialLocation: tab == index),
       title: Text(index == 0 ? l10n.superAdmin : labels[index]),
-      header: MasjidHeader(
-        name: l10n.superAdmin,
-        icon: Icons.admin_panel_settings_rounded,
-      ),
+      header: MasjidHeader(name: l10n.superAdmin, icon: AppIcons.admin),
       body: navigationShell,
     );
   }

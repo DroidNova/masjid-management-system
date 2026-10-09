@@ -2,7 +2,6 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
@@ -18,6 +17,8 @@ import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/a
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_user_detail_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 class _MockRepository extends Mock implements SuperAdminRepository {}
 
@@ -94,26 +95,20 @@ const _requestJson = <String, dynamic>{
 Future<void> _pump(
   WidgetTester tester,
   SuperAdminRepository repository,
-  Widget child,
-) async {
-  tester.view.physicalSize = const Size(1600, 1200);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [superAdminRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp(home: Scaffold(body: child)),
-    ),
-  );
-  await tester.pump();
-  await tester.pump();
-}
+  Widget child, {
+  Size size = const Size(420, 1400),
+}) => pumpRouted(
+  tester,
+  child,
+  size: size,
+  overrides: [superAdminRepositoryProvider.overrideWithValue(repository)],
+);
 
-/// Taps the card's Approve, then confirms in the dialog.
+/// Taps the page's Approve, then confirms in the sheet.
 Future<void> _approveAndConfirm(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(TextButton, 'Approve'));
+  await tester.tap(find.text('Approve').first);
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(FilledButton, 'Approve'));
+  await tester.tap(find.text('Approve').last);
   await tester.pumpAndSettle();
 }
 
@@ -124,7 +119,19 @@ void main() {
     registerFallbackValue(const AdminListFilter());
     await initializeDateFormatting('en_IN');
   });
-  setUp(() => repository = _MockRepository());
+  setUp(() {
+    repository = _MockRepository();
+    TestWidgetsFlutterBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+  });
+  tearDown(() {
+    TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue();
+  });
 
   group('models parse the real contract', () {
     test('user list item, request with committee members', () {
@@ -158,13 +165,14 @@ void main() {
             _page(<Map<String, dynamic>>[_userJson], AdminUserModel.fromJson),
       );
 
-      await _pump(tester, repository, const AdminUsersScreen());
+      await _pump(tester, repository, const Scaffold(body: AdminUsersScreen()));
 
       expect(find.text('Abdul Rahman'), findsOneWidget);
-      expect(find.textContaining('Jama Masjid'), findsOneWidget);
+      expect(find.text('Imam, Jama Masjid'), findsOneWidget);
+      expect(find.text('Active'), findsWidgets);
     });
 
-    testWidgets('shows the server error with retry', (tester) async {
+    testWidgets('shows the server error with Try again', (tester) async {
       when(
         () => repository.getUsers(any(), page: any(named: 'page')),
       ).thenThrow(
@@ -175,14 +183,13 @@ void main() {
         ),
       );
 
-      await _pump(tester, repository, const AdminUsersScreen());
+      await _pump(tester, repository, const Scaffold(body: AdminUsersScreen()));
 
-      expect(find.text('Unable to load'), findsOneWidget);
       expect(
         find.text('Requires permission: platform.users.read'),
         findsOneWidget,
       );
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
 
     testWidgets('status filter reloads with that status', (tester) async {
@@ -193,44 +200,84 @@ void main() {
             _page(<Map<String, dynamic>>[_userJson], AdminUserModel.fromJson),
       );
 
-      await _pump(tester, repository, const AdminUsersScreen());
-      await tester.tap(find.text('Suspended'));
+      await _pump(tester, repository, const Scaffold(body: AdminUsersScreen()));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Inactive'));
       await tester.pump();
       await tester.pump();
 
       final filters = verify(
         () => repository.getUsers(captureAny(), page: any(named: 'page')),
       ).captured.cast<AdminListFilter>();
-      expect(filters.last.status, 'SUSPENDED');
+      expect(filters.last.status, 'INACTIVE');
     });
   });
 
-  group('AdminMasjidsScreen', () {
-    testWidgets('shows masjids from the API', (tester) async {
-      when(
-        () => repository.getMasjids(any(), page: any(named: 'page')),
-      ).thenAnswer(
-        (_) async => _page(<Map<String, dynamic>>[
-          _masjidJson,
-        ], AdminMasjidModel.fromJson),
-      );
+  testWidgets('AdminMasjidsScreen shows masjids from the API', (tester) async {
+    when(
+      () => repository.getMasjids(any(), page: any(named: 'page')),
+    ).thenAnswer(
+      (_) async =>
+          _page(<Map<String, dynamic>>[_masjidJson], AdminMasjidModel.fromJson),
+    );
 
-      await _pump(tester, repository, const AdminMasjidsScreen());
+    await _pump(tester, repository, const Scaffold(body: AdminMasjidsScreen()));
 
-      expect(find.text('Jama Masjid'), findsOneWidget);
-      expect(find.textContaining('Users: 12'), findsOneWidget);
-    });
+    expect(find.text('Jama Masjid'), findsOneWidget);
+    expect(find.text('Imam: Abdul Rahman, 12 people'), findsOneWidget);
   });
 
-  group('AdminMasjidRequestsScreen', () {
+  testWidgets('on desktop a picked request opens beside the list', (
+    tester,
+  ) async {
+    when(
+      () => repository.getMasjidRequests(any(), page: any(named: 'page')),
+    ).thenAnswer(
+      (_) async => _page(<Map<String, dynamic>>[
+        _requestJson,
+      ], AdminMasjidRequestModel.fromJson),
+    );
+    when(
+      () => repository.getMasjidRequest('r1'),
+    ).thenAnswer((_) async => AdminMasjidRequestModel.fromJson(_requestJson));
+
+    await _pump(
+      tester,
+      repository,
+      const Scaffold(body: AdminMasjidRequestsScreen()),
+      size: const Size(1400, 900),
+    );
+    expect(find.text('Pick one from the list to see it here.'), findsOneWidget);
+
+    await tester.tap(find.text('Noor Masjid'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Noor Masjid'), findsNWidgets(2));
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.text('Reject'), findsOneWidget);
+  });
+
+  group('request details', () {
     setUp(() {
       when(
-        () => repository.getMasjidRequests(any(), page: any(named: 'page')),
-      ).thenAnswer(
-        (_) async => _page(<Map<String, dynamic>>[
-          _requestJson,
-        ], AdminMasjidRequestModel.fromJson),
+        () => repository.getMasjidRequest('r1'),
+      ).thenAnswer((_) async => AdminMasjidRequestModel.fromJson(_requestJson));
+    });
+
+    testWidgets('show the masjid, imam, and committee members', (tester) async {
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
       );
+
+      expect(find.text('Noor Masjid'), findsOneWidget);
+      expect(find.text('Pending'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Yusuf'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('+919876543212, Ibrahim'), findsOneWidget);
     });
 
     testWidgets('approve that hits USER_IN_ANOTHER_MASJID shows the message', (
@@ -248,36 +295,39 @@ void main() {
         ),
       );
 
-      await _pump(tester, repository, const AdminMasjidRequestsScreen());
-      expect(find.text('Noor Masjid'), findsOneWidget);
-
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
+      );
       await _approveAndConfirm(tester);
 
       expect(find.text('Cannot approve'), findsOneWidget);
       expect(find.text(message), findsOneWidget);
-      // Nothing changed, so the list is not reloaded.
-      verify(
-        () => repository.getMasjidRequests(any(), page: any(named: 'page')),
-      ).called(1);
+      // Nothing changed, so the request is not reloaded.
+      verify(() => repository.getMasjidRequest('r1')).called(1);
     });
 
-    testWidgets('a successful approve reloads the list', (tester) async {
+    testWidgets('a successful approve reloads the request', (tester) async {
       when(
         () => repository.approveMasjidRequest('r1'),
       ).thenAnswer((_) async {});
 
-      await _pump(tester, repository, const AdminMasjidRequestsScreen());
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
+      );
       await _approveAndConfirm(tester);
 
+      expect(find.text('Request approved'), findsOneWidget);
       verify(() => repository.approveMasjidRequest('r1')).called(1);
-      verify(
-        () => repository.getMasjidRequests(any(), page: any(named: 'page')),
-      ).called(2);
+      verify(() => repository.getMasjidRequest('r1')).called(2);
     });
   });
 
-  group('detail screens load by id', () {
-    testWidgets('user detail from a fresh URL (no extra)', (tester) async {
+  group('user details load by id', () {
+    testWidgets('from a fresh URL (no extra)', (tester) async {
       when(
         () => repository.getUser('u1'),
       ).thenAnswer((_) async => AdminUserModel.fromJson(_userJson));
@@ -286,10 +336,10 @@ void main() {
 
       verify(() => repository.getUser('u1')).called(1);
       expect(find.text('Abdul Rahman'), findsOneWidget);
-      expect(find.text('IMAM'), findsOneWidget);
+      expect(find.text('Imam'), findsOneWidget);
     });
 
-    testWidgets('user detail shows the server error', (tester) async {
+    testWidgets('shows the server error', (tester) async {
       when(() => repository.getUser('nope')).thenThrow(
         const ApiException(
           message: 'User not found',
@@ -301,22 +351,7 @@ void main() {
       await _pump(tester, repository, const AdminUserDetailScreen(id: 'nope'));
 
       expect(find.text('User not found'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
-    });
-
-    testWidgets('request detail shows committee members', (tester) async {
-      when(
-        () => repository.getMasjidRequest('r1'),
-      ).thenAnswer((_) async => AdminMasjidRequestModel.fromJson(_requestJson));
-
-      await _pump(
-        tester,
-        repository,
-        const AdminMasjidRequestDetailScreen(id: 'r1'),
-      );
-
-      expect(find.text('Noor Masjid'), findsOneWidget);
-      expect(find.text('Yusuf • +919876543212'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
   });
 }

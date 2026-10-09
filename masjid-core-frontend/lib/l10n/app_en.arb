@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Masjid Core",
+  "appTitle": "Masjid",
   "@appTitle": {
     "description": "App name shown in the window title and splash screen."
   },
@@ -545,5 +545,51 @@
   },
   "temporaryPasswordHelp": "Give this password to the person. They can change it later.",
   "whoIsIt": "Who is it?",
-  "youGaveInTotal": "You gave in total"
+  "youGaveInTotal": "You gave in total",
+  "aboutMasjid": "About the masjid",
+  "allRoles": "All roles",
+  "approve": "Approve",
+  "approveHelp": "This adds the masjid, its imam, and its committee.",
+  "approveQuestion": "Approve this masjid?",
+  "cannotApprove": "Cannot approve",
+  "changeRoles": "Change roles",
+  "changeStatus": "Change status",
+  "email": "Email",
+  "goBack": "Go back",
+  "goHome": "Go home",
+  "joinedOn": "Joined on",
+  "masjid": "Masjid",
+  "noMasjids": "No masjids",
+  "noRequests": "No requests",
+  "noRequestsWaiting": "No requests waiting",
+  "noUsers": "No users",
+  "pageNotFound": "Page not found",
+  "pageNotFoundHelp": "This link is old or wrong.",
+  "person": "Person",
+  "phone": "Phone",
+  "pickToSeeDetails": "Pick one from the list to see it here.",
+  "reason": "Reason",
+  "reasonOptional": "Reason (optional)",
+  "reject": "Reject",
+  "rejectQuestion": "Reject this request?",
+  "request": "Request",
+  "requestApproved": "Request approved",
+  "requestRejected": "Request rejected",
+  "requester": "Who asked",
+  "requestsWaiting": "{count, plural, =1{1 request waiting} other{{count} requests waiting}}",
+  "@requestsWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rolesChanged": "Roles changed",
+  "searchMasjids": "Search masjid or place",
+  "searchRequests": "Search masjid, place, or phone",
+  "searchUsers": "Search name, phone, or email",
+  "sentOn": "Sent on",
+  "statusChanged": "Status changed",
+  "statusSuspended": "Suspended",
+  "welcomeMessage": "Welcome message"
 }

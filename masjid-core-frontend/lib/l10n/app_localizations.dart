@@ -103,7 +103,7 @@ abstract class AppLocalizations {
   /// App name shown in the window title and splash screen.
   ///
   /// In en, this message translates to:
-  /// **'Masjid Core'**
+  /// **'Masjid'**
   String get appTitle;
 
   /// No description provided for @loading.
@@ -2037,6 +2037,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You gave in total'**
   String get youGaveInTotal;
+
+  /// No description provided for @aboutMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'About the masjid'**
+  String get aboutMasjid;
+
+  /// No description provided for @allRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'All roles'**
+  String get allRoles;
+
+  /// No description provided for @approve.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approve;
+
+  /// No description provided for @approveHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This adds the masjid, its imam, and its committee.'**
+  String get approveHelp;
+
+  /// No description provided for @approveQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this masjid?'**
+  String get approveQuestion;
+
+  /// No description provided for @cannotApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot approve'**
+  String get cannotApprove;
+
+  /// No description provided for @changeRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Change roles'**
+  String get changeRoles;
+
+  /// No description provided for @changeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status'**
+  String get changeStatus;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get goBack;
+
+  /// No description provided for @goHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go home'**
+  String get goHome;
+
+  /// No description provided for @joinedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined on'**
+  String get joinedOn;
+
+  /// No description provided for @masjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid'**
+  String get masjid;
+
+  /// No description provided for @noMasjids.
+  ///
+  /// In en, this message translates to:
+  /// **'No masjids'**
+  String get noMasjids;
+
+  /// No description provided for @noRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests'**
+  String get noRequests;
+
+  /// No description provided for @noRequestsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests waiting'**
+  String get noRequestsWaiting;
+
+  /// No description provided for @noUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No users'**
+  String get noUsers;
+
+  /// No description provided for @pageNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Page not found'**
+  String get pageNotFound;
+
+  /// No description provided for @pageNotFoundHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This link is old or wrong.'**
+  String get pageNotFoundHelp;
+
+  /// No description provided for @person.
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get person;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @pickToSeeDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one from the list to see it here.'**
+  String get pickToSeeDetails;
+
+  /// No description provided for @reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get reason;
+
+  /// No description provided for @reasonOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get reasonOptional;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
+  /// No description provided for @rejectQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject this request?'**
+  String get rejectQuestion;
+
+  /// No description provided for @request.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get request;
+
+  /// No description provided for @requestApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Request approved'**
+  String get requestApproved;
+
+  /// No description provided for @requestRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Request rejected'**
+  String get requestRejected;
+
+  /// No description provided for @requester.
+  ///
+  /// In en, this message translates to:
+  /// **'Who asked'**
+  String get requester;
+
+  /// No description provided for @requestsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 request waiting} other{{count} requests waiting}}'**
+  String requestsWaiting(int count);
+
+  /// No description provided for @rolesChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles changed'**
+  String get rolesChanged;
+
+  /// No description provided for @searchMasjids.
+  ///
+  /// In en, this message translates to:
+  /// **'Search masjid or place'**
+  String get searchMasjids;
+
+  /// No description provided for @searchRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Search masjid, place, or phone'**
+  String get searchRequests;
+
+  /// No description provided for @searchUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name, phone, or email'**
+  String get searchUsers;
+
+  /// No description provided for @sentOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent on'**
+  String get sentOn;
+
+  /// No description provided for @statusChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Status changed'**
+  String get statusChanged;
+
+  /// No description provided for @statusSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get statusSuspended;
+
+  /// No description provided for @welcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome message'**
+  String get welcomeMessage;
 }
 
 class _AppLocalizationsDelegate

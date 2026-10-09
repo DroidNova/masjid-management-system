@@ -1,92 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_controllers.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masjid_model.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/widgets/approve_reject_request_dialog.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/admin_masjid_card.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/widgets/update_masjid_status_dialog.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_action_feedback.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_paged_list.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/widgets/admin_search_field.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/admin_parts.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjid_detail_screen.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-class AdminMasjidsScreen extends ConsumerWidget {
+/// Every masjid: search, status chips, and cards. Tapping one opens its
+/// details (beside the list on desktop), where its status changes.
+class AdminMasjidsScreen extends ConsumerStatefulWidget {
   const AdminMasjidsScreen({super.key});
 
-  Future<void> _changeStatus(
-    BuildContext context,
-    WidgetRef ref,
-    AdminMasjidModel item,
-  ) async {
-    final status = await showUpdateMasjidStatusDialog(context);
-    if (status == null || !context.mounted) return;
-    String? reason;
-    if (masjidStatusNeedsReason(status)) {
-      reason = await showReasonDialog(
-        context,
-        title: 'Reason for $status',
-        confirmLabel: 'Save',
-        required: true,
-      );
-      if (reason == null || !context.mounted) return;
+  @override
+  ConsumerState<AdminMasjidsScreen> createState() => _AdminMasjidsScreenState();
+}
+
+class _AdminMasjidsScreenState extends ConsumerState<AdminMasjidsScreen> {
+  AdminMasjidModel? _picked;
+
+  void _open(AdminMasjidModel item) {
+    if (AdminSplitView.isSplit(context)) {
+      setState(() => _picked = item);
+    } else {
+      context.go('/super-admin/masjids/${item.id}', extra: item);
     }
-    await runAdminAction(
-      context,
-      () => ref
-          .read(superAdminActionsProvider)
-          .updateMasjidStatus(item.id, status, reason: reason),
-    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final filter = ref.watch(adminMasjidsFilterProvider);
-    final busyIds = ref.watch(adminBusyIdsProvider);
     final filterController = ref.read(adminMasjidsFilterProvider.notifier);
+    final picked = _picked;
+    final filtered = filter.search.isNotEmpty || filter.status != null;
 
-    Widget statusChip(String label, String? status) => FilterChip(
-      label: Text(label),
-      selected: filter.status == status,
-      onSelected: (_) =>
-          filterController.state = filter.copyWith(status: status),
-    );
-
-    return Column(
-      children: <Widget>[
+    final list = PagedListView<AdminMasjidModel>(
+      value: ref.watch(adminMasjidsProvider),
+      header: <Widget>[
         AdminSearchField(
-          label: 'Search masjids',
+          hint: l10n.searchMasjids,
           initialValue: filter.search,
           onSearch: (search) => filterController.update(
             (current) => current.copyWith(search: search),
           ),
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            statusChip('All', null),
-            statusChip('Pending', 'PENDING'),
-            statusChip('Approved', 'APPROVED'),
-            statusChip('Rejected', 'REJECTED'),
-            statusChip('Suspended', 'SUSPENDED'),
+        const SizedBox(height: AppSpace.m),
+        AdminFilterChips(
+          options: <AdminFilter>[
+            (value: null, label: l10n.all),
+            (value: 'APPROVED', label: l10n.stepApproved),
+            (value: 'PENDING', label: l10n.statusPending),
+            (value: 'SUSPENDED', label: l10n.statusSuspended),
+            (value: 'REJECTED', label: l10n.stepRejected),
           ],
+          selected: filter.status,
+          onSelected: (status) =>
+              filterController.state = filter.copyWith(status: status),
         ),
-        Expanded(
-          child: AdminPagedList<AdminMasjidModel>(
-            state: ref.watch(adminMasjidsProvider),
-            emptyText: 'No masjids found',
-            onRefresh: () => ref.read(adminMasjidsProvider.notifier).refresh(),
-            onLoadMore: () =>
-                ref.read(adminMasjidsProvider.notifier).loadMore(),
-            onRetry: () => ref.invalidate(adminMasjidsProvider),
-            itemBuilder: (context, item) => AdminMasjidCard(
-              item: item,
-              onStatus: () => _changeStatus(context, ref, item),
-              busy: busyIds.contains(item.id),
-            ),
-          ),
-        ),
+        const SizedBox(height: AppSpace.s),
       ],
+      onRefresh: () => ref.read(adminMasjidsProvider.notifier).refresh(),
+      onLoadMore: () => ref.read(adminMasjidsProvider.notifier).loadMore(),
+      onRetry: () => ref.invalidate(adminMasjidsProvider),
+      empty: listEmptyState(
+        icon: AppIcons.mosque,
+        tone: AppTones.brand,
+        title: l10n.noMasjids,
+        filtered: filtered,
+        l10n: l10n,
+      ),
+      itemBuilder: (context, item) => AdminListCard(
+        leading: const ToneIcon(icon: AppIcons.mosque, tone: AppTones.brand),
+        title: item.name,
+        lines: <String>[
+          placeLine(<String?>[item.locality, item.district, item.state]),
+          placeLine(<String?>[
+            if ((item.imamName ?? '').isNotEmpty)
+              '${l10n.roleImam}: ${item.imamName}',
+            l10n.peopleCount(item.usersCount),
+          ]),
+        ],
+        status: item.status,
+        selected: picked?.id == item.id,
+        onTap: () => _open(item),
+      ),
+    );
+
+    return AdminSplitView(
+      list: list,
+      detail: picked == null
+          ? null
+          : AdminMasjidDetails(
+              key: ValueKey<String>(picked.id),
+              id: picked.id,
+              initial: picked,
+            ),
     );
   }
 }

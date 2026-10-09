@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/community/application/community_controller.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/presentation/person_form_screen.dart';
@@ -34,12 +33,9 @@ class EditCommunityUserScreen extends ConsumerWidget {
 
     final Widget body;
     if (community.hasError) {
-      body = EmptyState(
-        icon: AppIcons.problem,
-        tone: AppTones.problem,
-        title: errorText(l10n, community.error!),
-        actionLabel: l10n.tryAgain,
-        onAction: () => ref.invalidate(communityControllerProvider),
+      body = ErrorState(
+        error: community.error!,
+        onRetry: () => ref.invalidate(communityControllerProvider),
       );
     } else if (community.hasValue) {
       body = EmptyState(icon: AppIcons.personSearch, title: l10n.nothingFound);

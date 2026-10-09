@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:masjid_core_frontend/core/network/api_client.dart';
-import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/core/refresh/data_scopes.dart';
 import 'package:masjid_core_frontend/features/super_admin/application/super_admin_actions.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_list_filter.dart';
@@ -17,28 +16,16 @@ import 'package:masjid_core_frontend/features/super_admin/data/models/admin_masj
 import 'package:masjid_core_frontend/features/super_admin/data/models/admin_user_model.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/super_admin_api.dart';
 import 'package:masjid_core_frontend/features/super_admin/data/super_admin_repository.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_requests_screen.dart';
-import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjids_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjid_requests/admin_masjid_request_detail_screen.dart';
+import 'package:masjid_core_frontend/features/super_admin/presentation/masjids/admin_masjid_detail_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_user_detail_screen.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 class _MockRepository extends Mock implements SuperAdminRepository {}
 
 class _MockApiClient extends Mock implements ApiClient {}
-
-PageResult<T> _page<T>(
-  List<Map<String, dynamic>> items,
-  T Function(Map<String, dynamic>) parse,
-) => PageResult<T>.fromJson(<String, dynamic>{
-  'items': items,
-  'meta': <String, dynamic>{
-    'page': 1,
-    'limit': 20,
-    'total': items.length,
-    'totalPages': 1,
-    'hasNextPage': false,
-  },
-}, parse);
 
 const _userJson = <String, dynamic>{
   'id': 'u1',
@@ -67,19 +54,22 @@ Future<void> _pump(
   WidgetTester tester,
   SuperAdminRepository repository,
   Widget child,
-) async {
-  tester.view.physicalSize = const Size(1600, 1200);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [superAdminRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp(home: Scaffold(body: child)),
-    ),
-  );
-  await tester.pump();
-  await tester.pump();
-}
+) => pumpRouted(
+  tester,
+  child,
+  overrides: [superAdminRepositoryProvider.overrideWithValue(repository)],
+);
+
+/// The page's own button, not the one in an open sheet.
+Finder _pageButton(String label) => find
+    .ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+    )
+    .first;
+
+ButtonStyleButton _button(WidgetTester tester, String label) =>
+    tester.widget<ButtonStyleButton>(_pageButton(label));
 
 void main() {
   late _MockRepository repository;
@@ -88,26 +78,38 @@ void main() {
     registerFallbackValue(const AdminListFilter());
     await initializeDateFormatting('en_IN');
   });
-  setUp(() => repository = _MockRepository());
+  setUp(() {
+    repository = _MockRepository();
+    TestWidgetsFlutterBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+  });
+  tearDown(() {
+    TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue();
+  });
 
-  group('masjid requests', () {
+  group('masjid request', () {
     setUp(() {
       when(
-        () => repository.getMasjidRequests(any(), page: any(named: 'page')),
-      ).thenAnswer(
-        (_) async => _page(<Map<String, dynamic>>[
-          _requestJson,
-        ], AdminMasjidRequestModel.fromJson),
-      );
+        () => repository.getMasjidRequest('r1'),
+      ).thenAnswer((_) async => AdminMasjidRequestModel.fromJson(_requestJson));
     });
 
     testWidgets('approve asks for confirmation; cancel sends nothing', (
       tester,
     ) async {
-      await _pump(tester, repository, const AdminMasjidRequestsScreen());
-      await tester.tap(find.widgetWithText(TextButton, 'Approve'));
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
+      );
+      await tester.tap(_pageButton('Approve'));
       await tester.pumpAndSettle();
-      expect(find.text('Approve request'), findsOneWidget);
+      expect(find.text('Approve this masjid?'), findsOneWidget);
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -123,21 +125,45 @@ void main() {
         () => repository.approveMasjidRequest('r1'),
       ).thenAnswer((_) => approval.future);
 
-      await _pump(tester, repository, const AdminMasjidRequestsScreen());
-      await tester.tap(find.widgetWithText(TextButton, 'Approve'));
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
+      );
+      await tester.tap(_pageButton('Approve'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Approve'));
+      await tester.tap(find.text('Approve').last);
       await tester.pump();
 
-      TextButton button(String label) =>
-          tester.widget<TextButton>(find.widgetWithText(TextButton, label));
-      expect(button('Approve').onPressed, isNull);
-      expect(button('Reject').onPressed, isNull);
+      expect(_button(tester, 'Approve').onPressed, isNull);
+      expect(_button(tester, 'Reject').onPressed, isNull);
 
       approval.complete();
       await tester.pumpAndSettle();
-      expect(button('Approve').onPressed, isNotNull);
+      expect(find.text('Request approved'), findsOneWidget);
       verify(() => repository.approveMasjidRequest('r1')).called(1);
+    });
+
+    testWidgets('reject sends the reason typed', (tester) async {
+      when(
+        () => repository.rejectMasjidRequest('r1', reason: 'Not real'),
+      ).thenAnswer((_) async {});
+
+      await _pump(
+        tester,
+        repository,
+        const AdminMasjidRequestDetailScreen(id: 'r1'),
+      );
+      await tester.tap(_pageButton('Reject'));
+      await tester.pumpAndSettle();
+      expect(find.text('Reject this request?'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).last, ' Not real ');
+      await tester.tap(find.text('Reject').last);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.rejectMasjidRequest('r1', reason: 'Not real'),
+      ).called(1);
     });
   });
 
@@ -145,11 +171,8 @@ void main() {
     tester,
   ) async {
     when(
-      () => repository.getMasjids(any(), page: any(named: 'page')),
-    ).thenAnswer(
-      (_) async =>
-          _page(<Map<String, dynamic>>[_masjidJson], AdminMasjidModel.fromJson),
-    );
+      () => repository.getMasjid('m1'),
+    ).thenAnswer((_) async => AdminMasjidModel.fromJson(_masjidJson));
     when(
       () => repository.updateMasjidStatus(
         any(),
@@ -158,10 +181,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    await _pump(tester, repository, const AdminMasjidsScreen());
-    await tester.tap(find.text('Change Status'));
+    await _pump(tester, repository, const AdminMasjidDetailScreen(id: 'm1'));
+    await tester.tap(find.text('Change status'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('SUSPENDED'));
+    await tester.tap(find.text('Suspended'));
     await tester.pumpAndSettle();
 
     FilledButton save() =>
@@ -196,14 +219,20 @@ void main() {
     );
 
     await _pump(tester, repository, const AdminUserDetailScreen(id: 'u1'));
-    await tester.tap(find.text('Assign Roles'));
+    await tester.tap(find.text('Change roles'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('MEMBER'));
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Member'));
     await tester.pump();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
+    // The success screen closes by itself.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
 
-    expect(find.text('IMAM, MEMBER'), findsOneWidget);
+    expect(find.text('Imam, Member'), findsOneWidget);
+    verify(
+      () => repository.assignUserRoles('u1', <String>['IMAM', 'MEMBER']),
+    ).called(1);
     verify(() => repository.getUser('u1')).called(1);
   });
 

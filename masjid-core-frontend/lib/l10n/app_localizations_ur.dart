@@ -9,7 +9,7 @@ class AppLocalizationsUr extends AppLocalizations {
   AppLocalizationsUr([String locale = 'ur']) : super(locale);
 
   @override
-  String get appTitle => 'Masjid Core';
+  String get appTitle => 'مسجد';
 
   @override
   String get loading => 'لوڈ ہو رہا ہے…';
@@ -1063,4 +1063,130 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get youGaveInTotal => 'آپ نے کل دیا';
+
+  @override
+  String get aboutMasjid => 'مسجد کے بارے میں';
+
+  @override
+  String get allRoles => 'سب کردار';
+
+  @override
+  String get approve => 'منظور کریں';
+
+  @override
+  String get approveHelp =>
+      'اس سے مسجد، اس کے امام اور کمیٹی شامل ہو جائیں گے۔';
+
+  @override
+  String get approveQuestion => 'یہ مسجد منظور کریں؟';
+
+  @override
+  String get cannotApprove => 'منظور نہیں ہو سکتا';
+
+  @override
+  String get changeRoles => 'کردار بدلیں';
+
+  @override
+  String get changeStatus => 'حالت بدلیں';
+
+  @override
+  String get email => 'ای میل';
+
+  @override
+  String get goBack => 'واپس جائیں';
+
+  @override
+  String get goHome => 'ہوم پر جائیں';
+
+  @override
+  String get joinedOn => 'شامل ہونے کی تاریخ';
+
+  @override
+  String get masjid => 'مسجد';
+
+  @override
+  String get noMasjids => 'کوئی مسجد نہیں';
+
+  @override
+  String get noRequests => 'کوئی درخواست نہیں';
+
+  @override
+  String get noRequestsWaiting => 'کوئی درخواست باقی نہیں';
+
+  @override
+  String get noUsers => 'کوئی شخص نہیں';
+
+  @override
+  String get pageNotFound => 'صفحہ نہیں ملا';
+
+  @override
+  String get pageNotFoundHelp => 'یہ لنک پرانا یا غلط ہے۔';
+
+  @override
+  String get person => 'شخص';
+
+  @override
+  String get phone => 'فون';
+
+  @override
+  String get pickToSeeDetails => 'یہاں دیکھنے کے لیے فہرست میں سے ایک چنیں۔';
+
+  @override
+  String get reason => 'وجہ';
+
+  @override
+  String get reasonOptional => 'وجہ (ضروری نہیں)';
+
+  @override
+  String get reject => 'نامنظور کریں';
+
+  @override
+  String get rejectQuestion => 'یہ درخواست نامنظور کریں؟';
+
+  @override
+  String get request => 'درخواست';
+
+  @override
+  String get requestApproved => 'درخواست منظور ہو گئی';
+
+  @override
+  String get requestRejected => 'درخواست نامنظور ہو گئی';
+
+  @override
+  String get requester => 'کس نے بھیجی';
+
+  @override
+  String requestsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count درخواستیں باقی',
+      one: '1 درخواست باقی',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rolesChanged => 'کردار بدل گیا';
+
+  @override
+  String get searchMasjids => 'مسجد یا جگہ تلاش کریں';
+
+  @override
+  String get searchRequests => 'مسجد، جگہ یا فون تلاش کریں';
+
+  @override
+  String get searchUsers => 'نام، فون یا ای میل تلاش کریں';
+
+  @override
+  String get sentOn => 'بھیجنے کی تاریخ';
+
+  @override
+  String get statusChanged => 'حالت بدل گئی';
+
+  @override
+  String get statusSuspended => 'روکا گیا';
+
+  @override
+  String get welcomeMessage => 'خوش آمدید پیغام';
 }

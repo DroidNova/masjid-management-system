@@ -2,7 +2,7 @@
     <!-- Release builds need this to reach the API (debug builds get it automatically). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="Masjid Core"
+        android:label="Masjid"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

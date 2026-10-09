@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/config/api_config.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_gate.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
@@ -57,7 +58,7 @@ import 'package:masjid_core_frontend/features/super_admin/presentation/super_adm
 import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_shell_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_user_detail_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
-import 'package:masjid_core_frontend/shared/widgets/permission_gate.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -183,6 +184,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       target: authRedirect(ref.read(authControllerProvider), state.uri),
     ),
     routes: _routes,
+    errorBuilder: (context, state) => const NotFoundView(),
   );
 });
 

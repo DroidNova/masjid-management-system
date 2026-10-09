@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/projects/application/project_detail_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/project_form_screen.dart';
@@ -34,12 +33,9 @@ class EditProjectScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editProject)),
       body: state.hasError
-          ? EmptyState(
-              icon: AppIcons.problem,
-              tone: AppTones.problem,
-              title: errorText(l10n, state.error!),
-              actionLabel: l10n.tryAgain,
-              onAction: () => ref.invalidate(projectDetailProvider(projectId)),
+          ? ErrorState(
+              error: state.error!,
+              onRetry: () => ref.invalidate(projectDetailProvider(projectId)),
             )
           : const SingleChildScrollView(
               child: PageBody.form(child: SkeletonList(itemCount: 3)),

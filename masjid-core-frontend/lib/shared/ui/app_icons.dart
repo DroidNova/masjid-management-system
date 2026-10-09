@@ -81,4 +81,10 @@ class AppIcons {
   static const IconData password = Icons.lock_rounded;
   static const IconData personSearch = Icons.person_search_rounded;
   static const IconData noInternet = Icons.wifi_off_rounded;
+  static const IconData lock = Icons.lock_rounded;
+  static const IconData notFound = Icons.explore_off_rounded;
+  static const IconData admin = Icons.admin_panel_settings_rounded;
+  static const IconData requests = Icons.pending_actions_rounded;
+  static const IconData dashboard = Icons.dashboard_rounded;
+  static const IconData roles = Icons.badge_rounded;
 }

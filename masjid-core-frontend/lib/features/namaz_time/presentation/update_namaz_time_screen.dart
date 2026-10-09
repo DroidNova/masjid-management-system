@@ -54,12 +54,9 @@ class UpdateNamazTimeScreen extends ConsumerWidget {
             ),
           ),
           error: (error, _) => page(
-            EmptyState(
-              icon: AppIcons.problem,
-              tone: AppTones.problem,
-              title: errorText(l10n, error),
-              actionLabel: l10n.tryAgain,
-              onAction: () => ref.invalidate(myNamazTimeProvider),
+            ErrorState(
+              error: error,
+              onRetry: () => ref.invalidate(myNamazTimeProvider),
             ),
           ),
           data: (namazTime) => _NamazTimeForm(initial: namazTime),

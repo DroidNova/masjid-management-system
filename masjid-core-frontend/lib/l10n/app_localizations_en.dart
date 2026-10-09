@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Masjid Core';
+  String get appTitle => 'Masjid';
 
   @override
   String get loading => 'Loading…';
@@ -1067,4 +1067,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get youGaveInTotal => 'You gave in total';
+
+  @override
+  String get aboutMasjid => 'About the masjid';
+
+  @override
+  String get allRoles => 'All roles';
+
+  @override
+  String get approve => 'Approve';
+
+  @override
+  String get approveHelp =>
+      'This adds the masjid, its imam, and its committee.';
+
+  @override
+  String get approveQuestion => 'Approve this masjid?';
+
+  @override
+  String get cannotApprove => 'Cannot approve';
+
+  @override
+  String get changeRoles => 'Change roles';
+
+  @override
+  String get changeStatus => 'Change status';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get goBack => 'Go back';
+
+  @override
+  String get goHome => 'Go home';
+
+  @override
+  String get joinedOn => 'Joined on';
+
+  @override
+  String get masjid => 'Masjid';
+
+  @override
+  String get noMasjids => 'No masjids';
+
+  @override
+  String get noRequests => 'No requests';
+
+  @override
+  String get noRequestsWaiting => 'No requests waiting';
+
+  @override
+  String get noUsers => 'No users';
+
+  @override
+  String get pageNotFound => 'Page not found';
+
+  @override
+  String get pageNotFoundHelp => 'This link is old or wrong.';
+
+  @override
+  String get person => 'Person';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get pickToSeeDetails => 'Pick one from the list to see it here.';
+
+  @override
+  String get reason => 'Reason';
+
+  @override
+  String get reasonOptional => 'Reason (optional)';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get rejectQuestion => 'Reject this request?';
+
+  @override
+  String get request => 'Request';
+
+  @override
+  String get requestApproved => 'Request approved';
+
+  @override
+  String get requestRejected => 'Request rejected';
+
+  @override
+  String get requester => 'Who asked';
+
+  @override
+  String requestsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count requests waiting',
+      one: '1 request waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rolesChanged => 'Roles changed';
+
+  @override
+  String get searchMasjids => 'Search masjid or place';
+
+  @override
+  String get searchRequests => 'Search masjid, place, or phone';
+
+  @override
+  String get searchUsers => 'Search name, phone, or email';
+
+  @override
+  String get sentOn => 'Sent on';
+
+  @override
+  String get statusChanged => 'Status changed';
+
+  @override
+  String get statusSuspended => 'Suspended';
+
+  @override
+  String get welcomeMessage => 'Welcome message';
 }

@@ -1,10 +1,10 @@
 {
-    "name": "Masjid Core",
-    "short_name": "Masjid Core",
+    "name": "Masjid",
+    "short_name": "Masjid",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
-    "theme_color": "#00796B",
+    "theme_color": "#00695C",
     "description": "Masjid management for villages and cities",
     "orientation": "any",
     "prefer_related_applications": false,

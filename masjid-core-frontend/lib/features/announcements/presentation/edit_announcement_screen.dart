@@ -65,13 +65,9 @@ class EditAnnouncementScreen extends ConsumerWidget {
         onSave: (title, message) => _save(context, ref, title, message),
       );
     } else if (loaded.hasError) {
-      body = EmptyState(
-        icon: AppIcons.problem,
-        tone: AppTones.problem,
-        title: errorText(l10n, loaded.error!),
-        actionLabel: l10n.tryAgain,
-        onAction: () =>
-            ref.invalidate(announcementByIdProvider(announcementId)),
+      body = ErrorState(
+        error: loaded.error!,
+        onRetry: () => ref.invalidate(announcementByIdProvider(announcementId)),
       );
     } else {
       body = const SingleChildScrollView(

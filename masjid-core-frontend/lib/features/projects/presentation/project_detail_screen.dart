@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
@@ -77,12 +76,9 @@ class ProjectDetailScreen extends ConsumerWidget {
             ref.read(projectDetailProvider(projectId).notifier).refresh(),
       );
     } else if (state.hasError) {
-      body = EmptyState(
-        icon: AppIcons.problem,
-        tone: AppTones.problem,
-        title: errorText(l10n, state.error!),
-        actionLabel: l10n.tryAgain,
-        onAction: () => ref.invalidate(projectDetailProvider(projectId)),
+      body = ErrorState(
+        error: state.error!,
+        onRetry: () => ref.invalidate(projectDetailProvider(projectId)),
       );
     } else {
       body = const SingleChildScrollView(

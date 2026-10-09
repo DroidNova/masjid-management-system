@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
 import 'package:masjid_core_frontend/shared/ui/app_sheet.dart';
@@ -84,7 +84,7 @@ class _DangerContentState extends State<_DangerContent> {
       if (mounted) {
         setState(() {
           _working = false;
-          _error = userMessage(error);
+          _error = errorText(AppLocalizations.of(context), error);
         });
       }
     }

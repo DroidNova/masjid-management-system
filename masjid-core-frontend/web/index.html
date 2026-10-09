@@ -23,34 +23,40 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Masjid Core">
+  <meta name="apple-mobile-web-app-title" content="Masjid">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Masjid Core</title>
+  <title>Masjid</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#00796B">
+  <meta name="theme-color" content="#00695C">
   <style>
-    /* Shown while the app downloads (slow connections); removed on first frame. */
+    /* Shown while the app downloads (slow connections); removed on first
+       frame. Pictures only, no words: it shows before a language is known. */
+    html, body { margin: 0; background: #FFFFFF; }
     #app-loading {
       position: fixed; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 16px;
-      font-family: system-ui, sans-serif; color: #00796B; background: #FFFFFF;
+      align-items: center; justify-content: center; gap: 28px;
+      background: #FFFFFF;
     }
+    #app-loading svg { width: 112px; height: 112px; }
     #app-loading .spinner {
       width: 36px; height: 36px; border-radius: 50%;
-      border: 4px solid #B2DFDB; border-top-color: #00796B;
+      border: 4px solid #DDF2EF; border-top-color: #00695C;
       animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      #app-loading .spinner { animation-duration: 3s; }
+    }
   </style>
 </head>
 <body>
-  <div id="app-loading" aria-live="polite">
+  <div id="app-loading" role="progressbar" aria-label="Loading">
+    <svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><mask id="cut"> <rect width="1024" height="1024" fill="white"/> <circle cx="526" cy="226" r="24" fill="black"/> <path d="M482 772 V690 a30 30 0 0 1 60 0 V772 Z" fill="black"/> </mask></defs> <g transform="translate(512 512) scale(1.05) translate(-512 -540)" mask="url(#cut)" fill="#00695C"> <circle cx="512" cy="236" r="30"/> <rect x="506" y="262" width="12" height="80" rx="6"/> <path d="M352 580 C352 440 440 372 512 336 C584 372 672 440 672 580 Z"/> <rect x="312" y="572" width="400" height="200" rx="10"/> <path d="M222 772 V452 L252 372 L282 452 V772 Z"/> <path d="M742 772 V452 L772 372 L802 452 V772 Z"/> </g></svg>
     <div class="spinner"></div>
-    <div>Loading Masjid Core…</div>
   </div>
   <script>
     window.addEventListener('flutter-first-frame', function () {
