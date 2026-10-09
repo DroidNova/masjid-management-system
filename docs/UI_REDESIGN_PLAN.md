@@ -4,9 +4,10 @@ Written 2026-10-09. This plan replaces the "no UI work now" rule in `IMPROVEMENT
 
 ## Checkpoint (read this first in a new session)
 
-- **Status:** U0 done 2026-10-09. The design system lives in `masjid-core-frontend/lib/shared/ui/` (import `shared/ui/ui.dart`); see it at `/dev/gallery` (dev builds, no login). Old screens still use `lib/shared/widgets/` until their phase moves them over; U7 deletes the old widgets.
-- **Next:** U1 (language picker, landing, login, masjid request flow).
+- **Status:** U0 and U1 done 2026-10-09. The design system lives in `masjid-core-frontend/lib/shared/ui/` (import `shared/ui/ui.dart`); see it at `/dev/gallery` (dev builds, no login). Old screens still use `lib/shared/widgets/` until their phase moves them over; U7 deletes the old widgets.
+- **Next:** U2 (role-based tabs, Home, Profile with the Leave masjid danger flow).
 - **U0 notes for later phases:** strings go in `lib/l10n/app_{en,hi,ur}.arb` (Hindi/Urdu are first drafts, checked in U8). Settings (language, large text, read-aloud) are in `core/settings/app_settings.dart`; read-aloud is `core/settings/speaker.dart`. Widget tests use `test/shared/ui/ui_test_helpers.dart` (`pumpUi`); pages with loading placeholders need animations turned off in tests (see `design_gallery_test.dart`). Docker's Flutter image is pinned to the CI version (3.41.6); bump both together.
+- **U1 notes for later phases:** shared pieces added: `NumberKeypad` (phone, code, amounts), `PhoneEntry` (keypad phone with country), `PhoneFormField` / `AppFormField` / `AgeFormField` / `GenderFormField`, `MessageBanner` (errors on the page instead of snack bars), `BusyButton`, `ScreenHeader`, `showCountryPicker`; `StepFlow` steps take `validate`, and `StepFlowState.goTo` jumps to a step. Errors go through `core/errors/error_text.dart` (`errorText(l10n, error)`): no internet and too many tries are translated, other API errors show the server's message. The router sends people without a chosen language to `/language` first (`languageRedirect`), and a signed-out refresh of a public page stays on it. Tests: `testAppOverrides()` and `testLocalizationsDelegates` build localized test apps, `tapKeypad` types on the keypad; `test/features/start_screens_test.dart` checks every U1 screen's layout in 3 languages, 2 widths, and a large font. SMS auto-fill of the code is left for M6 (real SMS); it will feed the OTP screen's code like the keys do.
 - **Rule:** one phase per session. Each phase ends with `flutter analyze`, the tests, a web build, and screenshots of the changed screens at phone width (360 dp), tablet width (800 dp), and desktop web width (1280 px), in English and Urdu.
 
 ## 1. Who uses the app
@@ -196,7 +197,7 @@ Built once in `lib/shared/`, used by every screen. A dev-only gallery route show
 | Phase | Scope | Done when |
 |---|---|---|
 | U0 Foundation (done 2026-10-09) | Tokens, theme, fonts, icons, shared widgets incl. `AdaptiveScaffold`, `AdaptiveDialog`, `DangerDialog`; gallery route; language setting + ARB setup; `flutter_tts`; iOS build in CI | Gallery renders every widget in English and Urdu (RTL) at phone, tablet, and desktop widths; tests for `AmountText` formatting, `StepFlow`, and hold-to-confirm |
-| U1 Start and login | Language picker, landing, phone, OTP, password, masjid request flow and tracking | Can register a masjid and log in without reading English |
+| U1 Start and login (done 2026-10-09) | Language picker, landing, phone, OTP, password, masjid request flow and tracking | Can register a masjid and log in without reading English |
 | U2 Shell, Home, Profile | Role-based tabs (bottom bar / rail / side menu), Home, Profile tab with status card, logout, and the Leave masjid danger flow | Each role sees only its own tabs and tiles; leave masjid works end to end and cannot be triggered by one accidental tap; all checked on Android, iOS, and web |
 | U3 Times and news | Namaz time card and update, announcements list/add/edit, read-aloud | Imam can change Asr time in under 15 seconds |
 | U4 Money | Finance, money in/out flows, collection contributions | Committee can record ₹500 Jumma collection in 4 taps after opening Money |

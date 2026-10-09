@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/features/auth/data/models/login_start_response.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/otp_screen.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 void main() {
   group('LoginStartResponse.otpLength', () {
@@ -27,19 +27,11 @@ void main() {
   });
 
   testWidgets('OtpScreen shows one box per expected digit', (tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: OtpScreen(
-            phone: '9876543210',
-            challengeId: 'abc',
-            otpLength: 4,
-          ),
-        ),
-      ),
+    await pumpUi(
+      tester,
+      const OtpScreen(phone: '9876543210', challengeId: 'abc', otpLength: 6),
     );
-    await tester.pump();
 
-    expect(find.byType(TextField), findsNWidgets(4));
+    expect(tester.widget<CodeBoxes>(find.byType(CodeBoxes)).length, 6);
   });
 }

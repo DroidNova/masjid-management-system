@@ -1,22 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_draft.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_validators.dart';
 import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
 
 /// A rule across fields failed before anything was sent.
 class MasjidRequestInvalid implements Exception {
-  const MasjidRequestInvalid(this.message);
+  const MasjidRequestInvalid(this.problem);
 
-  final String message;
+  final CommitteeProblem problem;
 
   @override
-  String toString() => message;
+  String toString() => 'MasjidRequestInvalid(${problem.name})';
 }
-
-/// Text to show for a failed submit.
-String masjidRequestErrorMessage(Object error) =>
-    error is MasjidRequestInvalid ? error.message : userMessage(error);
 
 final masjidRequestFormControllerProvider =
     NotifierProvider.autoDispose<MasjidRequestFormController, AsyncValue<void>>(

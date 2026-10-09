@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
+/// Login step 1: the phone number, typed on big number keys.
 class LoginPhoneScreen extends ConsumerStatefulWidget {
   const LoginPhoneScreen({super.key});
 
@@ -16,46 +17,35 @@ class LoginPhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  CountryCode _selectedCountry = getDefaultCountryCode();
+  CountryCode _country = getDefaultCountryCode();
+  String _digits = '';
   bool _isSubmitting = false;
+  String? _error;
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
+  bool get _isValid => PhoneEntry.isValid(_country, _digits);
 
   Future<void> _continue() async {
-    final nationalPhone = _phoneController.text.trim();
+    final l10n = AppLocalizations.of(context);
+    if (!_isValid || _isSubmitting) return;
 
-    if (nationalPhone.isEmpty ||
-        nationalPhone.length < (_selectedCountry.minLength ?? 6) ||
-        nationalPhone.length > (_selectedCountry.maxLength ?? 15)) {
-      _showError('Enter a valid phone number');
-      return;
-    }
-
-    final phone = normalizePhone(
-      countryCode: _selectedCountry,
-      nationalNumber: nationalPhone,
-    );
-
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
 
     try {
-      final response = await ref.read(authRepositoryProvider).startLogin(phone);
-
+      final response = await ref
+          .read(authRepositoryProvider)
+          .startLogin(
+            normalizePhone(countryCode: _country, nationalNumber: _digits),
+          );
       if (!mounted) return;
 
-      if (response.requiresOtp) {
-        final challengeId = response.challengeId;
-        if (challengeId == null || challengeId.isEmpty) {
-          _showError('OTP challenge is missing. Please try again.');
-          return;
-        }
-
-        context.go(
+      final challengeId = response.challengeId;
+      if (response.requiresOtp &&
+          challengeId != null &&
+          challengeId.isNotEmpty) {
+        await context.push(
           '/login-otp',
           extra: <String, String>{
             'phone': response.phone,
@@ -63,81 +53,61 @@ class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
             'otpLength': response.otpLength.toString(),
           },
         );
-        return;
-      }
-
-      if (response.requiresPassword) {
-        context.go(
+      } else if (response.requiresPassword) {
+        await context.push(
           '/login-password',
           extra: <String, String>{'phone': response.phone},
         );
-        return;
+      } else {
+        setState(() => _error = l10n.somethingWentWrong);
       }
-
-      _showError('Unsupported login step. Please try again.');
     } catch (error) {
-      if (mounted) _showError(authErrorText(error));
+      if (mounted) setState(() => _error = authErrorText(l10n, error));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final error = _error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(l10n.login)),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    'Login',
-                    style: textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enter your phone number to continue',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  AppPhoneField(
-                    phoneController: _phoneController,
-                    initialCountry: _selectedCountry,
-                    onCountryChanged: (country) => _selectedCountry = country,
-                    isRequired: true,
-                    textInputAction: TextInputAction.done,
-                  ),
-                  const SizedBox(height: 24),
-                  AppButton(
-                    label: 'Continue',
-                    isLoading: _isSubmitting,
-                    onPressed: _continue,
-                  ),
-                  const SizedBox(height: 12),
-                  AppButton(
-                    label: 'Back',
-                    isOutlined: true,
-                    onPressed: () => context.go('/auth'),
-                  ),
+        top: false,
+        child: SingleChildScrollView(
+          child: PageBody.form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                ScreenHeader(icon: AppIcons.phone, title: l10n.yourPhoneNumber),
+                PhoneEntry(
+                  country: _country,
+                  digits: _digits,
+                  enabled: !_isSubmitting,
+                  onCountryChanged: (country) => setState(() {
+                    _country = country;
+                    _digits = '';
+                  }),
+                  onDigitsChanged: (digits) => setState(() {
+                    _digits = digits;
+                    _error = null;
+                  }),
+                ),
+                const SizedBox(height: AppSpace.l),
+                if (error != null) ...<Widget>[
+                  MessageBanner(text: error),
+                  const SizedBox(height: AppSpace.l),
                 ],
-              ),
+                BusyButton(
+                  label: l10n.continueLabel,
+                  icon: AppIcons.next,
+                  busy: _isSubmitting,
+                  onPressed: _isValid ? _continue : null,
+                ),
+              ],
             ),
           ),
         ),

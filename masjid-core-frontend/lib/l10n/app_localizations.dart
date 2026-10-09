@@ -303,6 +303,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Large text'**
   String get largeText;
+
+  /// No description provided for @aboutMasjidOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'About the masjid (optional)'**
+  String get aboutMasjidOptional;
+
+  /// No description provided for @addMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Add member'**
+  String get addMember;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @age.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get age;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Namaz times, news, and accounts of your masjid'**
+  String get appTagline;
+
+  /// No description provided for @changeCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Change country'**
+  String get changeCountry;
+
+  /// No description provided for @changeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get changeNumber;
+
+  /// No description provided for @check.
+  ///
+  /// In en, this message translates to:
+  /// **'Check'**
+  String get check;
+
+  /// No description provided for @cityOrVillage.
+  ///
+  /// In en, this message translates to:
+  /// **'City or village'**
+  String get cityOrVillage;
+
+  /// No description provided for @committeeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The people who will run the masjid with the imam.'**
+  String get committeeHelp;
+
+  /// No description provided for @committeeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one committee member.'**
+  String get committeeMissing;
+
+  /// No description provided for @continueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueLabel;
+
+  /// No description provided for @country.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get country;
+
+  /// No description provided for @district.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get district;
+
+  /// No description provided for @duplicateCommitteePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Two committee members have the same phone number.'**
+  String get duplicateCommitteePhone;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @emailOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (optional)'**
+  String get emailOptional;
+
+  /// No description provided for @enterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get enterCode;
+
+  /// No description provided for @errorAccountInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is switched off. Please talk to your masjid committee.'**
+  String get errorAccountInactive;
+
+  /// No description provided for @errorCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This code has expired. Get a new code.'**
+  String get errorCodeExpired;
+
+  /// No description provided for @errorNoInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet. Check your connection and try again.'**
+  String get errorNoInternet;
+
+  /// No description provided for @errorTooManyTries.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Please wait a minute and try again.'**
+  String get errorTooManyTries;
+
+  /// No description provided for @errorWrongCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong code. Please try again.'**
+  String get errorWrongCode;
+
+  /// No description provided for @errorWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password. Please try again.'**
+  String get errorWrongPassword;
+
+  /// No description provided for @fatherName.
+  ///
+  /// In en, this message translates to:
+  /// **'Father\'s name'**
+  String get fatherName;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill this in.'**
+  String get fieldRequired;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get fullName;
+
+  /// No description provided for @gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get gender;
+
+  /// No description provided for @genderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Woman'**
+  String get genderFemale;
+
+  /// No description provided for @genderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Man'**
+  String get genderMale;
+
+  /// No description provided for @genderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get genderOther;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @imamIsCommitteeMember.
+  ///
+  /// In en, this message translates to:
+  /// **'The imam cannot also be a committee member.'**
+  String get imamIsCommitteeMember;
+
+  /// No description provided for @invalidAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age must be between 1 and 120.'**
+  String get invalidAge;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the email address.'**
+  String get invalidEmail;
+
+  /// No description provided for @invalidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the phone number.'**
+  String get invalidPhone;
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get login;
+
+  /// No description provided for @masjidName.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid name'**
+  String get masjidName;
+
+  /// No description provided for @masjidPhoneOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid phone (optional)'**
+  String get masjidPhoneOptional;
+
+  /// No description provided for @newCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'A new code has been sent.'**
+  String get newCodeSent;
+
+  /// No description provided for @noRequestFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No request found for this number.'**
+  String get noRequestFound;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @phoneAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number already registered'**
+  String get phoneAlreadyRegistered;
+
+  /// No description provided for @phoneInAnotherMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'This number already belongs to another masjid.'**
+  String get phoneInAnotherMasjid;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneNumber;
+
+  /// No description provided for @registerMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Register masjid'**
+  String get registerMasjid;
+
+  /// No description provided for @removeMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove member'**
+  String get removeMember;
+
+  /// No description provided for @requestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get requestSent;
+
+  /// No description provided for @requestSentHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'We will check the details. You can see the progress any time.'**
+  String get requestSentHelp;
+
+  /// No description provided for @requesterHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your details, so you can follow the request.'**
+  String get requesterHelp;
+
+  /// No description provided for @reviewHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Check everything, then send.'**
+  String get reviewHelp;
+
+  /// No description provided for @searchCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country'**
+  String get searchCountry;
+
+  /// No description provided for @sendNewCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send new code'**
+  String get sendNewCode;
+
+  /// No description provided for @sendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get sendRequest;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @state.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get state;
+
+  /// No description provided for @stepApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get stepApproved;
+
+  /// No description provided for @stepChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Being checked'**
+  String get stepChecking;
+
+  /// No description provided for @stepCommittee.
+  ///
+  /// In en, this message translates to:
+  /// **'Committee'**
+  String get stepCommittee;
+
+  /// No description provided for @stepImam.
+  ///
+  /// In en, this message translates to:
+  /// **'Imam'**
+  String get stepImam;
+
+  /// No description provided for @stepMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid'**
+  String get stepMasjid;
+
+  /// No description provided for @stepPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get stepPlace;
+
+  /// No description provided for @stepRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not approved'**
+  String get stepRejected;
+
+  /// No description provided for @stepReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and send'**
+  String get stepReview;
+
+  /// No description provided for @stepSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get stepSent;
+
+  /// No description provided for @stepYou.
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get stepYou;
+
+  /// No description provided for @trackHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the phone number you used when registering.'**
+  String get trackHelp;
+
+  /// No description provided for @trackRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Track request'**
+  String get trackRequest;
+
+  /// No description provided for @welcomeMessageOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome message (optional)'**
+  String get welcomeMessageOptional;
+
+  /// No description provided for @yourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get yourName;
+
+  /// No description provided for @yourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password'**
+  String get yourPassword;
+
+  /// No description provided for @yourPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone number'**
+  String get yourPhoneNumber;
+
+  /// No description provided for @codeSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {phone}'**
+  String codeSentTo(String phone);
+
+  /// No description provided for @memberNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Member {number}'**
+  String memberNumber(int number);
+
+  /// No description provided for @membersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String membersCount(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -1,78 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/features/masjid_request/presentation/widgets/request_timeline.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// After a masjid request is sent: a big tick, what happens next as a
+/// timeline, and the way to follow it.
 class MasjidRequestSubmittedScreen extends StatelessWidget {
   const MasjidRequestSubmittedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 72,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Request Submitted Successfully',
-                        textAlign: TextAlign.center,
-                        style: textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Your masjid registration request has been submitted successfully.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Please wait until confirmation comes from our end.',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'You can track your application using your registered phone number.',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      AppButton(
-                        label: 'Track Application',
-                        icon: Icons.search,
-                        onPressed: () => context.go('/masjid-request/track'),
-                      ),
-                      const SizedBox(height: 12),
-                      AppButton(
-                        label: 'Back to Home / Login',
-                        isOutlined: true,
-                        onPressed: () => context.go('/auth'),
-                      ),
-                    ],
+            child: PageBody.form(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  ScreenHeader(
+                    icon: AppIcons.done,
+                    tone: AppTones.done,
+                    title: l10n.requestSent,
+                    subtitle: l10n.requestSentHelp,
+                    trailing: ReadAloudButton(
+                      text: '${l10n.requestSent}. ${l10n.requestSentHelp}',
+                    ),
                   ),
-                ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpace.xl),
+                      child: RequestTimeline(
+                        status: 'PENDING',
+                        requestedAt: DateTime.now(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.xl),
+                  FilledButton.icon(
+                    onPressed: () => context.go('/masjid-request/track'),
+                    icon: const Icon(AppIcons.track),
+                    label: Text(l10n.trackRequest),
+                  ),
+                  const SizedBox(height: AppSpace.m),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/auth'),
+                    icon: const Icon(AppIcons.home),
+                    label: Text(l10n.home),
+                  ),
+                ],
               ),
             ),
           ),

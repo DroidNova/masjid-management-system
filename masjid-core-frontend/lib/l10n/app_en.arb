@@ -1,7 +1,9 @@
 {
   "@@locale": "en",
   "appTitle": "Masjid Core",
-  "@appTitle": { "description": "App name shown in the window title and splash screen." },
+  "@appTitle": {
+    "description": "App name shown in the window title and splash screen."
+  },
   "loading": "Loading…",
   "retry": "Retry",
   "logout": "Logout",
@@ -10,7 +12,6 @@
   "sessionExpired": "Your session has expired. Please login again.",
   "noMasjidAssigned": "You are not assigned to any masjid yet.",
   "dashboardLoadFailed": "Unable to load dashboard",
-
   "next": "Next",
   "back": "Back",
   "done": "Done",
@@ -31,18 +32,130 @@
   "searchPeople": "Search by name or phone",
   "amountHint": "Enter amount",
   "deleteDigit": "Delete",
-  "@deleteDigit": { "description": "Backspace key on the amount number pad (screen reader label)." },
+  "@deleteDigit": {
+    "description": "Backspace key on the amount number pad (screen reader label)."
+  },
   "pressAndHold": "Press and hold",
-  "@pressAndHold": { "description": "Hint under a dangerous button that must be held for 2 seconds." },
+  "@pressAndHold": {
+    "description": "Hint under a dangerous button that must be held for 2 seconds."
+  },
   "holdTo": "Hold to {action}",
   "@holdTo": {
     "description": "Screen reader label for a hold-to-confirm button. {action} is the button's own label, e.g. 'Leave'.",
-    "placeholders": { "action": { "type": "String" } }
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
   },
   "stepOf": "Step {current} of {total}",
   "@stepOf": {
-    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "chooseLanguage": "Choose language",
-  "largeText": "Large text"
+  "largeText": "Large text",
+  "aboutMasjidOptional": "About the masjid (optional)",
+  "addMember": "Add member",
+  "address": "Address",
+  "age": "Age",
+  "appTagline": "Namaz times, news, and accounts of your masjid",
+  "changeCountry": "Change country",
+  "changeNumber": "Change number",
+  "check": "Check",
+  "cityOrVillage": "City or village",
+  "committeeHelp": "The people who will run the masjid with the imam.",
+  "committeeMissing": "Add at least one committee member.",
+  "continueLabel": "Continue",
+  "country": "Country",
+  "district": "District",
+  "duplicateCommitteePhone": "Two committee members have the same phone number.",
+  "edit": "Edit",
+  "emailOptional": "Email (optional)",
+  "enterCode": "Enter the code",
+  "errorAccountInactive": "This account is switched off. Please talk to your masjid committee.",
+  "errorCodeExpired": "This code has expired. Get a new code.",
+  "errorNoInternet": "No internet. Check your connection and try again.",
+  "errorTooManyTries": "Too many tries. Please wait a minute and try again.",
+  "errorWrongCode": "Wrong code. Please try again.",
+  "errorWrongPassword": "Wrong password. Please try again.",
+  "fatherName": "Father's name",
+  "fieldRequired": "Please fill this in.",
+  "fullName": "Name",
+  "gender": "Gender",
+  "genderFemale": "Woman",
+  "genderMale": "Man",
+  "genderOther": "Other",
+  "hidePassword": "Hide password",
+  "home": "Home",
+  "imamIsCommitteeMember": "The imam cannot also be a committee member.",
+  "invalidAge": "Age must be between 1 and 120.",
+  "invalidEmail": "Check the email address.",
+  "invalidPhone": "Check the phone number.",
+  "login": "Login",
+  "masjidName": "Masjid name",
+  "masjidPhoneOptional": "Masjid phone (optional)",
+  "newCodeSent": "A new code has been sent.",
+  "noRequestFound": "No request found for this number.",
+  "password": "Password",
+  "phoneAlreadyRegistered": "Phone number already registered",
+  "phoneInAnotherMasjid": "This number already belongs to another masjid.",
+  "phoneNumber": "Phone number",
+  "registerMasjid": "Register masjid",
+  "removeMember": "Remove member",
+  "requestSent": "Request sent",
+  "requestSentHelp": "We will check the details. You can see the progress any time.",
+  "requesterHelp": "Your details, so you can follow the request.",
+  "reviewHelp": "Check everything, then send.",
+  "searchCountry": "Search country",
+  "sendNewCode": "Send new code",
+  "sendRequest": "Send request",
+  "showPassword": "Show password",
+  "state": "State",
+  "stepApproved": "Approved",
+  "stepChecking": "Being checked",
+  "stepCommittee": "Committee",
+  "stepImam": "Imam",
+  "stepMasjid": "Masjid",
+  "stepPlace": "Place",
+  "stepRejected": "Not approved",
+  "stepReview": "Check and send",
+  "stepSent": "Sent",
+  "stepYou": "About you",
+  "trackHelp": "Enter the phone number you used when registering.",
+  "trackRequest": "Track request",
+  "welcomeMessageOptional": "Welcome message (optional)",
+  "yourName": "Your name",
+  "yourPassword": "Your password",
+  "yourPhoneNumber": "Your phone number",
+  "codeSentTo": "Sent to {phone}",
+  "@codeSentTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "memberNumber": "Member {number}",
+  "@memberNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "membersCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@membersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

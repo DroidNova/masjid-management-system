@@ -15,7 +15,10 @@ import 'package:masjid_core_frontend/features/auth/data/models/login_start_respo
 import 'package:masjid_core_frontend/features/auth/presentation/login_password_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/login_phone_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/otp_screen.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
@@ -51,8 +54,13 @@ class _Harness {
       container.read(authControllerProvider.notifier) as _FakeAuth;
 
   Future<void> pump(WidgetTester tester, String initialLocation) async {
+    tester.view.physicalSize = const Size(420, 1100);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
     container = ProviderContainer(
       overrides: [
+        ...await testAppOverrides(),
         authRepositoryProvider.overrideWithValue(repository),
         authControllerProvider.overrideWith(_FakeAuth.new),
       ],
@@ -83,30 +91,24 @@ class _Harness {
             );
           },
         ),
-        GoRoute(
-          path: '/auth',
-          builder: (context, state) => const Scaffold(body: Text('landing')),
-        ),
       ],
     );
     addTearDown(router.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
       ),
     );
     await tester.pumpAndSettle();
   }
 }
 
-Future<void> _enterOtp(WidgetTester tester, String otp) async {
-  final boxes = find.byType(TextField);
-  for (var i = 0; i < otp.length; i++) {
-    await tester.enterText(boxes.at(i), otp[i]);
-  }
-  await tester.pump();
-}
+Finder _button(String label) => find.widgetWithText(FilledButton, label);
 
 void main() {
   late _MockAuthRepository repository;
@@ -114,7 +116,7 @@ void main() {
   setUp(() => repository = _MockAuthRepository());
 
   group('LoginPhoneScreen', () {
-    testWidgets('starts login and opens OTP with the server otpLength', (
+    testWidgets('Continue waits for a full number, then opens the code step', (
       tester,
     ) async {
       when(() => repository.startLogin(any())).thenAnswer(
@@ -128,14 +130,19 @@ void main() {
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-phone');
 
-      await tester.enterText(find.byType(TextFormField), '9876543210');
-      await tester.tap(find.text('Continue'));
+      await tapKeypad(tester, '98765');
+      expect(
+        tester.widget<FilledButton>(_button('Continue')).onPressed,
+        isNull,
+      );
+      expect(find.text('98765'), findsOneWidget);
+
+      await tapKeypad(tester, '43210');
+      expect(find.text('98765 43210'), findsOneWidget);
+      await tester.tap(_button('Continue'));
       await tester.pumpAndSettle();
 
-      final phone =
-          verify(() => repository.startLogin(captureAny())).captured.single
-              as String;
-      expect(phone, endsWith('9876543210'));
+      verify(() => repository.startLogin('+919876543210')).called(1);
       expect(harness.otpExtra, <String, String>{
         'phone': '+919876543210',
         'challengeId': 'c1',
@@ -155,14 +162,16 @@ void main() {
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-phone');
 
-      await tester.enterText(find.byType(TextFormField), '9876543210');
-      await tester.tap(find.text('Continue'));
+      await tapKeypad(tester, '9876543210');
+      await tester.tap(_button('Continue'));
       await tester.pumpAndSettle();
 
       expect(harness.passwordExtra, <String, String>{'phone': '+919876543210'});
     });
 
-    testWidgets('TOO_MANY_REQUESTS shows a wait hint, by code', (tester) async {
+    testWidgets('TOO_MANY_REQUESTS shows the wait message on the page', (
+      tester,
+    ) async {
       when(() => repository.startLogin(any())).thenThrow(
         const ApiException(
           message: 'ThrottlerException: Too Many Requests',
@@ -173,12 +182,12 @@ void main() {
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-phone');
 
-      await tester.enterText(find.byType(TextFormField), '9876543210');
-      await tester.tap(find.text('Continue'));
+      await tapKeypad(tester, '9876543210');
+      await tester.tap(_button('Continue'));
       await tester.pump();
 
       expect(
-        find.text('Too many attempts. Please wait a minute and try again.'),
+        find.text('Too many tries. Please wait a minute and try again.'),
         findsOneWidget,
       );
       expect(find.byType(LoginPhoneScreen), findsOneWidget);
@@ -186,7 +195,7 @@ void main() {
   });
 
   group('LoginPasswordScreen', () {
-    testWidgets('submits the password and opens OTP', (tester) async {
+    testWidgets('submits the password and opens the code step', (tester) async {
       when(() => repository.submitPassword(any(), any())).thenAnswer(
         (_) async => const LoginStartResponse(
           nextStep: 'OTP_REQUIRED',
@@ -198,7 +207,8 @@ void main() {
       await harness.pump(tester, '/login-password');
 
       await tester.enterText(find.byType(TextField), 'secret123');
-      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      await tester.tap(_button('Continue'));
       await tester.pumpAndSettle();
 
       verify(
@@ -211,7 +221,7 @@ void main() {
       });
     });
 
-    testWidgets('INVALID_CREDENTIALS shows the message and clears the field', (
+    testWidgets('a wrong password shows the message and clears the field', (
       tester,
     ) async {
       when(() => repository.submitPassword(any(), any())).thenThrow(
@@ -225,17 +235,18 @@ void main() {
       await harness.pump(tester, '/login-password');
 
       await tester.enterText(find.byType(TextField), 'wrongpass');
-      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      await tester.tap(_button('Continue'));
       await tester.pump();
 
-      expect(find.text('Invalid phone or password'), findsOneWidget);
+      expect(find.text('Wrong password. Please try again.'), findsOneWidget);
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller!.text, isEmpty);
     });
   });
 
   group('OtpScreen', () {
-    testWidgets('verifies and signs in (router does the navigation)', (
+    testWidgets('shows one box per digit and checks the code by itself', (
       tester,
     ) async {
       when(
@@ -244,19 +255,23 @@ void main() {
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-otp');
 
-      await _enterOtp(tester, '1111');
-      await tester.tap(find.text('Verify'));
+      final boxes = tester.widget<CodeBoxes>(find.byType(CodeBoxes));
+      expect(boxes.length, 4);
+
+      await tapKeypad(tester, '1111');
       await tester.pump();
 
       verify(
         () => repository.verifyOtp('+919876543210', 'c1', '1111'),
       ).called(1);
       expect(harness.auth.signedIn, _session);
-      // No navigation from the screen itself.
+      // No navigation from the screen itself; the router does it.
       expect(find.byType(OtpScreen), findsOneWidget);
     });
 
-    testWidgets('OTP_EXPIRED offers to request a new OTP', (tester) async {
+    testWidgets('an expired code offers a new one for the same phone', (
+      tester,
+    ) async {
       when(() => repository.verifyOtp(any(), any(), any())).thenThrow(
         const ApiException(
           message: 'OTP has expired. Please request a new one.',
@@ -264,24 +279,42 @@ void main() {
           statusCode: 400,
         ),
       );
+      when(() => repository.startLogin(any())).thenAnswer(
+        (_) async => const LoginStartResponse(
+          nextStep: 'OTP_REQUIRED',
+          phone: '+919876543210',
+          challengeId: 'c9',
+        ),
+      );
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-otp');
 
-      await _enterOtp(tester, '1111');
-      await tester.tap(find.text('Verify'));
+      await tapKeypad(tester, '1111');
       await tester.pumpAndSettle();
 
       expect(
-        find.text('OTP has expired. Please request a new one.'),
+        find.text('This code has expired. Get a new code.'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Request new OTP'));
+      await tester.tap(find.text('Send new code'));
       await tester.pumpAndSettle();
-      expect(find.byType(LoginPhoneScreen), findsOneWidget);
+
+      verify(() => repository.startLogin('+919876543210')).called(1);
+      expect(find.text('A new code has been sent.'), findsOneWidget);
       expect(harness.auth.signedIn, isNull);
+
+      // The next code is checked against the new challenge.
+      when(
+        () => repository.verifyOtp(any(), any(), any()),
+      ).thenAnswer((_) async => _session);
+      await tapKeypad(tester, '2222');
+      await tester.pump();
+      verify(
+        () => repository.verifyOtp('+919876543210', 'c9', '2222'),
+      ).called(1);
     });
 
-    testWidgets('OTP_INVALID shows the message and clears the boxes', (
+    testWidgets('a wrong code shows the message and empties the boxes', (
       tester,
     ) async {
       when(() => repository.verifyOtp(any(), any(), any())).thenThrow(
@@ -294,17 +327,12 @@ void main() {
       final harness = _Harness(repository);
       await harness.pump(tester, '/login-otp');
 
-      await _enterOtp(tester, '9999');
-      await tester.tap(find.text('Verify'));
+      await tapKeypad(tester, '9999');
       await tester.pump();
 
-      expect(find.text('Invalid OTP'), findsOneWidget);
-      expect(find.text('Request new OTP'), findsNothing);
-      for (final field in tester.widgetList<TextField>(
-        find.byType(TextField),
-      )) {
-        expect(field.controller!.text, isEmpty);
-      }
+      expect(find.text('Wrong code. Please try again.'), findsOneWidget);
+      expect(find.text('Send new code'), findsNothing);
+      expect(tester.widget<CodeBoxes>(find.byType(CodeBoxes)).code, isEmpty);
     });
   });
 }

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// Login's last step: the code sent by SMS, typed on big number keys. It is
+/// checked as soon as the last digit is in, with no extra button to find.
+///
+/// SMS auto-fill arrives with the real SMS provider (milestone M6); it will
+/// feed [_code] the same way the keys do.
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({
     super.key,
@@ -27,268 +32,211 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
-  int get _otpLength => widget.otpLength;
+  late String _challengeId = widget.challengeId;
+  late int _otpLength = widget.otpLength;
+  String _code = '';
+  bool _verifying = false;
+  bool _resending = false;
+  String? _error;
+  bool _expired = false;
+  bool _newCodeSent = false;
 
-  late final List<TextEditingController> _controllers =
-      List<TextEditingController>.generate(
-        _otpLength,
-        (_) => TextEditingController(),
-      );
-  late final List<FocusNode> _focusNodes = List<FocusNode>.generate(
-    _otpLength,
-    (_) => FocusNode(),
-  );
-  bool _isSubmitting = false;
-
-  bool get _isOtpComplete {
-    return _controllers.every((controller) => controller.text.length == 1);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNodes.first.requestFocus();
+  void _onKey(String key) {
+    if (_verifying) return;
+    setState(() {
+      _error = null;
+      _newCodeSent = false;
+      if (key == NumberKeypad.backspace) {
+        if (_code.isNotEmpty) _code = _code.substring(0, _code.length - 1);
+      } else if (_code.length < _otpLength) {
+        _code = '$_code$key';
+      }
     });
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _controllers) {
-      controller.dispose();
-    }
-    for (final focusNode in _focusNodes) {
-      focusNode.dispose();
-    }
-    super.dispose();
+    if (_code.length == _otpLength) _verify();
   }
 
   Future<void> _verify() async {
-    if (!_isOtpComplete) return;
-
-    final otp = _controllers.map((controller) => controller.text).join();
-    if (!RegExp('^\\d{$_otpLength}\$').hasMatch(otp)) {
-      _showError('OTP must be $_otpLength digits.');
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
+    final l10n = AppLocalizations.of(context);
+    setState(() => _verifying = true);
     try {
       final session = await ref
           .read(authRepositoryProvider)
-          .verifyOtp(widget.phone, widget.challengeId, otp);
-
+          .verifyOtp(widget.phone, _challengeId, _code);
       if (!mounted) return;
-
       // The router moves the signed-in user to their home page.
       ref.read(authControllerProvider.notifier).signIn(session);
     } catch (error) {
-      if (mounted) _handleError(error);
+      if (!mounted) return;
+      final code = apiErrorCode(error);
+      setState(() {
+        _error = authErrorText(l10n, error);
+        _expired =
+            code == ApiErrorCodes.otpExpired ||
+            code == ApiErrorCodes.otpChallengeInvalid;
+        // A wrong or dead code is cleared so the next try starts fresh.
+        _code = '';
+        _verifying = false;
+      });
+    }
+  }
+
+  /// Starts the login again for the same phone to get a new code.
+  Future<void> _sendNewCode() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _resending = true;
+      _error = null;
+    });
+    try {
+      final response = await ref
+          .read(authRepositoryProvider)
+          .startLogin(widget.phone);
+      if (!mounted) return;
+      final challengeId = response.challengeId;
+      if (!response.requiresOtp || challengeId == null || challengeId.isEmpty) {
+        // This account needs its password first.
+        context.go('/login-phone');
+        return;
+      }
+      setState(() {
+        _challengeId = challengeId;
+        _otpLength = response.otpLength;
+        _code = '';
+        _expired = false;
+        _newCodeSent = true;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = authErrorText(l10n, error));
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) setState(() => _resending = false);
     }
-  }
-
-  void _handleError(Object error) {
-    switch (apiErrorCode(error)) {
-      case ApiErrorCodes.otpExpired || ApiErrorCodes.otpChallengeInvalid:
-        // This code can no longer be used: a new OTP is needed.
-        _showError(
-          authErrorText(error),
-          action: SnackBarAction(
-            label: 'Request new OTP',
-            onPressed: () => context.go('/login-phone'),
-          ),
-        );
-      case ApiErrorCodes.otpInvalid:
-        _clearOtp();
-        _showError(authErrorText(error));
-      default:
-        _showError(authErrorText(error));
-    }
-  }
-
-  void _clearOtp() {
-    for (final controller in _controllers) {
-      controller.clear();
-    }
-    _focusNodes.first.requestFocus();
-    setState(() {});
-  }
-
-  void _onOtpChanged(int index, String value) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length > 1) {
-      _fillFromPaste(index, digits);
-      return;
-    }
-
-    if (digits != value) {
-      _controllers[index].text = digits;
-      _controllers[index].selection = TextSelection.collapsed(
-        offset: digits.length,
-      );
-    }
-
-    if (digits.isNotEmpty && index < _otpLength - 1) {
-      _focusNodes[index + 1].requestFocus();
-    }
-
-    setState(() {});
-  }
-
-  KeyEventResult _onOtpKey(int index, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey != LogicalKeyboardKey.backspace) {
-      return KeyEventResult.ignored;
-    }
-    if (_controllers[index].text.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
-      _controllers[index - 1].selection = TextSelection.collapsed(
-        offset: _controllers[index - 1].text.length,
-      );
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
-  void _fillFromPaste(int startIndex, String rawDigits) {
-    final digits = rawDigits.replaceAll(RegExp(r'\D'), '');
-    if (digits.isEmpty) return;
-
-    var currentIndex = startIndex;
-    for (final digit in digits.split('').take(_otpLength - startIndex)) {
-      _controllers[currentIndex].text = digit;
-      currentIndex++;
-      if (currentIndex >= _otpLength) break;
-    }
-
-    final focusIndex = currentIndex >= _otpLength
-        ? _otpLength - 1
-        : currentIndex;
-    _focusNodes[focusIndex].requestFocus();
-    _controllers[focusIndex].selection = TextSelection.collapsed(
-      offset: _controllers[focusIndex].text.length,
-    );
-    setState(() {});
-  }
-
-  void _showError(String message, {SnackBarAction? action}) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), action: action));
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final error = _error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify OTP')),
+      appBar: AppBar(title: Text(l10n.login)),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    'Verify OTP',
-                    style: textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enter the $_otpLength digit code sent to your phone',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
+        top: false,
+        child: SingleChildScrollView(
+          child: PageBody.form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                ScreenHeader(
+                  icon: AppIcons.code,
+                  title: l10n.enterCode,
+                  subtitle: l10n.codeSentTo(widget.phone),
+                ),
+                CodeBoxes(
+                  length: _otpLength,
+                  code: _code,
+                  hasError: error != null,
+                ),
+                const SizedBox(height: AppSpace.l),
+                if (_verifying)
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List<Widget>.generate(_otpLength, _buildOtpBox),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      const SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      ),
+                      const SizedBox(width: AppSpace.m),
+                      Text(l10n.pleaseWait),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  AppButton(
-                    label: 'Verify',
-                    isLoading: _isSubmitting,
-                    onPressed: _isOtpComplete ? _verify : null,
+                if (error != null)
+                  MessageBanner(
+                    text: error,
+                    action: _expired
+                        ? BusyButton(
+                            label: l10n.sendNewCode,
+                            icon: AppIcons.send,
+                            busy: _resending,
+                            onPressed: _sendNewCode,
+                          )
+                        : null,
                   ),
-                  const SizedBox(height: 12),
-                  AppButton(
-                    label: 'Back',
-                    isOutlined: true,
-                    onPressed: () => context.go('/login-phone'),
+                if (_newCodeSent)
+                  MessageBanner(text: l10n.newCodeSent, kind: StatusKind.done),
+                const SizedBox(height: AppSpace.l),
+                Center(
+                  child: NumberKeypad(
+                    onKey: _onKey,
+                    enabled: !_verifying && !_resending,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpace.m),
+                TextButton.icon(
+                  onPressed: () => context.go('/login-phone'),
+                  icon: const Icon(AppIcons.phone),
+                  label: Text(l10n.changeNumber),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  TextInputFormatter _pasteFormatter(int index) {
-    return TextInputFormatter.withFunction((oldValue, newValue) {
-      final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-      if (digits.length <= 1) return newValue;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _fillFromPaste(index, digits);
-      });
-      return oldValue;
-    });
-  }
+/// One box per code digit; the next empty box is highlighted.
+class CodeBoxes extends StatelessWidget {
+  const CodeBoxes({
+    super.key,
+    required this.length,
+    required this.code,
+    this.hasError = false,
+  });
 
-  Widget _buildOtpBox(int index) {
-    return Flexible(
-      child: Padding(
-        padding: EdgeInsets.only(right: index == _otpLength - 1 ? 0 : 8),
-        child: Focus(
-          onKeyEvent: (_, event) => _onOtpKey(index, event),
-          child: TextField(
-            controller: _controllers[index],
-            focusNode: _focusNodes[index],
-            keyboardType: TextInputType.number,
-            textInputAction: index == _otpLength - 1
-                ? TextInputAction.done
-                : TextInputAction.next,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-            inputFormatters: <TextInputFormatter>[
-              _pasteFormatter(index),
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(1),
-            ],
-            decoration: InputDecoration(
-              counterText: '',
-              contentPadding: const EdgeInsets.symmetric(vertical: 18),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
+  final int length;
+  final String code;
+  final bool hasError;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      liveRegion: true,
+      value: code,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List<Widget>.generate(length, (index) {
+            final filled = index < code.length;
+            final current = index == code.length;
+            final borderColor = hasError
+                ? AppTones.problem.color
+                : current || filled
+                ? AppTones.brand.color
+                : AppColors.border;
+            return Flexible(
+              child: Container(
+                width: 60,
+                height: 68,
+                margin: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.m),
+                  border: Border.all(
+                    color: borderColor,
+                    width: current ? 3 : 2,
+                  ),
+                ),
+                child: Text(
+                  filled ? code[index] : '',
+                  style: textTheme.headlineMedium,
                 ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 2,
-                ),
-              ),
-            ),
-            onChanged: (value) => _onOtpChanged(index, value),
-            onSubmitted: (_) {
-              if (_isOtpComplete) _verify();
-            },
-          ),
+            );
+          }),
         ),
       ),
     );

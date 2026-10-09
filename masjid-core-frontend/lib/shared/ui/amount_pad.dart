@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
-import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
+import 'package:masjid_core_frontend/shared/ui/number_keypad.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 
 /// Enter a rupee amount with big keys instead of the phone keyboard
@@ -27,7 +27,7 @@ class AmountPad extends StatelessWidget {
   final bool allowDecimal;
   final bool autofocus;
 
-  static const String backspaceKey = 'backspace';
+  static const String backspaceKey = NumberKeypad.backspace;
   static const int maxWholeDigits = 9;
 
   /// The text after pressing [key] (a digit, '.', or [backspaceKey]).
@@ -78,27 +78,8 @@ class AmountPad extends StatelessWidget {
     return '₹$grouped$rest';
   }
 
-  void _press(String key) {
-    HapticFeedback.selectionClick();
-    onChanged(applyKey(value, key, allowDecimal: allowDecimal));
-  }
-
-  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
-      return KeyEventResult.ignored;
-    }
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.backspace) {
-      _press(backspaceKey);
-      return KeyEventResult.handled;
-    }
-    final character = event.character;
-    if (character != null && RegExp(r'^[0-9.]$').hasMatch(character)) {
-      _press(character);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
+  void _press(String key) =>
+      onChanged(applyKey(value, key, allowDecimal: allowDecimal));
 
   @override
   Widget build(BuildContext context) {
@@ -106,96 +87,51 @@ class AmountPad extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final empty = value.isEmpty;
 
-    Widget key(String label, {String? keyValue, IconData? icon}) {
-      final pressed = keyValue ?? label;
-      return Padding(
-        padding: const EdgeInsets.all(AppSpace.xs),
-        child: Material(
-          color: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.m),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.m),
-            onTap: () => _press(pressed),
-            child: SizedBox(
-              height: 64,
-              child: Center(
-                child: icon != null
-                    ? Icon(icon, size: 28, semanticLabel: l10n.deleteDigit)
-                    : Text(label, style: textTheme.headlineMedium),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Semantics(
+          liveRegion: true,
+          label: empty ? l10n.amountHint : null,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              display(value),
+              textDirection: TextDirection.ltr,
+              style: textTheme.displayMedium?.copyWith(
+                color: empty ? AppColors.textSecondary : null,
+                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
               ),
             ),
           ),
         ),
-      );
-    }
-
-    Widget row(List<Widget> keys) =>
-        Row(children: keys.map((k) => Expanded(child: k)).toList());
-
-    return Focus(
-      autofocus: autofocus,
-      onKeyEvent: _onKey,
-      // Number pads keep 1-2-3 left to right in Urdu too.
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Semantics(
-              liveRegion: true,
-              label: empty ? l10n.amountHint : null,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  display(value),
-                  style: textTheme.displayMedium?.copyWith(
-                    color: empty ? AppColors.textSecondary : null,
-                    fontFeatures: const <FontFeature>[
-                      FontFeature.tabularFigures(),
-                    ],
+        const SizedBox(height: AppSpace.m),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpace.s,
+          runSpacing: AppSpace.s,
+          children: quickAmounts
+              .map(
+                (amount) => ActionChip(
+                  label: Text(
+                    display('$amount'),
+                    textDirection: TextDirection.ltr,
                   ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    onChanged('$amount');
+                  },
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpace.m),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: AppSpace.s,
-              runSpacing: AppSpace.s,
-              children: quickAmounts
-                  .map(
-                    (amount) => ActionChip(
-                      label: Text(display('$amount')),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        onChanged('$amount');
-                      },
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: AppSpace.m),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                children: <Widget>[
-                  row(<Widget>[key('1'), key('2'), key('3')]),
-                  row(<Widget>[key('4'), key('5'), key('6')]),
-                  row(<Widget>[key('7'), key('8'), key('9')]),
-                  row(<Widget>[
-                    allowDecimal ? key('.') : const SizedBox.shrink(),
-                    key('0'),
-                    key('', keyValue: backspaceKey, icon: AppIcons.backspace),
-                  ]),
-                ],
-              ),
-            ),
-          ],
+              )
+              .toList(),
         ),
-      ),
+        const SizedBox(height: AppSpace.m),
+        NumberKeypad(
+          onKey: _press,
+          extraKey: allowDecimal ? '.' : null,
+          autofocus: autofocus,
+        ),
+      ],
     );
   }
 }

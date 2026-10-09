@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/auth_error_text.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_text_field.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// Login step 2 for people with a password (imam, committee): the
+/// password, then the code.
 class LoginPasswordScreen extends ConsumerStatefulWidget {
   const LoginPasswordScreen({super.key, required this.phone});
 
@@ -20,7 +22,14 @@ class LoginPasswordScreen extends ConsumerStatefulWidget {
 class _LoginPasswordScreenState extends ConsumerState<LoginPasswordScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isSubmitting = false;
-  bool _obscurePassword = true;
+  bool _obscure = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -29,34 +38,27 @@ class _LoginPasswordScreenState extends ConsumerState<LoginPasswordScreen> {
   }
 
   Future<void> _continue() async {
-    final password = _passwordController.text.trim();
+    final l10n = AppLocalizations.of(context);
+    final password = _passwordController.text;
+    if (password.isEmpty || _isSubmitting) return;
 
-    if (password.isEmpty) {
-      _showError('Please enter your password.');
-      return;
-    }
-
-    if (password.length < 6) {
-      _showError('Password must be at least 6 characters.');
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
 
     try {
       final response = await ref
           .read(authRepositoryProvider)
           .submitPassword(widget.phone, password);
-
       if (!mounted) return;
 
       final challengeId = response.challengeId;
       if (!response.requiresOtp || challengeId == null || challengeId.isEmpty) {
-        _showError('OTP challenge is missing. Please try again.');
+        setState(() => _error = l10n.somethingWentWrong);
         return;
       }
-
-      context.go(
+      await context.push(
         '/login-otp',
         extra: <String, String>{
           'phone': response.phone,
@@ -67,79 +69,72 @@ class _LoginPasswordScreenState extends ConsumerState<LoginPasswordScreen> {
     } catch (error) {
       if (!mounted) return;
       if (apiErrorCode(error) == ApiErrorCodes.invalidCredentials) {
-        // Wrong password: clear the field so it can be retyped.
+        // Wrong password: clear the field so it can be typed again.
         _passwordController.clear();
       }
-      _showError(authErrorText(error));
+      setState(() => _error = authErrorText(l10n, error));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final error = _error;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter Password')),
+      appBar: AppBar(title: Text(l10n.login)),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+        top: false,
+        child: SingleChildScrollView(
+          child: PageBody.form(
+            child: AutofillGroup(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Text(
-                    'Enter Password',
-                    style: textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  ScreenHeader(
+                    icon: AppIcons.password,
+                    title: l10n.yourPassword,
+                    subtitle: widget.phone,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Password is required for admin/imam/committee login',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  AppTextField(
+                  TextField(
                     controller: _passwordController,
-                    label: 'Password',
-                    obscureText: _obscurePassword,
+                    obscureText: _obscure,
+                    autofocus: true,
+                    enabled: !_isSubmitting,
                     textInputAction: TextInputAction.done,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                    autofillHints: const <String>[AutofillHints.password],
+                    onSubmitted: (_) => _continue(),
+                    style: Theme.of(context).textTheme.titleLarge,
+                    decoration: InputDecoration(
+                      labelText: l10n.password,
+                      prefixIcon: const Icon(AppIcons.password),
+                      suffixIcon: IconButton(
+                        tooltip: _obscure
+                            ? l10n.showPassword
+                            : l10n.hidePassword,
+                        icon: Icon(
+                          _obscure
+                              ? AppIcons.showPassword
+                              : AppIcons.hidePassword,
+                        ),
+                        onPressed: () => setState(() => _obscure = !_obscure),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  AppButton(
-                    label: 'Continue',
-                    isLoading: _isSubmitting,
-                    onPressed: _continue,
-                  ),
-                  const SizedBox(height: 12),
-                  AppButton(
-                    label: 'Back',
-                    isOutlined: true,
-                    onPressed: () => context.go('/login-phone'),
+                  const SizedBox(height: AppSpace.l),
+                  if (error != null) ...<Widget>[
+                    MessageBanner(text: error),
+                    const SizedBox(height: AppSpace.l),
+                  ],
+                  BusyButton(
+                    label: l10n.continueLabel,
+                    icon: AppIcons.next,
+                    busy: _isSubmitting,
+                    onPressed: _passwordController.text.isEmpty
+                        ? null
+                        : _continue,
                   ),
                 ],
               ),

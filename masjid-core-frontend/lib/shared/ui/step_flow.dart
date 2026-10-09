@@ -14,6 +14,7 @@ class FlowStep {
     required this.icon,
     required this.builder,
     this.canContinue = true,
+    this.validate,
   });
 
   final String title;
@@ -23,6 +24,10 @@ class FlowStep {
   /// False keeps "Next" disabled (for example, no amount entered yet).
   /// The parent rebuilds the flow with a new value when its form changes.
   final bool canContinue;
+
+  /// Runs when "Next" is pressed; returning false stays on this step (for
+  /// example after a [Form] shows its field messages).
+  final bool Function()? validate;
 }
 
 /// A form asked one question at a time (rule 7): progress dots, the step's
@@ -62,8 +67,16 @@ class StepFlowState extends State<StepFlow> {
     if (_index > 0 && !_busy) setState(() => _index--);
   }
 
+  /// Jumps to step [index] (a review page's "Edit" buttons).
+  void goTo(int index) {
+    if (_busy || index < 0 || index >= widget.steps.length) return;
+    setState(() => _index = index);
+  }
+
   Future<void> next() async {
-    if (_busy || !widget.steps[_index].canContinue) return;
+    final step = widget.steps[_index];
+    if (_busy || !step.canContinue) return;
+    if (step.validate?.call() == false) return;
     if (!_isLast) {
       setState(() => _index++);
       return;

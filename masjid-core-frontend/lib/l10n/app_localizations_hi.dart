@@ -114,4 +114,250 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get largeText => 'बड़े अक्षर';
+
+  @override
+  String get aboutMasjidOptional => 'मस्जिद के बारे में (ज़रूरी नहीं)';
+
+  @override
+  String get addMember => 'सदस्य जोड़ें';
+
+  @override
+  String get address => 'पता';
+
+  @override
+  String get age => 'उम्र';
+
+  @override
+  String get appTagline => 'आपकी मस्जिद के नमाज़ के समय, खबरें और हिसाब';
+
+  @override
+  String get changeCountry => 'देश बदलें';
+
+  @override
+  String get changeNumber => 'नंबर बदलें';
+
+  @override
+  String get check => 'देखें';
+
+  @override
+  String get cityOrVillage => 'शहर या गाँव';
+
+  @override
+  String get committeeHelp => 'वे लोग जो इमाम के साथ मस्जिद चलाएँगे।';
+
+  @override
+  String get committeeMissing => 'कम से कम एक कमेटी सदस्य जोड़ें।';
+
+  @override
+  String get continueLabel => 'आगे बढ़ें';
+
+  @override
+  String get country => 'देश';
+
+  @override
+  String get district => 'ज़िला';
+
+  @override
+  String get duplicateCommitteePhone =>
+      'दो कमेटी सदस्यों का फ़ोन नंबर एक ही है।';
+
+  @override
+  String get edit => 'बदलें';
+
+  @override
+  String get emailOptional => 'ईमेल (ज़रूरी नहीं)';
+
+  @override
+  String get enterCode => 'कोड डालें';
+
+  @override
+  String get errorAccountInactive =>
+      'यह खाता बंद है। कृपया अपनी मस्जिद कमेटी से बात करें।';
+
+  @override
+  String get errorCodeExpired => 'इस कोड का समय खत्म हो गया। नया कोड लें।';
+
+  @override
+  String get errorNoInternet =>
+      'इंटरनेट नहीं है। कनेक्शन देखें और फिर कोशिश करें।';
+
+  @override
+  String get errorTooManyTries =>
+      'बहुत बार कोशिश हुई। एक मिनट रुककर फिर कोशिश करें।';
+
+  @override
+  String get errorWrongCode => 'कोड गलत है। फिर कोशिश करें।';
+
+  @override
+  String get errorWrongPassword => 'पासवर्ड गलत है। फिर कोशिश करें।';
+
+  @override
+  String get fatherName => 'पिता का नाम';
+
+  @override
+  String get fieldRequired => 'कृपया यह भरें।';
+
+  @override
+  String get fullName => 'नाम';
+
+  @override
+  String get gender => 'लिंग';
+
+  @override
+  String get genderFemale => 'महिला';
+
+  @override
+  String get genderMale => 'पुरुष';
+
+  @override
+  String get genderOther => 'अन्य';
+
+  @override
+  String get hidePassword => 'पासवर्ड छिपाएँ';
+
+  @override
+  String get home => 'होम';
+
+  @override
+  String get imamIsCommitteeMember => 'इमाम कमेटी सदस्य नहीं हो सकते।';
+
+  @override
+  String get invalidAge => 'उम्र 1 से 120 के बीच होनी चाहिए।';
+
+  @override
+  String get invalidEmail => 'ईमेल पता जाँचें।';
+
+  @override
+  String get invalidPhone => 'फ़ोन नंबर जाँचें।';
+
+  @override
+  String get login => 'लॉग इन';
+
+  @override
+  String get masjidName => 'मस्जिद का नाम';
+
+  @override
+  String get masjidPhoneOptional => 'मस्जिद का फ़ोन (ज़रूरी नहीं)';
+
+  @override
+  String get newCodeSent => 'नया कोड भेज दिया गया है।';
+
+  @override
+  String get noRequestFound => 'इस नंबर से कोई अनुरोध नहीं मिला।';
+
+  @override
+  String get password => 'पासवर्ड';
+
+  @override
+  String get phoneAlreadyRegistered => 'फ़ोन नंबर पहले से दर्ज है';
+
+  @override
+  String get phoneInAnotherMasjid =>
+      'यह नंबर पहले से किसी दूसरी मस्जिद में है।';
+
+  @override
+  String get phoneNumber => 'फ़ोन नंबर';
+
+  @override
+  String get registerMasjid => 'मस्जिद जोड़ें';
+
+  @override
+  String get removeMember => 'सदस्य हटाएँ';
+
+  @override
+  String get requestSent => 'अनुरोध भेज दिया गया';
+
+  @override
+  String get requestSentHelp =>
+      'हम जानकारी जाँचेंगे। आप कभी भी प्रगति देख सकते हैं।';
+
+  @override
+  String get requesterHelp => 'आपकी जानकारी, ताकि आप अनुरोध देख सकें।';
+
+  @override
+  String get reviewHelp => 'सब कुछ जाँचें, फिर भेजें।';
+
+  @override
+  String get searchCountry => 'देश खोजें';
+
+  @override
+  String get sendNewCode => 'नया कोड भेजें';
+
+  @override
+  String get sendRequest => 'अनुरोध भेजें';
+
+  @override
+  String get showPassword => 'पासवर्ड दिखाएँ';
+
+  @override
+  String get state => 'राज्य';
+
+  @override
+  String get stepApproved => 'मंज़ूर';
+
+  @override
+  String get stepChecking => 'जाँच हो रही है';
+
+  @override
+  String get stepCommittee => 'कमेटी';
+
+  @override
+  String get stepImam => 'इमाम';
+
+  @override
+  String get stepMasjid => 'मस्जिद';
+
+  @override
+  String get stepPlace => 'जगह';
+
+  @override
+  String get stepRejected => 'मंज़ूर नहीं';
+
+  @override
+  String get stepReview => 'जाँचें और भेजें';
+
+  @override
+  String get stepSent => 'भेजा गया';
+
+  @override
+  String get stepYou => 'आपके बारे में';
+
+  @override
+  String get trackHelp => 'रजिस्ट्रेशन के समय दिया गया फ़ोन नंबर डालें।';
+
+  @override
+  String get trackRequest => 'अनुरोध देखें';
+
+  @override
+  String get welcomeMessageOptional => 'स्वागत संदेश (ज़रूरी नहीं)';
+
+  @override
+  String get yourName => 'आपका नाम';
+
+  @override
+  String get yourPassword => 'आपका पासवर्ड';
+
+  @override
+  String get yourPhoneNumber => 'आपका फ़ोन नंबर';
+
+  @override
+  String codeSentTo(String phone) {
+    return '$phone पर भेजा गया';
+  }
+
+  @override
+  String memberNumber(int number) {
+    return 'सदस्य $number';
+  }
+
+  @override
+  String membersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count सदस्य',
+      one: '1 सदस्य',
+    );
+    return '$_temp0';
+  }
 }

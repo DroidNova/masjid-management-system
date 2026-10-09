@@ -6,6 +6,7 @@ import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/core/settings/speaker.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/theme/app_theme.dart';
+import 'package:masjid_core_frontend/shared/ui/number_keypad.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Records what would have been read aloud.
@@ -22,6 +23,45 @@ class FakeSpeaker implements Speaker {
   Future<void> stop() async => stops++;
 }
 
+/// The app's localizations, for test apps built by hand.
+const List<LocalizationsDelegate<Object>> testLocalizationsDelegates =
+    <LocalizationsDelegate<Object>>[
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ];
+
+/// Provider overrides every screen needs: saved settings (with [prefs] as
+/// stored values; English chosen unless given) and a silent speaker.
+Future<List<Override>> testAppOverrides({
+  Map<String, Object> prefs = const <String, Object>{},
+  FakeSpeaker? speaker,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{
+    'settings.language': 'en',
+    ...prefs,
+  });
+  final preferences = await SharedPreferences.getInstance();
+  return <Override>[
+    sharedPreferencesProvider.overrideWithValue(preferences),
+    speakerProvider.overrideWithValue(speaker ?? FakeSpeaker()),
+  ];
+}
+
+/// Taps [digits] on the on-screen [NumberKeypad].
+Future<void> tapKeypad(WidgetTester tester, String digits) async {
+  for (final digit in digits.split('')) {
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NumberKeypad),
+        matching: find.text(digit),
+      ),
+    );
+    await tester.pump();
+  }
+}
+
 /// Pumps [child] inside the app's theme, localizations, and providers, on a
 /// screen of [size] logical pixels.
 Future<ProviderContainer> pumpUi(
@@ -31,6 +71,7 @@ Future<ProviderContainer> pumpUi(
   Size size = const Size(400, 900),
   Map<String, Object> prefs = const <String, Object>{},
   FakeSpeaker? speaker,
+  List<Override> overrides = const <Override>[],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -42,6 +83,7 @@ Future<ProviderContainer> pumpUi(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(preferences),
       speakerProvider.overrideWithValue(speaker ?? FakeSpeaker()),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);
@@ -52,12 +94,7 @@ Future<ProviderContainer> pumpUi(
       child: MaterialApp(
         locale: locale,
         theme: AppTheme.light(languageCode: locale.languageCode),
-        localizationsDelegates: const <LocalizationsDelegate<Object>>[
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: child,
       ),

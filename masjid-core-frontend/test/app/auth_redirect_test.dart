@@ -33,6 +33,23 @@ void main() {
       }
     });
 
+    test('stays on the public page they opened or refreshed', () {
+      expect(
+        _go(const AuthSignedOut(), '/splash?from=%2Fmasjid-request%2Ftrack'),
+        '/masjid-request/track',
+      );
+      expect(
+        _go(const AuthSignedOut(), '/splash?from=%2Flogin-phone'),
+        '/login-phone',
+      );
+      // Mid-login steps lose their data on refresh: start again.
+      expect(_go(const AuthSignedOut(), '/splash?from=%2Flogin-otp'), '/auth');
+      expect(
+        _go(const AuthSignedOut(), '/splash?from=%2Fmain%2Fhome'),
+        '/auth',
+      );
+    });
+
     test('is sent to login from any other page', () {
       expect(_go(const AuthSignedOut(), '/main/home'), '/auth');
       expect(_go(const AuthSignedOut(), '/super-admin'), '/auth');

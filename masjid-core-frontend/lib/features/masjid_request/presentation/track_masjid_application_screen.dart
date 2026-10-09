@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
-import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/track_application_controller.dart';
 import 'package:masjid_core_frontend/features/masjid_request/data/models/track_masjid_application_result.dart';
+import 'package:masjid_core_frontend/features/masjid_request/presentation/widgets/request_timeline.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_phone_field.dart';
 
-/// Public: look up masjid applications by the requester's phone number.
+/// Public: look up masjid requests by the requester's phone number and see
+/// each one's progress as a timeline.
 class TrackMasjidApplicationScreen extends ConsumerStatefulWidget {
   const TrackMasjidApplicationScreen({super.key});
 
@@ -21,191 +22,151 @@ class TrackMasjidApplicationScreen extends ConsumerStatefulWidget {
 
 class _TrackMasjidApplicationScreenState
     extends ConsumerState<TrackMasjidApplicationScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
-  CountryCode _selectedCountry = getDefaultCountryCode();
+  CountryCode _country = getDefaultCountryCode();
+  String _digits = '';
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _trackApplication() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _track() async {
+    if (!PhoneEntry.isValid(_country, _digits)) return;
     await ref
         .read(trackApplicationControllerProvider.notifier)
-        .track(
-          normalizePhone(
-            countryCode: _selectedCountry,
-            nationalNumber: _phoneController.text,
-          ),
-        );
+        .track(normalizePhone(countryCode: _country, nationalNumber: _digits));
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final result = ref.watch(trackApplicationControllerProvider);
     final isLoading = result?.isLoading ?? false;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Track Application'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/auth'),
-        ),
+        title: Text(l10n.trackRequest),
+        leading: Navigator.canPop(context)
+            ? null
+            : IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const BackButtonIcon(),
+                onPressed: () => context.go('/auth'),
+              ),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: <Widget>[
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 700),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        'Track Application',
-                        style: textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enter the phone number used during masjid registration.',
-                        style: textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 20),
-                      AppPhoneField(
-                        phoneController: _phoneController,
-                        initialCountry: _selectedCountry,
-                        onCountryChanged: (country) =>
-                            _selectedCountry = country,
-                        label: 'Registered Phone Number *',
-                        isRequired: true,
-                        textInputAction: TextInputAction.search,
-                      ),
-                      const SizedBox(height: 16),
-                      AppButton(
-                        label: 'Track',
-                        icon: Icons.search,
-                        isLoading: isLoading,
-                        onPressed: _trackApplication,
-                      ),
-                      const SizedBox(height: 24),
-                      if (result != null) ..._results(result),
-                    ],
-                  ),
+        top: false,
+        child: SingleChildScrollView(
+          child: PageBody.form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                ScreenHeader(
+                  icon: AppIcons.track,
+                  tone: AppTones.namaz,
+                  title: l10n.trackRequest,
+                  subtitle: l10n.trackHelp,
                 ),
-              ),
+                PhoneEntry(
+                  country: _country,
+                  digits: _digits,
+                  enabled: !isLoading,
+                  onCountryChanged: (country) => setState(() {
+                    _country = country;
+                    _digits = '';
+                  }),
+                  onDigitsChanged: (digits) => setState(() => _digits = digits),
+                ),
+                const SizedBox(height: AppSpace.l),
+                BusyButton(
+                  label: l10n.check,
+                  icon: AppIcons.search,
+                  busy: isLoading,
+                  color: AppTones.namaz.color,
+                  onPressed: PhoneEntry.isValid(_country, _digits)
+                      ? _track
+                      : null,
+                ),
+                const SizedBox(height: AppSpace.xl),
+                if (result != null && !result.isLoading)
+                  ..._results(l10n, result),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  List<Widget> _results(AsyncValue<List<TrackMasjidApplicationResult>> result) {
-    if (result.isLoading) {
-      return const <Widget>[Center(child: CircularProgressIndicator())];
-    }
+  List<Widget> _results(
+    AppLocalizations l10n,
+    AsyncValue<List<TrackMasjidApplicationResult>> result,
+  ) {
     final error = result.error;
     if (error != null) {
-      return <Widget>[_TrackMessageCard(message: userMessage(error))];
+      return <Widget>[MessageBanner(text: errorText(l10n, error))];
     }
     final items = result.value ?? const <TrackMasjidApplicationResult>[];
     if (items.isEmpty) {
-      return const <Widget>[
-        _TrackMessageCard(
-          message: 'No application found for this phone number.',
-        ),
+      return <Widget>[
+        MessageBanner(text: l10n.noRequestFound, kind: StatusKind.neutral),
       ];
     }
-    return items.map(_ApplicationCard.new).toList();
-  }
-}
-
-class _TrackMessageCard extends StatelessWidget {
-  const _TrackMessageCard({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(message, textAlign: TextAlign.center),
-      ),
-    );
+    return items.map((item) => _ApplicationCard(item: item)).toList();
   }
 }
 
 class _ApplicationCard extends StatelessWidget {
-  const _ApplicationCard(this.item);
+  const _ApplicationCard({required this.item});
 
   final TrackMasjidApplicationResult item;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    item.masjidName,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                _StatusChip(status: item.status),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text('Imam: ${item.imamName ?? 'Not available'}'),
-            const SizedBox(height: 6),
-            Text(
-              'Requested: ${item.requestedAt == null ? 'Not available' : AppFormat.date(item.requestedAt!)}',
-            ),
-            const SizedBox(height: 6),
-            const Text('Contact us: support@yourdomain.com'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final normalized = status.toUpperCase();
-    final color = switch (normalized) {
-      'APPROVED' => Colors.green,
-      'REJECTED' => Colors.red,
-      _ => Colors.orange,
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final status = item.status.toUpperCase();
+    final imam = item.imamName;
+    final (StatusKind kind, String label) = switch (status) {
+      'APPROVED' => (StatusKind.done, l10n.stepApproved),
+      'REJECTED' => (StatusKind.problem, l10n.stepRejected),
+      _ => (StatusKind.waiting, l10n.stepChecking),
     };
 
-    return Chip(
-      label: Text(normalized),
-      backgroundColor: color.withValues(alpha: 0.12),
-      labelStyle: TextStyle(color: color.shade700, fontWeight: FontWeight.w700),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.l),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  const ToneIcon(icon: AppIcons.mosque, tone: AppTones.namaz),
+                  const SizedBox(width: AppSpace.m),
+                  Expanded(
+                    child: Text(item.masjidName, style: textTheme.titleLarge),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpace.m),
+              StatusBadge(kind: kind, label: label),
+              if (imam != null && imam.isNotEmpty) ...<Widget>[
+                const SizedBox(height: AppSpace.m),
+                Row(
+                  children: <Widget>[
+                    const Icon(AppIcons.imam, color: AppColors.textSecondary),
+                    const SizedBox(width: AppSpace.s),
+                    Expanded(child: Text(imam, style: textTheme.bodyLarge)),
+                  ],
+                ),
+              ],
+              const Divider(height: AppSpace.xxl),
+              RequestTimeline(
+                status: item.status,
+                requestedAt: item.requestedAt,
+                reviewedAt: item.reviewedAt,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

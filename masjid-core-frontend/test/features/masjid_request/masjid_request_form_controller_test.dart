@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_draft.dart';
 import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_form_controller.dart';
+import 'package:masjid_core_frontend/features/masjid_request/application/masjid_request_validators.dart';
 import 'package:masjid_core_frontend/features/masjid_request/data/masjid_request_repository.dart';
 import 'package:masjid_core_frontend/features/masjid_request/data/models/create_masjid_request.dart';
 import 'package:masjid_core_frontend/shared/constants/country_codes.dart';
@@ -161,8 +162,8 @@ void main() {
       expect(ok, isFalse);
       final error = container.read(masjidRequestFormControllerProvider).error!;
       expect(
-        masjidRequestErrorMessage(error),
-        'Imam cannot also be a committee member.',
+        (error as MasjidRequestInvalid).problem,
+        CommitteeProblem.imamIsMember,
       );
       verifyNever(() => repository.submitMasjidRequest(any()));
     },
@@ -174,15 +175,14 @@ void main() {
     );
 
     expect(ok, isFalse);
+    final error = container.read(masjidRequestFormControllerProvider).error;
     expect(
-      masjidRequestErrorMessage(
-        container.read(masjidRequestFormControllerProvider).error!,
-      ),
-      'Committee member mobile number is duplicated.',
+      (error! as MasjidRequestInvalid).problem,
+      CommitteeProblem.duplicatePhone,
     );
   });
 
-  test('a server error keeps the server message', () async {
+  test('a server error is kept as is for the screen', () async {
     when(() => repository.submitMasjidRequest(any())).thenThrow(
       const ApiException(
         message: 'This phone number already belongs to another masjid',
@@ -195,8 +195,9 @@ void main() {
 
     expect(ok, isFalse);
     final error = container.read(masjidRequestFormControllerProvider).error!;
+    expect(error, isA<ApiException>());
     expect(
-      masjidRequestErrorMessage(error),
+      (error as ApiException).message,
       'This phone number already belongs to another masjid',
     );
   });

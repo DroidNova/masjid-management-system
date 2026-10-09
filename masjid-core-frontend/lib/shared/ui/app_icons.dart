@@ -18,6 +18,9 @@ class AppIcons {
   static const IconData people = Icons.groups_rounded;
   static const IconData salary = Icons.currency_rupee_rounded;
   static const IconData myPayments = Icons.receipt_long_rounded;
+  static const IconData imam = Icons.person_pin_rounded;
+  static const IconData place = Icons.place_rounded;
+  static const IconData review = Icons.fact_check_rounded;
 
   // Prayers: the sun's position through the day.
   static const IconData fajr = Icons.wb_twilight_rounded;
@@ -38,6 +41,25 @@ class AppIcons {
   static const IconData problem = Icons.error_rounded;
   static const IconData warning = Icons.warning_rounded;
   static const IconData info = Icons.info_rounded;
+
+  // Start and login.
+  static const IconData login = Icons.login_rounded;
+  static const IconData registerMasjid = Icons.add_business_rounded;
+  static const IconData track = Icons.manage_search_rounded;
+  static const IconData phone = Icons.phone_rounded;
+  static const IconData code = Icons.sms_rounded;
+  static const IconData send = Icons.send_rounded;
+  static const IconData showPassword = Icons.visibility_rounded;
+  static const IconData hidePassword = Icons.visibility_off_rounded;
+
+  // People.
+  static const IconData person = Icons.person_rounded;
+  static const IconData male = Icons.man_rounded;
+  static const IconData female = Icons.woman_rounded;
+  static const IconData otherGender = Icons.person_outline_rounded;
+  static const IconData email = Icons.email_rounded;
+  static const IconData age = Icons.cake_rounded;
+  static const IconData family = Icons.family_restroom_rounded;
 
   // Actions.
   static const IconData add = Icons.add_rounded;

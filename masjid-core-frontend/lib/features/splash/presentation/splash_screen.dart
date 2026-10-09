@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 /// Shown while the stored session is checked at startup. The auth state
 /// (AuthController) and the router redirect decide where to go next.
@@ -9,24 +9,28 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                AppLocalizations.of(context).appTitle,
-                style: textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const LoadingView(),
-            ],
-          ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const ToneIcon(
+              icon: AppIcons.mosque,
+              tone: AppTones.brand,
+              size: 120,
+              circle: true,
+            ),
+            const SizedBox(height: AppSpace.xl),
+            Text(
+              AppLocalizations.of(context).appTitle,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: AppSpace.xl),
+            const SizedBox.square(
+              dimension: 32,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+          ],
         ),
       ),
     );

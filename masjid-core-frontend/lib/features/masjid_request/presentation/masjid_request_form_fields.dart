@@ -5,6 +5,9 @@ import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
 
 /// Text controllers and picked values of one committee member's fields.
 class CommitteeMemberFields {
+  /// Keeps each member's fields attached to the right card when one is
+  /// removed from the middle of the list.
+  final Key key = UniqueKey();
   final TextEditingController name = TextEditingController();
   final TextEditingController phone = TextEditingController();
   final TextEditingController fatherName = TextEditingController();

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/config/api_config.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
+import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/announcements_screen.dart';
@@ -26,6 +27,7 @@ import 'package:masjid_core_frontend/features/finance/presentation/add_collectio
 import 'package:masjid_core_frontend/features/finance/presentation/add_expense_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/finance_screen.dart';
 import 'package:masjid_core_frontend/features/imam_salary/presentation/imam_salary_screen.dart';
+import 'package:masjid_core_frontend/features/language/presentation/language_screen.dart';
 import 'package:masjid_core_frontend/features/main_shell/presentation/main_shell_screen.dart';
 import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid_request_form_screen.dart';
 import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid_request_submitted_screen.dart';
@@ -63,7 +65,11 @@ const Set<String> publicLocations = <String>{
   '/masjid-request/submitted',
   '/masjid-request/track',
   designGalleryLocation,
+  languageLocation,
 };
+
+/// The language picker; shown first until a language is chosen.
+const String languageLocation = '/language';
 
 /// Design-system gallery; registered only outside production builds.
 const String designGalleryLocation = '/dev/gallery';
@@ -92,6 +98,16 @@ String? authRedirect(AuthState state, Uri uri) {
 
     case AuthSignedOut():
       if (publicLocations.contains(path)) return null;
+      // Back to the public page they opened or refreshed (website), except
+      // the mid-login steps, whose data a refresh loses.
+      final from = path == '/splash' ? uri.queryParameters['from'] : null;
+      final fromPath = from == null ? null : Uri.parse(from).path;
+      if (fromPath != null &&
+          publicLocations.contains(fromPath) &&
+          fromPath != '/login-otp' &&
+          fromPath != '/login-password') {
+        return from;
+      }
       return '/auth';
 
     case AuthSignedIn(:final user):
@@ -126,6 +142,28 @@ class _AuthRefresh extends ChangeNotifier {
   }
 }
 
+/// Sends people who have not chosen a language yet to the language picker
+/// first (UI_REDESIGN_PLAN.md, rule 12), then on to [target]: where the
+/// auth redirect wanted to go, or the requested page. The splash screen and
+/// the gallery are left alone. Returns null to stay.
+String? languageRedirect({
+  required bool hasChosenLanguage,
+  required Uri uri,
+  String? target,
+}) {
+  if (hasChosenLanguage) return target;
+  final next = Uri.parse(target ?? uri.toString());
+  if (next.path == languageLocation ||
+      next.path == '/splash' ||
+      next.path == designGalleryLocation) {
+    return target;
+  }
+  return Uri(
+    path: languageLocation,
+    queryParameters: <String, String>{'from': next.toString()},
+  ).toString();
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefresh(ref);
   ref.onDispose(refresh.dispose);
@@ -133,8 +171,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: refresh,
-    redirect: (context, state) =>
-        authRedirect(ref.read(authControllerProvider), state.uri),
+    redirect: (context, state) => languageRedirect(
+      hasChosenLanguage: ref.read(appSettingsProvider).hasChosenLanguage,
+      uri: state.uri,
+      target: authRedirect(ref.read(authControllerProvider), state.uri),
+    ),
     routes: _routes,
   );
 });
@@ -146,6 +187,11 @@ final List<RouteBase> _routes = <RouteBase>[
       path: designGalleryLocation,
       builder: (context, state) => const DesignGalleryScreen(),
     ),
+  GoRoute(
+    path: languageLocation,
+    builder: (context, state) =>
+        LanguageScreen(from: state.uri.queryParameters['from']),
+  ),
   GoRoute(
     path: '/auth',
     builder: (context, state) => const AuthLandingScreen(),
