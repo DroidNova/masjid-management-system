@@ -64,6 +64,16 @@ class PermissionHelper {
   static bool hasRoleInList(List<String> roles, String role) =>
       roles.map((value) => value.toUpperCase()).contains(role.toUpperCase());
 
+  /// Imam, committee, and admin accounts log in with a password and can
+  /// change it; members log in with a code only. Mirrors PRIVILEGED_ROLES
+  /// in masjid-core auth.service.ts (an account type, not a permission).
+  static bool hasPassword(AppUser? user) => <String>[
+    superAdmin,
+    masjidAdmin,
+    imam,
+    committeeMember,
+  ].any((role) => hasRole(user, role));
+
   /// Super admins use a separate admin shell instead of the masjid app.
   static bool isSuperAdmin(AppUser? user) => hasRole(user, superAdmin);
 

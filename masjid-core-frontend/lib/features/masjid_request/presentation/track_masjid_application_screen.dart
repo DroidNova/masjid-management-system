@@ -66,6 +66,7 @@ class _TrackMasjidApplicationScreenState
                   country: _country,
                   digits: _digits,
                   enabled: !isLoading,
+                  onSubmit: _track,
                   onCountryChanged: (country) => setState(() {
                     _country = country;
                     _digits = '';

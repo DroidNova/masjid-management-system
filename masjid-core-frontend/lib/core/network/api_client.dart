@@ -29,11 +29,11 @@ class ApiClient {
   static ApiClient configure({
     required TokenStorage tokenStorage,
     required SessionExpiredCallback onSessionExpired,
-    String baseUrl = ApiConfig.baseUrl,
+    String? baseUrl,
     HttpClientAdapter? adapter,
   }) {
     final options = BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: baseUrl ?? ApiConfig.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 20),
       headers: const <String, String>{

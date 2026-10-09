@@ -277,9 +277,13 @@ To set it up on your machine:
 
 1. Create a free ngrok account, copy the **authtoken**, claim a free **static domain**.
 2. Put `NGROK_AUTHTOKEN=<token>` in `.env.tunnel`.
-3. In `.env`: `COMPOSE_PROFILES=tunnel`, `NGROK_DOMAIN=<domain>`,
-   `FRONTEND_API_BASE_URL=https://<domain>/api/v1`, and add
-   `https://<domain>` to `CORS_ALLOWED_ORIGINS`.
+3. In `.env`: `COMPOSE_PROFILES=tunnel`, `NGROK_DOMAIN=<domain>`, and add
+   `https://<domain>` to `CORS_ALLOWED_ORIGINS`. Keep
+   `FRONTEND_API_BASE_URL=/api/v1`: the website then calls the API at its
+   own address, whether opened on localhost:8080 or through the tunnel. (A
+   full tunnel URL here makes localhost:8080 call the tunnel, and free ngrok's
+   warning page blocks those calls.) The APK still uses the full
+   `https://<domain>/api/v1`.
 4. `docker compose up -d --build frontend` (the web build bakes in the API URL), then `docker compose up -d`.
 
 Facts about the tunnel:

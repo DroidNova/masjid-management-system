@@ -50,6 +50,21 @@ class AuthApi {
     return AppUser.fromJson(data);
   }
 
+  /// Imam, committee, and admin accounts only; other sessions are signed
+  /// out by the server, this one stays valid.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _apiClient.post<Object?>(
+      '/auth/password/change',
+      body: <String, dynamic>{
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+    );
+  }
+
   Future<void> logout({String? refreshToken}) async {
     await _apiClient.post<Object?>(
       '/auth/logout',

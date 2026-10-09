@@ -360,4 +360,209 @@ class AppLocalizationsHi extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get account => 'खाता';
+
+  @override
+  String get changePassword => 'पासवर्ड बदलें';
+
+  @override
+  String get changePasswordHelp =>
+      'आपके दूसरे फ़ोन और कंप्यूटर से लॉग आउट हो जाएगा।';
+
+  @override
+  String get changeTimes => 'समय बदलें';
+
+  @override
+  String get currentPassword => 'अभी का पासवर्ड';
+
+  @override
+  String get errorSamePassword => 'नया पासवर्ड पुराने जैसा ही है।';
+
+  @override
+  String get errorWrongCurrentPassword => 'अभी का पासवर्ड गलत है।';
+
+  @override
+  String get familyHead => 'घर के मुखिया';
+
+  @override
+  String get latestNews => 'ताज़ा खबर';
+
+  @override
+  String get leave => 'छोड़ें';
+
+  @override
+  String get leaveMasjid => 'मस्जिद छोड़ें';
+
+  @override
+  String get leaveMasjidQuestion => 'मस्जिद छोड़ना चाहते हैं?';
+
+  @override
+  String get leavePointAccess =>
+      'आप इस मस्जिद के समय, खबरें और हिसाब नहीं देख पाएँगे।';
+
+  @override
+  String get leavePointHistory => 'आपके भुगतान का रिकॉर्ड मस्जिद के पास रहेगा।';
+
+  @override
+  String get leavePointJoin =>
+      'छोड़ने के बाद कोई दूसरी मस्जिद आपको जोड़ सकती है।';
+
+  @override
+  String get logoutQuestion => 'लॉग आउट करें?';
+
+  @override
+  String get masjidBalance => 'मस्जिद का बैलेंस';
+
+  @override
+  String get memberSince => 'सदस्य कब से';
+
+  @override
+  String get moneyIn => 'पैसा आया';
+
+  @override
+  String get moneyOut => 'पैसा गया';
+
+  @override
+  String get namazTimesNotSet => 'नमाज़ के समय अभी तय नहीं हुए हैं।';
+
+  @override
+  String get newPassword => 'नया पासवर्ड';
+
+  @override
+  String get nextNamaz => 'अगली नमाज़';
+
+  @override
+  String get notVerified => 'जाँचा नहीं गया';
+
+  @override
+  String get passwordChanged => 'पासवर्ड बदल गया';
+
+  @override
+  String get passwordsDiffer => 'दोनों पासवर्ड एक जैसे नहीं हैं।';
+
+  @override
+  String get prayerAsr => 'अस्र';
+
+  @override
+  String get prayerFajr => 'फ़ज्र';
+
+  @override
+  String get prayerIsha => 'इशा';
+
+  @override
+  String get prayerJumma => 'जुमा';
+
+  @override
+  String get prayerMaghrib => 'मग़रिब';
+
+  @override
+  String get prayerZuhr => 'ज़ुहर';
+
+  @override
+  String get repeatNewPassword => 'नया पासवर्ड फिर से';
+
+  @override
+  String get roleCommittee => 'कमेटी';
+
+  @override
+  String get roleImam => 'इमाम';
+
+  @override
+  String get roleMember => 'सदस्य';
+
+  @override
+  String get roleSuperAdmin => 'सुपर एडमिन';
+
+  @override
+  String get salary => 'तनख़्वाह';
+
+  @override
+  String get seeAll => 'सब देखें';
+
+  @override
+  String get setTimes => 'समय तय करें';
+
+  @override
+  String get statusActive => 'चालू';
+
+  @override
+  String get statusInactive => 'बंद';
+
+  @override
+  String get statusPending => 'रुका हुआ';
+
+  @override
+  String get superAdmin => 'सुपर एडमिन';
+
+  @override
+  String get tabDashboard => 'डैशबोर्ड';
+
+  @override
+  String get tabHome => 'होम';
+
+  @override
+  String get tabMasjids => 'मस्जिदें';
+
+  @override
+  String get tabMoney => 'पैसा';
+
+  @override
+  String get tabMyPayments => 'मेरा भुगतान';
+
+  @override
+  String get tabNews => 'खबरें';
+
+  @override
+  String get tabPeople => 'लोग';
+
+  @override
+  String get tabProfile => 'प्रोफ़ाइल';
+
+  @override
+  String get tabProjects => 'काम';
+
+  @override
+  String get tabRequests => 'अनुरोध';
+
+  @override
+  String get tabTimes => 'समय';
+
+  @override
+  String get tabUsers => 'उपयोगकर्ता';
+
+  @override
+  String get thisMonth => 'इस महीने';
+
+  @override
+  String get verified => 'जाँचा गया';
+
+  @override
+  String get youLeftTheMasjid => 'आपने मस्जिद छोड़ दी';
+
+  @override
+  String inHoursMinutes(int hours, int minutes) {
+    return '$hours घंटे $minutes मिनट में';
+  }
+
+  @override
+  String inMinutes(int minutes) {
+    return '$minutes मिनट में';
+  }
+
+  @override
+  String nextNamazSpoken(String prayer, String time, String countdown) {
+    return 'अगली नमाज़: $prayer, $time बजे, $countdown';
+  }
+
+  @override
+  String passwordTooShort(int count) {
+    return 'कम से कम $count अक्षर या अंक रखें।';
+  }
+
+  @override
+  String youLeft(String masjid) {
+    return 'आपने $masjid छोड़ दी';
+  }
 }

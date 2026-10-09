@@ -98,7 +98,7 @@ class ActionTileGrid extends StatelessWidget {
         final columns = size.tileColumns;
         // Square on phones, wider on big screens so tiles do not tower.
         final shape = switch (size) {
-          ScreenSize.compact => 1.0,
+          ScreenSize.compact => 1.15,
           ScreenSize.medium => 1.25,
           ScreenSize.expanded => 1.5,
         };

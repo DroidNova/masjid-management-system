@@ -157,5 +157,113 @@
         "type": "int"
       }
     }
+  },
+  "account": "Account",
+  "changePassword": "Change password",
+  "changePasswordHelp": "Your other phones and computers will be logged out.",
+  "changeTimes": "Change times",
+  "currentPassword": "Current password",
+  "errorSamePassword": "The new password is the same as the old one.",
+  "errorWrongCurrentPassword": "The current password is wrong.",
+  "familyHead": "Family head",
+  "latestNews": "Latest news",
+  "leave": "Leave",
+  "leaveMasjid": "Leave masjid",
+  "leaveMasjidQuestion": "Leave the masjid?",
+  "leavePointAccess": "You will no longer see this masjid's times, news, and money.",
+  "leavePointHistory": "Your payment history stays with the masjid.",
+  "leavePointJoin": "Another masjid can add you after you leave.",
+  "logoutQuestion": "Log out?",
+  "masjidBalance": "Masjid balance",
+  "memberSince": "Member since",
+  "moneyIn": "Money in",
+  "moneyOut": "Money out",
+  "namazTimesNotSet": "Namaz times are not set yet.",
+  "newPassword": "New password",
+  "nextNamaz": "Next namaz",
+  "notVerified": "Not verified",
+  "passwordChanged": "Password changed",
+  "passwordsDiffer": "The two passwords are not the same.",
+  "prayerAsr": "Asr",
+  "prayerFajr": "Fajr",
+  "prayerIsha": "Isha",
+  "prayerJumma": "Jumma",
+  "prayerMaghrib": "Maghrib",
+  "prayerZuhr": "Zuhr",
+  "repeatNewPassword": "New password again",
+  "roleCommittee": "Committee",
+  "roleImam": "Imam",
+  "roleMember": "Member",
+  "roleSuperAdmin": "Super admin",
+  "salary": "Salary",
+  "seeAll": "See all",
+  "setTimes": "Set times",
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+  "statusPending": "Pending",
+  "superAdmin": "Super admin",
+  "tabDashboard": "Dashboard",
+  "tabHome": "Home",
+  "tabMasjids": "Masjids",
+  "tabMoney": "Money",
+  "tabMyPayments": "My payments",
+  "tabNews": "News",
+  "tabPeople": "People",
+  "tabProfile": "Profile",
+  "tabProjects": "Projects",
+  "tabRequests": "Requests",
+  "tabTimes": "Times",
+  "tabUsers": "Users",
+  "thisMonth": "This month",
+  "verified": "Verified",
+  "youLeftTheMasjid": "You left the masjid",
+  "inHoursMinutes": "in {hours} h {minutes} min",
+  "@inHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inMinutes": "in {minutes} min",
+  "@inMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nextNamazSpoken": "Next namaz: {prayer} at {time}, {countdown}",
+  "@nextNamazSpoken": {
+    "placeholders": {
+      "prayer": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordTooShort": "Use at least {count} letters or numbers.",
+  "@passwordTooShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "youLeft": "You left {masjid}",
+  "@youLeft": {
+    "placeholders": {
+      "masjid": {
+        "type": "String"
+      }
+    }
   }
 }

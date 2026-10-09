@@ -57,6 +57,14 @@ class AuthRepository {
     return user;
   }
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _authApi.changePassword(
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+  );
+
   Future<void> logout() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
 

@@ -20,6 +20,7 @@ class PhoneEntry extends StatelessWidget {
     required this.onDigitsChanged,
     this.autofocus = true,
     this.enabled = true,
+    this.onSubmit,
   });
 
   final CountryCode country;
@@ -28,6 +29,9 @@ class PhoneEntry extends StatelessWidget {
   final ValueChanged<String> onDigitsChanged;
   final bool autofocus;
   final bool enabled;
+
+  /// Enter on a computer keyboard; see [NumberKeypad.onSubmit].
+  final VoidCallback? onSubmit;
 
   static int maxLengthFor(CountryCode country) => country.maxLength ?? 15;
   static int minLengthFor(CountryCode country) => country.minLength ?? 6;
@@ -124,6 +128,7 @@ class PhoneEntry extends StatelessWidget {
         NumberKeypad(
           autofocus: autofocus,
           enabled: enabled,
+          onSubmit: onSubmit,
           onKey: (key) => onDigitsChanged(
             applyKey(digits, key, maxLength: maxLengthFor(country)),
           ),

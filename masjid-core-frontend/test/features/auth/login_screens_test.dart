@@ -2,6 +2,7 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -148,6 +149,37 @@ void main() {
         'challengeId': 'c1',
         'otpLength': '6',
       });
+    });
+
+    testWidgets('a computer keyboard can type the number and press Enter', (
+      tester,
+    ) async {
+      when(() => repository.startLogin(any())).thenAnswer(
+        (_) async => const LoginStartResponse(
+          nextStep: 'OTP_REQUIRED',
+          phone: '+919876543210',
+          challengeId: 'c1',
+        ),
+      );
+      final harness = _Harness(repository);
+      await harness.pump(tester, '/login-phone');
+
+      for (final digit in '9876543210'.split('')) {
+        await tester.sendKeyEvent(
+          LogicalKeyboardKey(
+            LogicalKeyboardKey.digit0.keyId + int.parse(digit),
+          ),
+        );
+        // A real keyboard gets a frame between key presses.
+        await tester.pump();
+      }
+      await tester.pump();
+      expect(find.text('98765 43210'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.startLogin('+919876543210')).called(1);
+      expect(harness.otpExtra, isNotNull);
     });
 
     testWidgets('goes to the password step when the server asks', (

@@ -2,51 +2,104 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
+import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/home_dashboard_screen.dart';
-import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/next_namaz_card.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../shared/ui/ui_test_helpers.dart';
 
 class _MockDashboardRepository extends Mock implements DashboardRepository {}
 
-/// Auth state fixed to "signed out" (no storage, no network).
 class _FixedAuth extends AuthController {
+  _FixedAuth(this.permissions);
+
+  final List<String> permissions;
+  int signOutCalls = 0;
+
   @override
-  AuthState build() => const AuthSignedOut();
+  AuthState build() => AuthSignedIn(
+    AppUser(id: 'u1', fullName: 'Rafiq', permissions: permissions),
+  );
+
+  @override
+  Future<void> signOut() async => signOutCalls++;
 }
 
-Future<void> _pump(WidgetTester tester, DashboardRepository repository) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        dashboardRepositoryProvider.overrideWithValue(repository),
-        authControllerProvider.overrideWith(_FixedAuth.new),
-      ],
-      child: const MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: HomeDashboardScreen()),
-      ),
-    ),
+final _dashboard = DashboardResponse.fromJson(const {
+  'masjid': {'id': 'm1', 'name': 'Barota Masjid'},
+  'namazTime': {
+    'fajr': '05:00 AM',
+    'zuhr': '01:30 PM',
+    'asr': '05:00 PM',
+    'maghrib': '06:45 PM',
+    'isha': '08:15 PM',
+  },
+  'membersCount': 12,
+  'latestAnnouncements': [
+    {
+      'id': 'a1',
+      'title': 'Eid prayer',
+      'message': 'Eid namaz at 7 AM.',
+      'createdAt': '2026-10-07T10:00:00.000Z',
+    },
+  ],
+  'financeSummary': {
+    'totalCollection': 100,
+    'totalExpense': 40,
+    'currentBalance': 60,
+    'thisMonthCollection': 50,
+    'thisMonthExpense': 10,
+  },
+});
+
+const _member = <String>[
+  AppPermissions.dashboardRead,
+  AppPermissions.projectsRead,
+  AppPermissions.ownContributionsRead,
+];
+
+const _committee = <String>[
+  AppPermissions.dashboardRead,
+  AppPermissions.namazTimesUpdate,
+  AppPermissions.collectionsManage,
+  AppPermissions.expensesManage,
+  AppPermissions.imamSalaryRead,
+];
+
+Future<_FixedAuth> _pump(
+  WidgetTester tester,
+  DashboardRepository repository, {
+  List<String> permissions = _member,
+}) async {
+  final auth = _FixedAuth(permissions);
+  await pumpUi(
+    tester,
+    const Scaffold(body: HomeDashboardScreen()),
+    size: const Size(420, 2000),
+    overrides: [
+      dashboardRepositoryProvider.overrideWithValue(repository),
+      authControllerProvider.overrideWith(() => auth),
+    ],
   );
-  await tester.pump();
-  await tester.pump();
+  return auth;
 }
+
+List<String> _tileLabels(WidgetTester tester) => tester
+    .widgetList<ActionTile>(find.byType(ActionTile))
+    .map((tile) => tile.label)
+    .toList();
 
 void main() {
-  testWidgets('says "not assigned" for USER_MASJID_NOT_ASSIGNED, by code', (
-    tester,
-  ) async {
+  testWidgets('no masjid: says so and offers to log out', (tester) async {
     final repository = _MockDashboardRepository();
     when(() => repository.getMyMasjidDashboard()).thenThrow(
       const ApiException(
@@ -56,21 +109,21 @@ void main() {
       ),
     );
 
-    await _pump(tester, repository);
+    final auth = await _pump(tester, repository);
 
     expect(
       find.text('You are not assigned to any masjid yet.'),
       findsOneWidget,
     );
-    expect(find.text('Logout / Back to Login'), findsOneWidget);
+    await tester.tap(find.text('Logout'));
+    expect(auth.signOutCalls, 1);
   });
 
-  testWidgets('other errors show the message and a retry button', (
+  testWidgets('other errors: a picture, one line, and Try again', (
     tester,
   ) async {
     final repository = _MockDashboardRepository();
     when(() => repository.getMyMasjidDashboard()).thenThrow(
-      // Mentions "masjid" but is not the no-masjid code: no longer misread.
       const ApiException(
         message: 'Masjid not found',
         code: 'MASJID_NOT_FOUND',
@@ -81,31 +134,96 @@ void main() {
     await _pump(tester, repository);
 
     expect(find.text('Unable to load dashboard'), findsOneWidget);
-    expect(find.text('Masjid not found'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    // No raw server text for people who just want their masjid.
+    expect(find.text('Masjid not found'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
   });
 
-  testWidgets('renders the dashboard when data loads', (tester) async {
+  testWidgets('a member sees times, their tiles, news, and the balance', (
+    tester,
+  ) async {
     final repository = _MockDashboardRepository();
-    when(() => repository.getMyMasjidDashboard()).thenAnswer(
-      (_) async => DashboardResponse.fromJson(const {
-        'masjid': {'id': 'm1', 'name': 'Barota Masjid'},
-        'membersCount': 12,
-        'latestAnnouncements': <Object>[],
-        'projectsSummary': {
-          'activeProjectsCount': 0,
-          'latestProjects': <Object>[],
-        },
-        'financeSummary': {
-          'totalCollection': 100,
-          'totalExpense': 40,
-          'currentBalance': 60,
-        },
-      }),
-    );
+    when(
+      () => repository.getMyMasjidDashboard(),
+    ).thenAnswer((_) async => _dashboard);
 
     await _pump(tester, repository);
 
-    expect(find.textContaining('Barota Masjid'), findsWidgets);
+    expect(find.byType(NextNamazCard), findsOneWidget);
+    expect(_tileLabels(tester), <String>['News', 'Projects', 'My payments']);
+    expect(find.text('Eid prayer'), findsOneWidget);
+    expect(find.text('₹60'), findsOneWidget);
+    expect(find.text('+₹50'), findsOneWidget);
+    expect(find.text('−₹10'), findsOneWidget);
+  });
+
+  testWidgets('the committee gets money, salary, and times tiles first', (
+    tester,
+  ) async {
+    final repository = _MockDashboardRepository();
+    when(
+      () => repository.getMyMasjidDashboard(),
+    ).thenAnswer((_) async => _dashboard);
+
+    await _pump(tester, repository, permissions: _committee);
+
+    expect(_tileLabels(tester), <String>[
+      'Money in',
+      'Money out',
+      'Salary',
+      'Times',
+      'News',
+      'Projects',
+    ]);
+  });
+
+  group('NextNamazCard', () {
+    const times = NamazTimeSummary(
+      fajr: '05:00 AM',
+      zuhr: '01:30 PM',
+      asr: '05:00 PM',
+      maghrib: '06:45 PM',
+      isha: '08:15 PM',
+    );
+
+    testWidgets('shows the next prayer, its time, and the time left', (
+      tester,
+    ) async {
+      await pumpUi(
+        tester,
+        Scaffold(
+          body: NextNamazCard(
+            times: times,
+            onOpen: () {},
+            clock: () => DateTime(2026, 10, 8, 15, 40),
+          ),
+        ),
+      );
+
+      expect(find.text('Next namaz'), findsOneWidget);
+      expect(find.text('Asr'), findsNWidgets(2));
+      expect(find.text('5:00 PM'), findsNWidgets(2));
+      expect(find.text('in 1 h 20 min'), findsOneWidget);
+    });
+
+    testWidgets('without times, editors are offered to set them', (
+      tester,
+    ) async {
+      var opened = 0;
+      await pumpUi(
+        tester,
+        Scaffold(
+          body: NextNamazCard(
+            times: null,
+            canUpdate: true,
+            onOpen: () => opened++,
+          ),
+        ),
+      );
+
+      expect(find.text('Namaz times are not set yet.'), findsOneWidget);
+      await tester.tap(find.text('Set times'));
+      expect(opened, 1);
+    });
   });
 }

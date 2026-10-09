@@ -33,7 +33,10 @@ import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid
 import 'package:masjid_core_frontend/features/masjid_request/presentation/masjid_request_submitted_screen.dart';
 import 'package:masjid_core_frontend/features/masjid_request/presentation/track_masjid_application_screen.dart';
 import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
+import 'package:masjid_core_frontend/features/namaz_time/presentation/namaz_times_screen.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/update_namaz_time_screen.dart';
+import 'package:masjid_core_frontend/features/profile/presentation/change_password_screen.dart';
+import 'package:masjid_core_frontend/features/profile/presentation/profile_screen.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/add_project_screen.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/edit_project_screen.dart';
@@ -187,6 +190,10 @@ final List<RouteBase> _routes = <RouteBase>[
       path: designGalleryLocation,
       builder: (context, state) => const DesignGalleryScreen(),
     ),
+  GoRoute(
+    path: '/profile/password',
+    builder: (context, state) => const ChangePasswordScreen(),
+  ),
   GoRoute(
     path: languageLocation,
     builder: (context, state) =>
@@ -460,6 +467,14 @@ final List<RouteBase> _routes = <RouteBase>[
           ),
         ],
       ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/super-admin/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+        ],
+      ),
     ],
   ),
 
@@ -497,6 +512,41 @@ final List<RouteBase> _routes = <RouteBase>[
           GoRoute(
             path: '/main/community',
             builder: (context, state) => const CommunityScreen(),
+          ),
+        ],
+      ),
+      // The branches above and below follow MainTab's order
+      // (features/main_shell/main_tabs.dart); which show as tabs depends
+      // on the person.
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/news',
+            builder: (context, state) => const AnnouncementsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/times',
+            builder: (context, state) => const NamazTimesScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/my-payments',
+            builder: (context, state) => const MyContributionsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/main/profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),

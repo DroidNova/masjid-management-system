@@ -759,6 +759,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 member} other{{count} members}}'**
   String membersCount(int count);
+
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
+
+  /// No description provided for @changePasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your other phones and computers will be logged out.'**
+  String get changePasswordHelp;
+
+  /// No description provided for @changeTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Change times'**
+  String get changeTimes;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @errorSamePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The new password is the same as the old one.'**
+  String get errorSamePassword;
+
+  /// No description provided for @errorWrongCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'The current password is wrong.'**
+  String get errorWrongCurrentPassword;
+
+  /// No description provided for @familyHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Family head'**
+  String get familyHead;
+
+  /// No description provided for @latestNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest news'**
+  String get latestNews;
+
+  /// No description provided for @leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leave;
+
+  /// No description provided for @leaveMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave masjid'**
+  String get leaveMasjid;
+
+  /// No description provided for @leaveMasjidQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the masjid?'**
+  String get leaveMasjidQuestion;
+
+  /// No description provided for @leavePointAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer see this masjid\'s times, news, and money.'**
+  String get leavePointAccess;
+
+  /// No description provided for @leavePointHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment history stays with the masjid.'**
+  String get leavePointHistory;
+
+  /// No description provided for @leavePointJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Another masjid can add you after you leave.'**
+  String get leavePointJoin;
+
+  /// No description provided for @logoutQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get logoutQuestion;
+
+  /// No description provided for @masjidBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid balance'**
+  String get masjidBalance;
+
+  /// No description provided for @memberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get memberSince;
+
+  /// No description provided for @moneyIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Money in'**
+  String get moneyIn;
+
+  /// No description provided for @moneyOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Money out'**
+  String get moneyOut;
+
+  /// No description provided for @namazTimesNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Namaz times are not set yet.'**
+  String get namazTimesNotSet;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @nextNamaz.
+  ///
+  /// In en, this message translates to:
+  /// **'Next namaz'**
+  String get nextNamaz;
+
+  /// No description provided for @notVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get notVerified;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get passwordChanged;
+
+  /// No description provided for @passwordsDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords are not the same.'**
+  String get passwordsDiffer;
+
+  /// No description provided for @prayerAsr.
+  ///
+  /// In en, this message translates to:
+  /// **'Asr'**
+  String get prayerAsr;
+
+  /// No description provided for @prayerFajr.
+  ///
+  /// In en, this message translates to:
+  /// **'Fajr'**
+  String get prayerFajr;
+
+  /// No description provided for @prayerIsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Isha'**
+  String get prayerIsha;
+
+  /// No description provided for @prayerJumma.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumma'**
+  String get prayerJumma;
+
+  /// No description provided for @prayerMaghrib.
+  ///
+  /// In en, this message translates to:
+  /// **'Maghrib'**
+  String get prayerMaghrib;
+
+  /// No description provided for @prayerZuhr.
+  ///
+  /// In en, this message translates to:
+  /// **'Zuhr'**
+  String get prayerZuhr;
+
+  /// No description provided for @repeatNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password again'**
+  String get repeatNewPassword;
+
+  /// No description provided for @roleCommittee.
+  ///
+  /// In en, this message translates to:
+  /// **'Committee'**
+  String get roleCommittee;
+
+  /// No description provided for @roleImam.
+  ///
+  /// In en, this message translates to:
+  /// **'Imam'**
+  String get roleImam;
+
+  /// No description provided for @roleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get roleMember;
+
+  /// No description provided for @roleSuperAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Super admin'**
+  String get roleSuperAdmin;
+
+  /// No description provided for @salary.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary'**
+  String get salary;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @setTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Set times'**
+  String get setTimes;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get statusInactive;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @superAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Super admin'**
+  String get superAdmin;
+
+  /// No description provided for @tabDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get tabDashboard;
+
+  /// No description provided for @tabHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get tabHome;
+
+  /// No description provided for @tabMasjids.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjids'**
+  String get tabMasjids;
+
+  /// No description provided for @tabMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get tabMoney;
+
+  /// No description provided for @tabMyPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'My payments'**
+  String get tabMyPayments;
+
+  /// No description provided for @tabNews.
+  ///
+  /// In en, this message translates to:
+  /// **'News'**
+  String get tabNews;
+
+  /// No description provided for @tabPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get tabPeople;
+
+  /// No description provided for @tabProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get tabProfile;
+
+  /// No description provided for @tabProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get tabProjects;
+
+  /// No description provided for @tabRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get tabRequests;
+
+  /// No description provided for @tabTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Times'**
+  String get tabTimes;
+
+  /// No description provided for @tabUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get tabUsers;
+
+  /// No description provided for @thisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get thisMonth;
+
+  /// No description provided for @verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get verified;
+
+  /// No description provided for @youLeftTheMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'You left the masjid'**
+  String get youLeftTheMasjid;
+
+  /// No description provided for @inHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {hours} h {minutes} min'**
+  String inHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @inMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {minutes} min'**
+  String inMinutes(int minutes);
+
+  /// No description provided for @nextNamazSpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Next namaz: {prayer} at {time}, {countdown}'**
+  String nextNamazSpoken(String prayer, String time, String countdown);
+
+  /// No description provided for @passwordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least {count} letters or numbers.'**
+  String passwordTooShort(int count);
+
+  /// No description provided for @youLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'You left {masjid}'**
+  String youLeft(String masjid);
 }
 
 class _AppLocalizationsDelegate

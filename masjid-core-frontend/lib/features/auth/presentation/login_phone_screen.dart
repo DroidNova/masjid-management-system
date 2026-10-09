@@ -87,6 +87,7 @@ class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
                   country: _country,
                   digits: _digits,
                   enabled: !_isSubmitting,
+                  onSubmit: _continue,
                   onCountryChanged: (country) => setState(() {
                     _country = country;
                     _digits = '';

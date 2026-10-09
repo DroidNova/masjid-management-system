@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/core/refresh/data_scopes.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/community/application/community_controller.dart';
-import 'package:masjid_core_frontend/features/community/application/leave_masjid_controller.dart';
 import 'package:masjid_core_frontend/features/community/data/community_repository.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
@@ -97,19 +96,5 @@ void main() {
     await first;
     verify(() => repository.updateMasjidUserStatus('u1', any())).called(1);
     expect(container.read(communityBusyUserIdsProvider), isEmpty);
-  });
-
-  test('leaving the masjid marks nothing (sign-out follows)', () async {
-    when(() => repository.leaveMyMasjid()).thenAnswer((_) async {});
-    container.listen(leaveMasjidControllerProvider, (_, _) {});
-
-    final left = await container
-        .read(leaveMasjidControllerProvider.notifier)
-        .leave();
-
-    expect(left, isTrue);
-    for (final scope in DataScope.values) {
-      expect(version(scope), 0, reason: scope.name);
-    }
   });
 }

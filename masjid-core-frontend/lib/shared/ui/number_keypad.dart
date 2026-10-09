@@ -8,8 +8,9 @@ import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 /// such as '.'). Used for phone numbers, OTP codes, and amounts, so typing
 /// numbers looks and works the same everywhere (rule 8).
 ///
-/// The computer keyboard works too while it has focus: digits, the extra
-/// key's character, and Backspace. Keys keep 1-2-3 left to right in Urdu.
+/// The computer keyboard works too while it has focus: digits (top row and
+/// number pad), the extra key's character, Backspace, and Enter for
+/// [onSubmit]. Keys keep 1-2-3 left to right in Urdu.
 class NumberKeypad extends StatelessWidget {
   const NumberKeypad({
     super.key,
@@ -17,6 +18,7 @@ class NumberKeypad extends StatelessWidget {
     this.extraKey,
     this.autofocus = true,
     this.enabled = true,
+    this.onSubmit,
   });
 
   /// Called with a digit, [extraKey], or [backspace].
@@ -27,7 +29,13 @@ class NumberKeypad extends StatelessWidget {
   final bool autofocus;
   final bool enabled;
 
+  /// The computer keyboard's Enter key (website): the screen's main action,
+  /// such as Continue. Null ignores Enter.
+  final VoidCallback? onSubmit;
+
   static const String backspace = 'backspace';
+
+  static final RegExp _digit = RegExp(r'^[0-9]$');
 
   void _press(String key) {
     if (!enabled) return;
@@ -35,17 +43,39 @@ class NumberKeypad extends StatelessWidget {
     onKey(key);
   }
 
+  /// The digit of a number key (top row or number pad) when the platform
+  /// sends no character with it.
+  static String? _digitOf(LogicalKeyboardKey key) {
+    for (final first in <LogicalKeyboardKey>[
+      LogicalKeyboardKey.digit0,
+      LogicalKeyboardKey.numpad0,
+    ]) {
+      final offset = key.keyId - first.keyId;
+      if (offset >= 0 && offset <= 9) return '$offset';
+    }
+    return null;
+  }
+
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    if (event.logicalKey == LogicalKeyboardKey.backspace) {
+    final key = event.logicalKey;
+    final submit = onSubmit;
+    if (submit != null &&
+        event is KeyDownEvent &&
+        (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter)) {
+      if (enabled) submit();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.backspace) {
       _press(backspace);
       return KeyEventResult.handled;
     }
-    final character = event.character;
+    final character = event.character ?? _digitOf(key);
     if (character == null) return KeyEventResult.ignored;
-    if (RegExp(r'^[0-9]$').hasMatch(character) || character == extraKey) {
+    if (_digit.hasMatch(character) || character == extraKey) {
       _press(character);
       return KeyEventResult.handled;
     }

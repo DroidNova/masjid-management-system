@@ -29,6 +29,9 @@ class ApiErrorCodes {
   /// The account behind the session was deactivated or deleted.
   static const String userInactive = 'USER_INACTIVE';
   static const String userNotFound = 'USER_NOT_FOUND';
+
+  /// The new password is the same as the current one.
+  static const String passwordUnchanged = 'PASSWORD_UNCHANGED';
 }
 
 /// A failed API call, built once from the backend's error envelope:

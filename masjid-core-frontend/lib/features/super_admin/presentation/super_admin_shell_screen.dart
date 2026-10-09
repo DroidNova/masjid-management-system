@@ -1,53 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/main_shell/presentation/main_shell_screen.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-/// Bottom-tab shell for the super admin. Each tab is a branch of a
-/// StatefulShellRoute (see app/router.dart), so tabs keep their state.
-class SuperAdminShellScreen extends ConsumerWidget {
+/// The super admin's frame: Dashboard, Requests, Masjids, Users, and
+/// Profile (bottom bar, rail, or side menu by width). Each tab is a branch
+/// of a StatefulShellRoute (see app/router.dart), so tabs keep their state.
+class SuperAdminShellScreen extends StatelessWidget {
   const SuperAdminShellScreen({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Super Admin'),
-        actions: <Widget>[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Chip(label: Text('SUPER_ADMIN')),
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = <String>[
+      l10n.tabDashboard,
+      l10n.tabRequests,
+      l10n.tabMasjids,
+      l10n.tabUsers,
+      l10n.tabProfile,
+    ];
+    final index = navigationShell.currentIndex;
+
+    return AdaptiveScaffold(
+      destinations: <AppDestination>[
+        AppDestination(icon: Icons.dashboard_rounded, label: labels[0]),
+        AppDestination(icon: Icons.pending_actions_rounded, label: labels[1]),
+        AppDestination(icon: AppIcons.mosque, label: labels[2]),
+        AppDestination(icon: AppIcons.people, label: labels[3]),
+        AppDestination(icon: AppIcons.profile, label: labels[4]),
+      ],
+      selectedIndex: index,
+      onSelected: (tab) =>
+          navigationShell.goBranch(tab, initialLocation: tab == index),
+      title: Text(index == 0 ? l10n.superAdmin : labels[index]),
+      header: MasjidHeader(
+        name: l10n.superAdmin,
+        icon: Icons.admin_panel_settings_rounded,
       ),
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.pending_actions),
-            label: 'Requests',
-          ),
-          NavigationDestination(icon: Icon(Icons.mosque), label: 'Masjids'),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Users'),
-        ],
-      ),
     );
   }
 }
