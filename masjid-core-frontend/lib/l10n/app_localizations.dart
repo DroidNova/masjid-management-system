@@ -1857,6 +1857,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{amount} still to pay'**
   String stillToPay(String amount);
+
+  /// No description provided for @activate.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on again'**
+  String get activate;
+
+  /// No description provided for @activateQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Let this person use the app again?'**
+  String get activateQuestion;
+
+  /// No description provided for @addPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Add person'**
+  String get addPerson;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @deactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get deactivate;
+
+  /// No description provided for @deactivatePointHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Their payments and history stay saved.'**
+  String get deactivatePointHistory;
+
+  /// No description provided for @deactivatePointLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'They cannot log in to the app.'**
+  String get deactivatePointLogin;
+
+  /// No description provided for @deactivateQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off this person?'**
+  String get deactivateQuestion;
+
+  /// No description provided for @details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// No description provided for @donations.
+  ///
+  /// In en, this message translates to:
+  /// **'Donations'**
+  String get donations;
+
+  /// No description provided for @editPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit person'**
+  String get editPerson;
+
+  /// No description provided for @family.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get family;
+
+  /// No description provided for @familyHeadHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The family head pays the imam salary for the family.'**
+  String get familyHeadHelp;
+
+  /// No description provided for @familyMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 family member} other{{count} family members}}'**
+  String familyMembersCount(int count);
+
+  /// No description provided for @familyMembersOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Family members (optional)'**
+  String get familyMembersOptional;
+
+  /// No description provided for @masjidId.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid ID'**
+  String get masjidId;
+
+  /// No description provided for @myPaymentsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your payments.'**
+  String get myPaymentsLoadFailed;
+
+  /// No description provided for @noFamilyForRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Only members have a family here.'**
+  String get noFamilyForRole;
+
+  /// No description provided for @noGiftsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing given yet'**
+  String get noGiftsYet;
+
+  /// No description provided for @noPeopleYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No people yet'**
+  String get noPeopleYet;
+
+  /// No description provided for @peopleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person} other{{count} people}}'**
+  String peopleCount(int count);
+
+  /// No description provided for @peopleMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get peopleMembers;
+
+  /// No description provided for @personAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Person added'**
+  String get personAdded;
+
+  /// No description provided for @personCanLoginWithCode.
+  ///
+  /// In en, this message translates to:
+  /// **'They can log in with their phone number and a code.'**
+  String get personCanLoginWithCode;
+
+  /// No description provided for @role.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get role;
+
+  /// No description provided for @roleAndFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Role and family'**
+  String get roleAndFamily;
+
+  /// No description provided for @salaryStillDue.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} salary still to pay'**
+  String salaryStillDue(String amount);
+
+  /// No description provided for @temporaryPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this password to the person. They can change it later.'**
+  String get temporaryPasswordHelp;
+
+  /// No description provided for @whoIsIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is it?'**
+  String get whoIsIt;
+
+  /// No description provided for @youGaveInTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'You gave in total'**
+  String get youGaveInTotal;
 }
 
 class _AppLocalizationsDelegate

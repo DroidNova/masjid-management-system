@@ -956,4 +956,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String stillToPay(String amount) {
     return '$amount still to pay';
   }
+
+  @override
+  String get activate => 'Turn on again';
+
+  @override
+  String get activateQuestion => 'Let this person use the app again?';
+
+  @override
+  String get addPerson => 'Add person';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get deactivate => 'Turn off';
+
+  @override
+  String get deactivatePointHistory => 'Their payments and history stay saved.';
+
+  @override
+  String get deactivatePointLogin => 'They cannot log in to the app.';
+
+  @override
+  String get deactivateQuestion => 'Turn off this person?';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get donations => 'Donations';
+
+  @override
+  String get editPerson => 'Edit person';
+
+  @override
+  String get family => 'Family';
+
+  @override
+  String get familyHeadHelp =>
+      'The family head pays the imam salary for the family.';
+
+  @override
+  String familyMembersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count family members',
+      one: '1 family member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get familyMembersOptional => 'Family members (optional)';
+
+  @override
+  String get masjidId => 'Masjid ID';
+
+  @override
+  String get myPaymentsLoadFailed => 'Could not load your payments.';
+
+  @override
+  String get noFamilyForRole => 'Only members have a family here.';
+
+  @override
+  String get noGiftsYet => 'Nothing given yet';
+
+  @override
+  String get noPeopleYet => 'No people yet';
+
+  @override
+  String peopleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people',
+      one: '1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get peopleMembers => 'Members';
+
+  @override
+  String get personAdded => 'Person added';
+
+  @override
+  String get personCanLoginWithCode =>
+      'They can log in with their phone number and a code.';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String get roleAndFamily => 'Role and family';
+
+  @override
+  String salaryStillDue(String amount) {
+    return '$amount salary still to pay';
+  }
+
+  @override
+  String get temporaryPasswordHelp =>
+      'Give this password to the person. They can change it later.';
+
+  @override
+  String get whoIsIt => 'Who is it?';
+
+  @override
+  String get youGaveInTotal => 'You gave in total';
 }

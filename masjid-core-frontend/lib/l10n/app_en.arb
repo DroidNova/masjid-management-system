@@ -494,5 +494,56 @@
         "type": "String"
       }
     }
-  }
+  },
+  "activate": "Turn on again",
+  "activateQuestion": "Let this person use the app again?",
+  "addPerson": "Add person",
+  "copy": "Copy",
+  "deactivate": "Turn off",
+  "deactivatePointHistory": "Their payments and history stay saved.",
+  "deactivatePointLogin": "They cannot log in to the app.",
+  "deactivateQuestion": "Turn off this person?",
+  "details": "Details",
+  "donations": "Donations",
+  "editPerson": "Edit person",
+  "family": "Family",
+  "familyHeadHelp": "The family head pays the imam salary for the family.",
+  "familyMembersCount": "{count, plural, =1{1 family member} other{{count} family members}}",
+  "@familyMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "familyMembersOptional": "Family members (optional)",
+  "masjidId": "Masjid ID",
+  "myPaymentsLoadFailed": "Could not load your payments.",
+  "noFamilyForRole": "Only members have a family here.",
+  "noGiftsYet": "Nothing given yet",
+  "noPeopleYet": "No people yet",
+  "peopleCount": "{count, plural, =1{1 person} other{{count} people}}",
+  "@peopleCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleMembers": "Members",
+  "personAdded": "Person added",
+  "personCanLoginWithCode": "They can log in with their phone number and a code.",
+  "role": "Role",
+  "roleAndFamily": "Role and family",
+  "salaryStillDue": "{amount} salary still to pay",
+  "@salaryStillDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "temporaryPasswordHelp": "Give this password to the person. They can change it later.",
+  "whoIsIt": "Who is it?",
+  "youGaveInTotal": "You gave in total"
 }

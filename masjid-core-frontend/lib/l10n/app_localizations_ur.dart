@@ -951,4 +951,116 @@ class AppLocalizationsUr extends AppLocalizations {
   String stillToPay(String amount) {
     return '$amount باقی ہے';
   }
+
+  @override
+  String get activate => 'دوبارہ چالو کریں';
+
+  @override
+  String get activateQuestion => 'اس شخص کو دوبارہ ایپ چلانے دیں؟';
+
+  @override
+  String get addPerson => 'شخص شامل کریں';
+
+  @override
+  String get copy => 'کاپی کریں';
+
+  @override
+  String get deactivate => 'بند کریں';
+
+  @override
+  String get deactivatePointHistory =>
+      'ان کی ادائیگیاں اور پرانا حساب محفوظ رہے گا۔';
+
+  @override
+  String get deactivatePointLogin => 'وہ ایپ میں لاگ اِن نہیں کر سکیں گے۔';
+
+  @override
+  String get deactivateQuestion => 'اس شخص کو بند کریں؟';
+
+  @override
+  String get details => 'تفصیل';
+
+  @override
+  String get donations => 'عطیات';
+
+  @override
+  String get editPerson => 'شخص میں تبدیلی';
+
+  @override
+  String get family => 'خاندان';
+
+  @override
+  String get familyHeadHelp =>
+      'خاندان کا سربراہ خاندان کی طرف سے امام کی تنخواہ دیتا ہے۔';
+
+  @override
+  String familyMembersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'خاندان میں $count افراد',
+      one: 'خاندان میں 1 فرد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get familyMembersOptional => 'خاندان کے افراد (ضروری نہیں)';
+
+  @override
+  String get masjidId => 'مسجد آئی ڈی';
+
+  @override
+  String get myPaymentsLoadFailed => 'آپ کا حساب نہیں کھل سکا۔';
+
+  @override
+  String get noFamilyForRole => 'یہاں صرف ممبروں کا خاندان ہوتا ہے۔';
+
+  @override
+  String get noGiftsYet => 'ابھی تک کچھ نہیں دیا';
+
+  @override
+  String get noPeopleYet => 'ابھی کوئی شخص نہیں';
+
+  @override
+  String peopleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count لوگ',
+      one: '1 شخص',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get peopleMembers => 'ممبر';
+
+  @override
+  String get personAdded => 'شخص شامل ہو گیا';
+
+  @override
+  String get personCanLoginWithCode =>
+      'وہ اپنے فون نمبر اور کوڈ سے لاگ اِن کر سکتے ہیں۔';
+
+  @override
+  String get role => 'کردار';
+
+  @override
+  String get roleAndFamily => 'کردار اور خاندان';
+
+  @override
+  String salaryStillDue(String amount) {
+    return '$amount تنخواہ ابھی دینی باقی ہے';
+  }
+
+  @override
+  String get temporaryPasswordHelp =>
+      'یہ پاس ورڈ اس شخص کو دیں۔ وہ بعد میں اسے بدل سکتے ہیں۔';
+
+  @override
+  String get whoIsIt => 'یہ کون ہے؟';
+
+  @override
+  String get youGaveInTotal => 'آپ نے کل دیا';
 }

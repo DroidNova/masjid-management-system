@@ -14,8 +14,10 @@ import 'package:masjid_core_frontend/features/auth/presentation/auth_landing_scr
 import 'package:masjid_core_frontend/features/auth/presentation/login_password_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/login_phone_screen.dart';
 import 'package:masjid_core_frontend/features/auth/presentation/otp_screen.dart';
+import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/presentation/add_community_user_screen.dart';
 import 'package:masjid_core_frontend/features/community/presentation/community_screen.dart';
+import 'package:masjid_core_frontend/features/community/presentation/edit_community_user_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/collection_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/contribution_flow_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
@@ -264,6 +266,19 @@ final List<RouteBase> _routes = <RouteBase>[
     ),
   ),
   GoRoute(
+    path: '/community/users/:id/edit',
+    builder: (context, state) {
+      final extra = state.extra;
+      return PermissionGate(
+        isAllowed: PermissionHelper.canAddCommunityUser,
+        child: EditCommunityUserScreen(
+          userId: state.pathParameters['id'] ?? '',
+          initial: extra is CommunityUserModel ? extra : null,
+        ),
+      );
+    },
+  ),
+  GoRoute(
     path: '/finance/add-collection',
     builder: (context, state) => const PermissionGate(
       isAllowed: PermissionHelper.canManageFinance,
@@ -292,7 +307,7 @@ final List<RouteBase> _routes = <RouteBase>[
   ),
   GoRoute(
     path: '/contributions',
-    builder: (context, state) => const MyContributionsScreen(),
+    builder: (context, state) => const MyContributionsScreen(showAppBar: true),
   ),
   // Record who gave: a collection gift, or with ?project=<id> a project one.
   GoRoute(

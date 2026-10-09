@@ -46,9 +46,7 @@ class MainShellScreen extends ConsumerWidget {
           initialLocation: branch == navigationShell.currentIndex,
         );
       },
-      title: current.hasOwnAppBar
-          ? null
-          : Text(current == MainTab.home ? name : current.label(l10n)),
+      title: Text(current == MainTab.home ? name : current.label(l10n)),
       header: MasjidHeader(name: name),
       body: navigationShell,
     );

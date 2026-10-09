@@ -200,13 +200,9 @@ void main() {
     verifyNever(() => repository.getProjectTitle(any()));
   });
 
-  testWidgets('My Contributions loads more only for the section scrolled to', (
+  testWidgets('My payments loads the open section only, and more at its end', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(800, 600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-
     when(() => repository.getMySummary()).thenAnswer(
       (_) async => const MyContributionSummary(
         user: MyContributionUser(id: 'u1', fullName: 'Ahmed Khan'),
@@ -237,35 +233,36 @@ void main() {
       () => repository.getMyCollectionContributions(page: any(named: 'page')),
     ).thenAnswer((_) async => _page(<CollectionContribution>[], more: true));
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          contributionsRepositoryProvider.overrideWithValue(repository),
-          authControllerProvider.overrideWith(_SignedIn.new),
-        ],
-        child: const MaterialApp(home: MyContributionsScreen()),
-      ),
+    await pumpUi(
+      tester,
+      const MyContributionsScreen(),
+      size: const Size(800, 600),
+      overrides: [
+        contributionsRepositoryProvider.overrideWithValue(repository),
+        authControllerProvider.overrideWith(_SignedIn.new),
+      ],
+    );
+
+    // Only the salary months are open; nothing near their end yet.
+    verifyNever(() => repository.getMyImamSalaryMonths(page: 2));
+    verifyNever(
+      () => repository.getMyProjectContributions(page: any(named: 'page')),
+    );
+    verifyNever(
+      () => repository.getMyCollectionContributions(page: any(named: 'page')),
+    );
+
+    // Scroll to the end of the salary months.
+    await tester.scrollUntilVisible(
+      find.text('December 2025'),
+      400,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    // Nothing near a section end yet: no second pages.
-    verifyNever(() => repository.getMyImamSalaryMonths(page: 2));
-    verifyNever(() => repository.getMyProjectContributions(page: 2));
-    verifyNever(() => repository.getMyCollectionContributions(page: 2));
-
-    // Scroll to the end of the salary months only.
-    for (
-      var i = 0;
-      i < 30 && find.text('Project Contributions').evaluate().isEmpty;
-      i++
-    ) {
-      await tester.drag(find.byType(ListView), const Offset(0, -200));
-      await tester.pumpAndSettle();
-    }
-    expect(find.text('Project Contributions'), findsOneWidget);
-
     verify(() => repository.getMyImamSalaryMonths(page: 2)).called(1);
-    verifyNever(() => repository.getMyProjectContributions(page: 2));
-    verifyNever(() => repository.getMyCollectionContributions(page: 2));
+    verifyNever(
+      () => repository.getMyProjectContributions(page: any(named: 'page')),
+    );
   });
 }

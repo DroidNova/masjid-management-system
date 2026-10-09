@@ -72,20 +72,6 @@ CreateCommunityUserRequest buildCreateCommunityUserRequest({
   );
 }
 
-/// Text for the "User Added" dialog.
-String addUserSuccessMessage(CommunityUserModel user, String? role) {
-  final message = user.message;
-  if (message != null && message.isNotEmpty) return message;
-  final password = user.temporaryPassword;
-  if (password != null && password.isNotEmpty) {
-    return 'User added successfully. Temporary password is $password.';
-  }
-  if (role == PermissionHelper.member) {
-    return 'Member added successfully. This user can login using phone OTP.';
-  }
-  return 'User added successfully.';
-}
-
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;

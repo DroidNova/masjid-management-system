@@ -160,7 +160,7 @@ void main() {
     });
   });
 
-  testWidgets('MyContributionsScreen shows summary and each section', (
+  testWidgets('MyContributionsScreen shows totals, what is due, and sections', (
     tester,
   ) async {
     when(() => repository.getMySummary()).thenAnswer(
@@ -203,6 +203,7 @@ void main() {
         const ProjectContribution(
           id: 'c1',
           amount: 1500,
+          paymentMode: 'CASH',
           project: ContributionProject(title: 'New Roof'),
         ),
       ]),
@@ -218,16 +219,39 @@ void main() {
       permissions: const <String>[AppPermissions.ownContributionsRead],
     );
 
-    expect(find.text('Ahmed Khan'), findsOneWidget);
-    expect(find.text('Family Head'), findsOneWidget);
-    expect(find.text('All paid contributions ₹4,750'), findsOneWidget);
+    expect(find.text('You gave in total'), findsOneWidget);
+    expect(find.text('₹4,750'), findsOneWidget);
+    expect(find.text('₹600 salary still to pay'), findsOneWidget);
     expect(find.text('June 2026'), findsOneWidget);
-    expect(find.text('View Payments'), findsOneWidget);
+    expect(find.text('Not paid'), findsOneWidget);
+    expect(find.text('₹600 still to pay'), findsOneWidget);
+    // Months with no payment have nothing to open.
+    expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+    verifyNever(
+      () => repository.getMyProjectContributions(page: any(named: 'page')),
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        matching: find.text('Projects'),
+      ),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('New Roof'), findsOneWidget);
-    expect(find.text('No collection contributions yet.'), findsOneWidget);
+    expect(find.text('Cash'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        matching: find.text('Donations'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing given yet'), findsOneWidget);
   });
 
-  testWidgets('MyContributionsScreen shows a retry when the summary fails', (
+  testWidgets('MyContributionsScreen shows Try again when the summary fails', (
     tester,
   ) async {
     when(() => repository.getMySummary()).thenThrow(
@@ -240,17 +264,12 @@ void main() {
     when(
       () => repository.getMyImamSalaryMonths(page: any(named: 'page')),
     ).thenAnswer((_) async => _page(<MyImamSalaryMonth>[]));
-    when(
-      () => repository.getMyProjectContributions(page: any(named: 'page')),
-    ).thenAnswer((_) async => _page(<ProjectContribution>[]));
-    when(
-      () => repository.getMyCollectionContributions(page: any(named: 'page')),
-    ).thenAnswer((_) async => _page(<CollectionContribution>[]));
 
     await _pump(tester, repository, const MyContributionsScreen());
 
-    expect(find.text('You are not assigned to a masjid'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Could not load your payments.'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text('No salary payments yet'), findsOneWidget);
   });
 
   testWidgets('ImamSalaryPaymentHistoryScreen lists the month payments', (
@@ -282,8 +301,8 @@ void main() {
     );
 
     expect(find.text('May 2026'), findsOneWidget);
-    expect(find.text('₹300'), findsOneWidget);
-    expect(find.text('Paid on 10 May 2026'), findsOneWidget);
+    expect(find.textContaining('300'), findsWidgets);
+    expect(find.text('Committee One'), findsOneWidget);
     expect(find.text('After Jumma'), findsOneWidget);
   });
 }
