@@ -285,6 +285,10 @@ To set it up on your machine:
    warning page blocks those calls.) The APK still uses the full
    `https://<domain>/api/v1`.
 4. `docker compose up -d --build frontend` (the web build bakes in the API URL), then `docker compose up -d`.
+5. In `.env` set `BACKEND_NODE_ENV=staging`, and in `masjid-core/.env` set
+   `SWAGGER_ENABLED=false` and `LOG_LEVEL=info`. Staging refuses to start with
+   JWT secrets under 32 characters, needs `CORS_ALLOWED_ORIGINS`, and keeps the
+   test login code (`AUTH_DEV_MODE=true`). Then `docker compose up -d backend`.
 
 Facts about the tunnel:
 
@@ -301,9 +305,16 @@ URL it was built with:
 
 ```powershell
 cd masjid-core-frontend
-flutter build apk --release --dart-define-from-file=env/tunnel.json
-# Output: build/app/outputs/flutter-apk/app-release.apk
+flutter build apk --release --split-per-abi --dart-define-from-file=env/tunnel.json
+# Output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk (most phones)
+# and app-armeabi-v7a-release.apk (old phones), about 20 MB each.
 ```
+
+Release builds are signed with the key named in `android/key.properties`
+(not in git; the owner's key lives in `C:\Users\ashim\.masjid-keys`). Without
+that file the build falls back to the debug key, and phones then refuse to
+update over an APK signed with the real key. Sharing the APK with the team:
+see `docs/TEAM_TESTING.md`.
 
 `env/tunnel.json` points at the ngrok domain. Gradle 8.14 needs JDK 17 (JDK 25
 fails with a bare "25.0.2" error); see `flutter config --jdk-dir`.

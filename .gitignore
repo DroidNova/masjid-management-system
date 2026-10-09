@@ -38,3 +38,5 @@ ios/Flutter/ephemeral/
 # OS files
 .DS_Store
 Thumbs.db
+# Database copies (scripts/backup.*)
+backups/
