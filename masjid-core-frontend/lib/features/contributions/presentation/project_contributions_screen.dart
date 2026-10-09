@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/contributions/application/contribution_list_controllers.dart';
-import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_form_dialog.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/contribution_transaction_card.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/paged_list_parts.dart';
 
@@ -49,10 +49,11 @@ class _ProjectContributionsScreenState
   }
 
   Future<void> _openAddContribution() async {
-    await showDialog<bool>(
-      context: context,
-      builder: (context) =>
-          ContributionFormDialog.project(projectId: widget.projectId),
+    await context.push(
+      Uri(
+        path: '/contributions/new',
+        queryParameters: <String, String>{'project': widget.projectId},
+      ).toString(),
     );
     // The list reloads itself: recording marks DataScope.contributions.
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:masjid_core_frontend/core/errors/user_message.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
@@ -12,13 +11,14 @@ import 'package:masjid_core_frontend/features/finance/data/models/collection_ent
 import 'package:masjid_core_frontend/features/finance/data/models/expense_entry_model.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/finance_entry_filter.dart';
 import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_entry_tile.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_labels.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_paged_entries.dart';
-import 'package:masjid_core_frontend/features/finance/presentation/widgets/finance_summary_card.dart';
-import 'package:masjid_core_frontend/shared/widgets/app_button.dart';
-import 'package:masjid_core_frontend/shared/widgets/loading_view.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
+import 'package:masjid_core_frontend/features/finance/presentation/widgets/money_entry_tile.dart';
+import 'package:masjid_core_frontend/l10n/app_localizations.dart';
+import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// The Money tab: the balance, big "Money in" / "Money out" buttons, links
+/// to givers and the imam's salary, and the money in or out list grouped by
+/// day, filtered by kind with picture chips.
 class FinanceScreen extends ConsumerStatefulWidget {
   const FinanceScreen({super.key});
 
@@ -27,354 +27,388 @@ class FinanceScreen extends ConsumerStatefulWidget {
 }
 
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
-  int _selectedTab = 0;
+  bool _showingOut = false;
 
-  /// Expenses are loaded the first time that tab opens, then kept.
-  bool _expensesOpened = false;
+  /// Money out is loaded the first time it is shown, then kept.
+  bool _outOpened = false;
 
-  /// The entry whose cancel is in flight (shows progress on its tile).
-  String? _cancellingId;
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    // Both lists (and their filters) stay loaded while this screen is
+    // open, so switching between money in and out is instant.
+    ref.listen(collectionsFilterProvider, (_, _) {});
+    ref.listen(expensesFilterProvider, (_, _) {});
+    ref.listen(collectionsControllerProvider, (_, _) {});
+    if (_outOpened) ref.listen(expensesControllerProvider, (_, _) {});
+    // Kept alive so a failed cancel's error can be read and shown.
+    ref.listen(financeEntryControllerProvider, (_, _) {});
 
-  bool get _showingCollections => _selectedTab == 0;
+    final summary = ref.watch(financeSummaryProvider);
+    final summaryError = summary.hasError && !summary.isLoading
+        ? summary.error
+        : null;
+    if (summaryError is ApiException &&
+        summaryError.code == ApiErrorCodes.userMasjidNotAssigned) {
+      return EmptyState(
+        icon: AppIcons.mosque,
+        title: l10n.noMasjidAssigned,
+        actionLabel: l10n.logout,
+        actionIcon: AppIcons.logout,
+        onAction: () => ref.read(authControllerProvider.notifier).signOut(),
+      );
+    }
 
-  Future<void> _refresh() async {
-    await Future.wait<void>(<Future<void>>[
-      ref.read(financeSummaryProvider.notifier).refresh(),
-      if (_showingCollections)
-        ref.read(collectionsControllerProvider.notifier).refresh()
-      else
-        ref.read(expensesControllerProvider.notifier).refresh(),
-    ]);
+    final permissions = ref.watch(currentPermissionsProvider);
+    final canIn = PermissionHelper.canManageCollections(permissions);
+    final canOut = PermissionHelper.canManageExpenses(permissions);
+
+    final header = <Widget>[
+      _BalanceHero(summary: summary),
+      if (canIn || canOut) ...<Widget>[
+        const SizedBox(height: AppSpace.l),
+        Row(
+          children: <Widget>[
+            if (canIn)
+              Expanded(
+                child: _BigMoneyButton(
+                  label: l10n.moneyIn,
+                  icon: AppIcons.moneyIn,
+                  tone: AppTones.moneyIn,
+                  onTap: () => context.push('/finance/add-collection'),
+                ),
+              ),
+            if (canIn && canOut) const SizedBox(width: AppSpace.m),
+            if (canOut)
+              Expanded(
+                child: _BigMoneyButton(
+                  label: l10n.moneyOut,
+                  icon: AppIcons.moneyOut,
+                  tone: AppTones.moneyOut,
+                  onTap: () => context.push('/finance/add-expense'),
+                ),
+              ),
+          ],
+        ),
+      ],
+      const SizedBox(height: AppSpace.l),
+      Row(
+        children: <Widget>[
+          Expanded(
+            child: _LinkCard(
+              icon: AppIcons.zakat,
+              label: l10n.givers,
+              tone: AppTones.moneyIn,
+              onTap: () => context.push('/finance/collection-contributions'),
+            ),
+          ),
+          if (PermissionHelper.canViewImamSalary(permissions)) ...<Widget>[
+            const SizedBox(width: AppSpace.m),
+            Expanded(
+              child: _LinkCard(
+                icon: AppIcons.salary,
+                label: l10n.salary,
+                tone: AppTones.salary,
+                onTap: () => context.push('/imam-salaries'),
+              ),
+            ),
+          ],
+        ],
+      ),
+      const SizedBox(height: AppSpace.xl),
+      SegmentedButton<bool>(
+        showSelectedIcon: false,
+        segments: <ButtonSegment<bool>>[
+          ButtonSegment<bool>(
+            value: false,
+            icon: Icon(AppIcons.moneyIn, color: AppTones.moneyIn.color),
+            label: Text(l10n.moneyIn),
+          ),
+          ButtonSegment<bool>(
+            value: true,
+            icon: Icon(AppIcons.moneyOut, color: AppTones.moneyOut.color),
+            label: Text(l10n.moneyOut),
+          ),
+        ],
+        selected: <bool>{_showingOut},
+        onSelectionChanged: (selection) => setState(() {
+          _showingOut = selection.first;
+          if (_showingOut) _outOpened = true;
+        }),
+      ),
+      const SizedBox(height: AppSpace.m),
+      _KindChips(isExpense: _showingOut),
+    ];
+
+    return _showingOut
+        ? _expenses(context, header, canOut)
+        : _collections(context, header, canIn);
   }
 
-  void _loadMore() {
-    if (_showingCollections) {
-      ref.read(collectionsControllerProvider.notifier).loadMore();
-    } else {
-      ref.read(expensesControllerProvider.notifier).loadMore();
+  Widget _collections(BuildContext context, List<Widget> header, bool canAdd) {
+    final l10n = AppLocalizations.of(context);
+    final controller = ref.read(collectionsControllerProvider.notifier);
+    final filter = ref.watch(collectionsFilterProvider);
+    return PagedListView<CollectionEntryModel>(
+      value: ref.watch(collectionsControllerProvider),
+      header: header,
+      dayOf: (entry) => entry.collectedAt ?? entry.createdAt,
+      onRefresh: _refresh,
+      onLoadMore: controller.loadMore,
+      onRetry: () => ref.invalidate(collectionsControllerProvider),
+      empty: listEmptyState(
+        l10n: l10n,
+        icon: AppIcons.moneyIn,
+        tone: AppTones.moneyIn,
+        title: l10n.noMoneyInYet,
+        filtered: filter != const FinanceEntryFilter(),
+        actionLabel: canAdd ? l10n.moneyIn : null,
+        onAction: () => context.push('/finance/add-collection'),
+      ),
+      itemBuilder: (context, entry) => MoneyEntryTile(
+        type: entry.type,
+        title: entry.title,
+        note: entry.description,
+        amount: entry.amount,
+        date: entry.collectedAt ?? entry.createdAt,
+        isExpense: false,
+        cancelled: entry.isCancelled,
+        onCancel: canAdd && !entry.isCancelled
+            ? () => _cancel((notifier) => notifier.cancelCollection(entry.id))
+            : null,
+      ),
+    );
+  }
+
+  Widget _expenses(BuildContext context, List<Widget> header, bool canAdd) {
+    final l10n = AppLocalizations.of(context);
+    final controller = ref.read(expensesControllerProvider.notifier);
+    final filter = ref.watch(expensesFilterProvider);
+    return PagedListView<ExpenseEntryModel>(
+      value: ref.watch(expensesControllerProvider),
+      header: header,
+      dayOf: (entry) => entry.spentAt ?? entry.createdAt,
+      onRefresh: _refresh,
+      onLoadMore: controller.loadMore,
+      onRetry: () => ref.invalidate(expensesControllerProvider),
+      empty: listEmptyState(
+        l10n: l10n,
+        icon: AppIcons.moneyOut,
+        tone: AppTones.moneyOut,
+        title: l10n.noMoneyOutYet,
+        filtered: filter != const FinanceEntryFilter(),
+        actionLabel: canAdd ? l10n.moneyOut : null,
+        onAction: () => context.push('/finance/add-expense'),
+      ),
+      itemBuilder: (context, entry) => MoneyEntryTile(
+        type: entry.type,
+        title: entry.title,
+        note: entry.description,
+        amount: entry.amount,
+        date: entry.spentAt ?? entry.createdAt,
+        isExpense: true,
+        cancelled: entry.isCancelled,
+        onCancel: canAdd && !entry.isCancelled
+            ? () => _cancel((notifier) => notifier.cancelExpense(entry.id))
+            : null,
+      ),
+    );
+  }
+
+  /// Runs a cancel; on failure throws the server's error for the dialog.
+  Future<void> _cancel(
+    Future<bool> Function(FinanceEntryController notifier) action,
+  ) async {
+    final done = await action(
+      ref.read(financeEntryControllerProvider.notifier),
+    );
+    if (!done) {
+      throw ref.read(financeEntryControllerProvider).error ??
+          StateError('cancel failed');
     }
   }
 
-  bool _onScroll(ScrollNotification notification) {
-    if (notification.metrics.extentAfter < 300) _loadMore();
-    return false;
+  Future<void> _refresh() async {
+    ref.invalidate(financeSummaryProvider);
+    await (_showingOut
+        ? ref.read(expensesControllerProvider.notifier).refresh()
+        : ref.read(collectionsControllerProvider.notifier).refresh());
   }
+}
 
-  Future<void> _confirmCancel({
-    required bool isExpense,
-    required String id,
-  }) async {
-    final label = isExpense ? 'expense' : 'collection';
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Cancel ${isExpense ? 'Expense' : 'Collection'}'),
-        content: Text(
-          'This $label will be marked as cancelled and no longer counted '
-          'in the totals.',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep'),
+/// The balance in big numbers, with this month's money in and out.
+class _BalanceHero extends StatelessWidget {
+  const _BalanceHero({required this.summary});
+
+  final AsyncValue<FinanceSummaryModel> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final data = summary.valueOrNull;
+
+    if (data == null) {
+      return summary.hasError
+          ? MessageBanner(text: l10n.moneyLoadFailed)
+          : const SkeletonBox(height: 180, radius: AppRadius.l);
+    }
+
+    final balance = data.currentBalance;
+    final spoken =
+        '${l10n.masjidBalance}: ${AmountText.format(balance)}. '
+        '${l10n.thisMonth}: ${l10n.moneyIn} ${AmountText.format(data.thisMonthCollection)}, '
+        '${l10n.moneyOut} ${AmountText.format(data.thisMonthExpense)}';
+
+    return HeroCard(
+      tone: balance < 0 ? AppTones.moneyOut : AppTones.brand,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(AppIcons.money, size: 28),
+              const SizedBox(width: AppSpace.s),
+              Expanded(
+                child: Text(
+                  l10n.masjidBalance,
+                  style: textTheme.titleMedium?.copyWith(color: Colors.white),
+                ),
+              ),
+              ReadAloudButton(text: spoken, color: Colors.white),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Cancel ${isExpense ? 'Expense' : 'Collection'}'),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: AmountText(
+              balance,
+              size: AmountSize.hero,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: AppSpace.m),
+          Text(
+            l10n.thisMonth,
+            style: textTheme.bodyMedium?.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(height: AppSpace.xs),
+          Wrap(
+            spacing: AppSpace.xl,
+            runSpacing: AppSpace.s,
+            children: <Widget>[
+              _HeroFigure(
+                icon: AppIcons.moneyIn,
+                amount: data.thisMonthCollection,
+                kind: AmountKind.moneyIn,
+              ),
+              _HeroFigure(
+                icon: AppIcons.moneyOut,
+                amount: data.thisMonthExpense,
+                kind: AmountKind.moneyOut,
+              ),
+            ],
           ),
         ],
       ),
     );
-    if (confirmed != true || !mounted || _cancellingId != null) return;
-
-    setState(() => _cancellingId = id);
-    final controller = ref.read(financeEntryControllerProvider.notifier);
-    final ok = isExpense
-        ? await controller.cancelExpense(id)
-        : await controller.cancelCollection(id);
-    if (!mounted) return;
-    setState(() => _cancellingId = null);
-    final error = ref.read(financeEntryControllerProvider).error;
-    // Not ok and no error: another save was already running.
-    if (!ok && error == null) return;
-    final message = ok
-        ? '${isExpense ? 'Expense' : 'Collection'} cancelled.'
-        : userMessage(error!);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
-
-  @override
-  Widget build(BuildContext context) {
-    // Keeps the mutation controller alive while a cancel is in flight.
-    ref.watch(financeEntryControllerProvider);
-    // Both tabs keep their list and filter while this screen is open, so
-    // switching tabs neither reloads nor resets the filter.
-    ref.listen(collectionsFilterProvider, (_, _) {});
-    ref.listen(expensesFilterProvider, (_, _) {});
-    ref.listen(collectionsControllerProvider, (_, _) {});
-    if (_expensesOpened) ref.listen(expensesControllerProvider, (_, _) {});
-
-    final summaryState = ref.watch(financeSummaryProvider);
-    final error = summaryState.hasError && !summaryState.isLoading
-        ? summaryState.error
-        : null;
-    if (error is ApiException &&
-        error.code == ApiErrorCodes.userMasjidNotAssigned) {
-      return _FinanceErrorView(
-        message: 'You are not assigned to any masjid yet.',
-        buttonLabel: 'Logout / Back to Login',
-        onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-      );
-    }
-    return _buildContent(summaryState);
-  }
-
-  /// The totals card; a failed summary does not hide the lists below it.
-  Widget _summary(AsyncValue<FinanceSummaryModel> summaryState) =>
-      summaryState.when(
-        skipLoadingOnReload: true,
-        loading: () => const Card(
-          child: Padding(padding: EdgeInsets.all(24), child: LoadingView()),
-        ),
-        error: (error, _) => Card(
-          child: ListTile(
-            title: const Text('Unable to load finance data.'),
-            subtitle: Text(userMessage(error)),
-            trailing: TextButton(
-              onPressed: () => ref.invalidate(financeSummaryProvider),
-              child: const Text('Retry'),
-            ),
-          ),
-        ),
-        data: (summary) => FinanceSummaryCard(summary: summary),
-      );
-
-  Widget _buildContent(AsyncValue<FinanceSummaryModel> summaryState) {
-    final permissions = ref.watch(currentPermissionsProvider);
-
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: _refresh,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: _onScroll,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _summary(summaryState),
-                    const SizedBox(height: 12),
-                    _ImamSalaryNavigationCard(
-                      subtitle:
-                          PermissionHelper.canManageImamSalary(permissions)
-                          ? 'Manage salary paid/unpaid records'
-                          : 'View salary paid/unpaid records',
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.volunteer_activism_outlined),
-                        title: const Text('Collection Contributions'),
-                        subtitle: const Text(
-                          'View donations and contributor transactions',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () =>
-                            context.push('/finance/collection-contributions'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SegmentedButton<int>(
-                      segments: const <ButtonSegment<int>>[
-                        ButtonSegment<int>(
-                          value: 0,
-                          label: Text('Collections'),
-                        ),
-                        ButtonSegment<int>(value: 1, label: Text('Expenses')),
-                      ],
-                      selected: <int>{_selectedTab},
-                      onSelectionChanged: (selection) {
-                        setState(() {
-                          _selectedTab = selection.first;
-                          if (_selectedTab == 1) _expensesOpened = true;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    if (_showingCollections)
-                      _collectionsSection(permissions)
-                    else
-                      _expensesSection(permissions),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _collectionsSection(List<String> permissions) {
-    final canManage = PermissionHelper.canManageCollections(permissions);
-    final filter = ref.watch(collectionsFilterProvider);
-
-    return _FinanceEntriesSection(
-      title: 'Collections',
-      buttonLabel: 'Add Collection',
-      onAddPressed: canManage
-          ? () => context.push('/finance/add-collection')
-          : null,
-      filter: _TypeFilter(
-        labels: collectionTypeLabels,
-        value: filter.type,
-        onChanged: (type) => ref
-            .read(collectionsFilterProvider.notifier)
-            .update((current) => current.copyWith(type: type)),
-      ),
-      body: FinancePagedEntries<CollectionEntryModel>(
-        state: ref.watch(collectionsControllerProvider),
-        emptyMessage: _emptyMessage(filter, 'No collections added yet.'),
-        onRetry: () => ref.invalidate(collectionsControllerProvider),
-        onLoadMore: _loadMore,
-        itemBuilder: (entry) => FinanceEntryTile(
-          key: ValueKey<String>(entry.id),
-          type: entry.type,
-          amount: entry.amount,
-          title: entry.title,
-          description: entry.description,
-          date: entry.collectedAt ?? entry.createdAt,
-          status: entry.status,
-          isExpense: false,
-          cancelling: _cancellingId == entry.id,
-          onCancel: canManage && !entry.isCancelled
-              ? () => _confirmCancel(isExpense: false, id: entry.id)
-              : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _expensesSection(List<String> permissions) {
-    final canManage = PermissionHelper.canManageExpenses(permissions);
-    final filter = ref.watch(expensesFilterProvider);
-
-    return _FinanceEntriesSection(
-      title: 'Expenses',
-      buttonLabel: 'Add Expense',
-      onAddPressed: canManage
-          ? () => context.push('/finance/add-expense')
-          : null,
-      filter: _TypeFilter(
-        labels: expenseTypeLabels,
-        value: filter.type,
-        onChanged: (type) => ref
-            .read(expensesFilterProvider.notifier)
-            .update((current) => current.copyWith(type: type)),
-      ),
-      body: FinancePagedEntries<ExpenseEntryModel>(
-        state: ref.watch(expensesControllerProvider),
-        emptyMessage: _emptyMessage(filter, 'No expenses added yet.'),
-        onRetry: () => ref.invalidate(expensesControllerProvider),
-        onLoadMore: _loadMore,
-        itemBuilder: (entry) => FinanceEntryTile(
-          key: ValueKey<String>(entry.id),
-          type: entry.type,
-          amount: entry.amount,
-          title: entry.title,
-          description: entry.description,
-          date: entry.spentAt ?? entry.createdAt,
-          status: entry.status,
-          isExpense: true,
-          cancelling: _cancellingId == entry.id,
-          onCancel: canManage && !entry.isCancelled
-              ? () => _confirmCancel(isExpense: true, id: entry.id)
-              : null,
-        ),
-      ),
-    );
-  }
-
-  String _emptyMessage(FinanceEntryFilter filter, String noEntries) =>
-      filter == const FinanceEntryFilter()
-      ? noEntries
-      : 'No entries match this filter.';
 }
 
-/// "All types" plus one item per type.
-class _TypeFilter extends StatelessWidget {
-  const _TypeFilter({
-    required this.labels,
-    required this.value,
-    required this.onChanged,
+class _HeroFigure extends StatelessWidget {
+  const _HeroFigure({
+    required this.icon,
+    required this.amount,
+    required this.kind,
   });
 
-  final Map<String, String> labels;
-  final String? value;
-  final ValueChanged<String?> onChanged;
+  final IconData icon;
+  final double amount;
+  final AmountKind kind;
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton<String?>(
-      value: value,
-      isExpanded: true,
-      items: <DropdownMenuItem<String?>>[
-        const DropdownMenuItem<String?>(child: Text('All types')),
-        ...labels.entries.map(
-          (entry) => DropdownMenuItem<String?>(
-            value: entry.key,
-            child: Text(entry.value),
-          ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 22),
+        const SizedBox(width: AppSpace.xs),
+        Flexible(
+          child: AmountText(amount, kind: kind, color: Colors.white),
         ),
       ],
-      onChanged: onChanged,
     );
   }
 }
 
-class _ImamSalaryNavigationCard extends StatelessWidget {
-  const _ImamSalaryNavigationCard({required this.subtitle});
+/// A big coloured button with a picture: "Money in" (green), "Money out"
+/// (red).
+class _BigMoneyButton extends StatelessWidget {
+  const _BigMoneyButton({
+    required this.label,
+    required this.icon,
+    required this.tone,
+    required this.onTap,
+  });
 
-  final String subtitle;
+  final String label;
+  final IconData icon;
+  final AppTone tone;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: tone.color,
+        minimumSize: const Size.fromHeight(88),
+        padding: const EdgeInsets.all(AppSpace.m),
+      ),
+      onPressed: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 36),
+          const SizedBox(height: AppSpace.xs),
+          Text(label, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+/// A short card linking to another money page (givers, salary).
+class _LinkCard extends StatelessWidget {
+  const _LinkCard({
+    required this.icon,
+    required this.label,
+    required this.tone,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final AppTone tone;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () => context.push('/imam-salaries'),
-        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpace.m),
           child: Row(
             children: <Widget>[
-              Icon(
-                Icons.payments_outlined,
-                color: Theme.of(context).colorScheme.primary,
-                size: 32,
-              ),
-              const SizedBox(width: 14),
+              ToneIcon(icon: icon, tone: tone, size: 44),
+              const SizedBox(width: AppSpace.m),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Imam Salary',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(subtitle),
-                  ],
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              const Icon(Icons.chevron_right_rounded),
             ],
           ),
         ),
@@ -383,99 +417,46 @@ class _ImamSalaryNavigationCard extends StatelessWidget {
   }
 }
 
-class _FinanceEntriesSection extends StatelessWidget {
-  const _FinanceEntriesSection({
-    required this.title,
-    required this.buttonLabel,
-    required this.filter,
-    required this.body,
-    this.onAddPressed,
-  });
+/// "All" plus one chip per kind, each with its picture.
+class _KindChips extends ConsumerWidget {
+  const _KindChips({required this.isExpense});
 
-  final String title;
-  final String buttonLabel;
-  final VoidCallback? onAddPressed;
-  final Widget filter;
-  final Widget body;
+  final bool isExpense;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (onAddPressed != null)
-                  FilledButton(
-                    onPressed: onAddPressed,
-                    child: Text(buttonLabel),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            filter,
-            const SizedBox(height: 12),
-            body,
-          ],
-        ),
-      ),
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final provider = isExpense
+        ? expensesFilterProvider
+        : collectionsFilterProvider;
+    final selected = ref.watch(provider).type;
+    final categories = isExpense ? moneyOutCategories : moneyInCategories;
 
-class _FinanceErrorView extends StatelessWidget {
-  const _FinanceErrorView({
-    required this.message,
-    required this.onPressed,
-    this.buttonLabel = 'Retry',
-  });
+    void choose(String? type) => ref
+        .read(provider.notifier)
+        .update((filter) => filter.copyWith(type: type));
 
-  final String message;
-  final String buttonLabel;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                AppButton(label: buttonLabel, onPressed: onPressed),
-              ],
-            ),
+    return SizedBox(
+      height: 56,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: <Widget>[
+          ChoiceChip(
+            label: Text(l10n.all),
+            selected: selected == null,
+            onSelected: (_) => choose(null),
           ),
-        ),
+          for (final category in categories) ...<Widget>[
+            const SizedBox(width: AppSpace.s),
+            ChoiceChip(
+              avatar: Icon(category.icon, size: 20),
+              label: Text(category.label(l10n)),
+              selected: selected == category.value,
+              onSelected: (_) =>
+                  choose(selected == category.value ? null : category.value),
+            ),
+          ],
+        ],
       ),
     );
   }

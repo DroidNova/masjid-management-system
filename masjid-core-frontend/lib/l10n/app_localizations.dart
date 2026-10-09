@@ -1299,6 +1299,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Times saved'**
   String get timesSaved;
+
+  /// No description provided for @addGiver.
+  ///
+  /// In en, this message translates to:
+  /// **'Add giver'**
+  String get addGiver;
+
+  /// No description provided for @addNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get addNote;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @cancelEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel entry'**
+  String get cancelEntry;
+
+  /// No description provided for @cancelEntryPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'The amount is taken out of the masjid\'s totals. The entry stays in the list, marked cancelled.'**
+  String get cancelEntryPoint;
+
+  /// No description provided for @cancelEntryQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this entry?'**
+  String get cancelEntryQuestion;
+
+  /// No description provided for @cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get cancelled;
+
+  /// No description provided for @catCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get catCleaning;
+
+  /// No description provided for @catConstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Construction'**
+  String get catConstruction;
+
+  /// No description provided for @catConstructionFund.
+  ///
+  /// In en, this message translates to:
+  /// **'Building fund'**
+  String get catConstructionFund;
+
+  /// No description provided for @catDonationBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Donation box'**
+  String get catDonationBox;
+
+  /// No description provided for @catElectricity.
+  ///
+  /// In en, this message translates to:
+  /// **'Electricity'**
+  String get catElectricity;
+
+  /// No description provided for @catImamSalary.
+  ///
+  /// In en, this message translates to:
+  /// **'Imam salary'**
+  String get catImamSalary;
+
+  /// No description provided for @catJumma.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumma'**
+  String get catJumma;
+
+  /// No description provided for @catOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get catOther;
+
+  /// No description provided for @catRamadanFund.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan fund'**
+  String get catRamadanFund;
+
+  /// No description provided for @catRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair'**
+  String get catRepair;
+
+  /// No description provided for @catSadaqah.
+  ///
+  /// In en, this message translates to:
+  /// **'Sadaqah'**
+  String get catSadaqah;
+
+  /// No description provided for @catWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get catWater;
+
+  /// No description provided for @catZakat.
+  ///
+  /// In en, this message translates to:
+  /// **'Zakat'**
+  String get catZakat;
+
+  /// No description provided for @givers.
+  ///
+  /// In en, this message translates to:
+  /// **'Givers'**
+  String get givers;
+
+  /// No description provided for @howMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'How much?'**
+  String get howMuch;
+
+  /// No description provided for @moneyInSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Money in saved'**
+  String get moneyInSaved;
+
+  /// No description provided for @moneyLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load the money totals.'**
+  String get moneyLoadFailed;
+
+  /// No description provided for @moneyOutSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Money out saved'**
+  String get moneyOutSaved;
+
+  /// No description provided for @noGiversYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No givers yet'**
+  String get noGiversYet;
+
+  /// No description provided for @noMoneyInYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No money in yet'**
+  String get noMoneyInYet;
+
+  /// No description provided for @noMoneyOutYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No money out yet'**
+  String get noMoneyOutYet;
+
+  /// No description provided for @nothingMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches'**
+  String get nothingMatches;
+
+  /// No description provided for @payCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get payCash;
+
+  /// No description provided for @payOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get payOnline;
+
+  /// No description provided for @phoneOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get phoneOptional;
+
+  /// No description provided for @pickAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick someone else'**
+  String get pickAnother;
+
+  /// No description provided for @pickMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a member'**
+  String get pickMember;
+
+  /// No description provided for @someoneElse.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a member'**
+  String get someoneElse;
+
+  /// No description provided for @whatFor.
+  ///
+  /// In en, this message translates to:
+  /// **'What for?'**
+  String get whatFor;
+
+  /// No description provided for @whatKind.
+  ///
+  /// In en, this message translates to:
+  /// **'What kind?'**
+  String get whatKind;
+
+  /// No description provided for @whoGave.
+  ///
+  /// In en, this message translates to:
+  /// **'Who gave?'**
+  String get whoGave;
 }
 
 class _AppLocalizationsDelegate

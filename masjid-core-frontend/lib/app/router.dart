@@ -17,6 +17,7 @@ import 'package:masjid_core_frontend/features/auth/presentation/otp_screen.dart'
 import 'package:masjid_core_frontend/features/community/presentation/add_community_user_screen.dart';
 import 'package:masjid_core_frontend/features/community/presentation/community_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/collection_contributions_screen.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/contribution_flow_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
@@ -292,6 +293,16 @@ final List<RouteBase> _routes = <RouteBase>[
   GoRoute(
     path: '/contributions',
     builder: (context, state) => const MyContributionsScreen(),
+  ),
+  // Record who gave: a collection gift, or with ?project=<id> a project one.
+  GoRoute(
+    path: '/contributions/new',
+    builder: (context, state) => PermissionGate(
+      isAllowed: PermissionHelper.canRecordContributions,
+      child: ContributionFlowScreen(
+        projectId: state.uri.queryParameters['project'],
+      ),
+    ),
   ),
   GoRoute(
     path: '/contributions/imam-salary/:month/:year/payments',

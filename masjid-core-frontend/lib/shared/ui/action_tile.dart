@@ -13,6 +13,7 @@ class ActionTile extends StatelessWidget {
     required this.tone,
     required this.onTap,
     this.badge,
+    this.selected = false,
   });
 
   final IconData icon;
@@ -23,14 +24,25 @@ class ActionTile extends StatelessWidget {
   /// A small count in the corner (for example, unread news).
   final int? badge;
 
+  /// Picked (in a "what kind?" grid): a thick border and a tick.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final count = badge;
     return Semantics(
       button: true,
+      selected: selected,
       label: label,
       excludeSemantics: true,
       child: Card(
+        color: selected ? tone.container : null,
+        shape: selected
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.l),
+                side: BorderSide(color: tone.color, width: 3),
+              )
+            : null,
         child: InkWell(
           onTap: onTap,
           hoverColor: tone.container.withValues(alpha: 0.5),
@@ -65,6 +77,12 @@ class ActionTile extends StatelessWidget {
                   ),
                 ),
               ),
+              if (selected)
+                PositionedDirectional(
+                  top: AppSpace.s,
+                  end: AppSpace.s,
+                  child: Icon(Icons.check_circle_rounded, color: tone.color),
+                ),
               if (count != null && count > 0)
                 PositionedDirectional(
                   top: AppSpace.m,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
@@ -34,16 +33,6 @@ class AnnouncementCard extends StatefulWidget {
 
 class _AnnouncementCardState extends State<AnnouncementCard> {
   bool _expanded = false;
-
-  /// "Today", "Yesterday", or the date.
-  String _when(AppLocalizations l10n, DateTime date) {
-    final today = DateUtils.dateOnly(widget.today ?? DateTime.now());
-    final day = DateUtils.dateOnly(date.toLocal());
-    final days = today.difference(day).inDays;
-    if (days == 0) return l10n.today;
-    if (days == 1) return l10n.yesterday;
-    return AppFormat.date(date);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +81,7 @@ class _AnnouncementCardState extends State<AnnouncementCard> {
                         children: <Widget>[
                           if (date != null)
                             Text(
-                              _when(l10n, date),
+                              dayLabel(l10n, date, today: widget.today),
                               style: textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,
                               ),

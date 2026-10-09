@@ -642,4 +642,119 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get timesSaved => 'اوقات محفوظ ہو گئے';
+
+  @override
+  String get addGiver => 'دینے والا شامل کریں';
+
+  @override
+  String get addNote => 'نوٹ شامل کریں';
+
+  @override
+  String get all => 'سب';
+
+  @override
+  String get cancelEntry => 'اندراج منسوخ کریں';
+
+  @override
+  String get cancelEntryPoint =>
+      'یہ رقم مسجد کے حساب سے نکل جائے گی۔ اندراج فہرست میں منسوخ کے نشان کے ساتھ رہے گا۔';
+
+  @override
+  String get cancelEntryQuestion => 'یہ اندراج منسوخ کریں؟';
+
+  @override
+  String get cancelled => 'منسوخ';
+
+  @override
+  String get catCleaning => 'صفائی';
+
+  @override
+  String get catConstruction => 'تعمیر';
+
+  @override
+  String get catConstructionFund => 'تعمیراتی فنڈ';
+
+  @override
+  String get catDonationBox => 'چندہ بکس';
+
+  @override
+  String get catElectricity => 'بجلی';
+
+  @override
+  String get catImamSalary => 'امام کی تنخواہ';
+
+  @override
+  String get catJumma => 'جمعہ';
+
+  @override
+  String get catOther => 'دیگر';
+
+  @override
+  String get catRamadanFund => 'رمضان فنڈ';
+
+  @override
+  String get catRepair => 'مرمت';
+
+  @override
+  String get catSadaqah => 'صدقہ';
+
+  @override
+  String get catWater => 'پانی';
+
+  @override
+  String get catZakat => 'زکوٰۃ';
+
+  @override
+  String get givers => 'دینے والے';
+
+  @override
+  String get howMuch => 'کتنا؟';
+
+  @override
+  String get moneyInSaved => 'آئی رقم محفوظ ہو گئی';
+
+  @override
+  String get moneyLoadFailed => 'رقم کا حساب لوڈ نہیں ہو سکا۔';
+
+  @override
+  String get moneyOutSaved => 'گئی رقم محفوظ ہو گئی';
+
+  @override
+  String get noGiversYet => 'ابھی کوئی دینے والا نہیں';
+
+  @override
+  String get noMoneyInYet => 'ابھی کوئی رقم نہیں آئی';
+
+  @override
+  String get noMoneyOutYet => 'ابھی کوئی رقم نہیں گئی';
+
+  @override
+  String get nothingMatches => 'کچھ نہیں ملا';
+
+  @override
+  String get payCash => 'نقد';
+
+  @override
+  String get payOnline => 'آن لائن';
+
+  @override
+  String get phoneOptional => 'فون (اختیاری)';
+
+  @override
+  String get pickAnother => 'کوئی اور چنیں';
+
+  @override
+  String get pickMember => 'رکن چنیں';
+
+  @override
+  String get someoneElse => 'رکن نہیں ہیں';
+
+  @override
+  String get whatFor => 'کس لیے؟';
+
+  @override
+  String get whatKind => 'کس قسم کا؟';
+
+  @override
+  String get whoGave => 'کس نے دیا؟';
 }

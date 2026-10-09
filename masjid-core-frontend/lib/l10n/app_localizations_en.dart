@@ -646,4 +646,119 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timesSaved => 'Times saved';
+
+  @override
+  String get addGiver => 'Add giver';
+
+  @override
+  String get addNote => 'Add a note';
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get cancelEntry => 'Cancel entry';
+
+  @override
+  String get cancelEntryPoint =>
+      'The amount is taken out of the masjid\'s totals. The entry stays in the list, marked cancelled.';
+
+  @override
+  String get cancelEntryQuestion => 'Cancel this entry?';
+
+  @override
+  String get cancelled => 'Cancelled';
+
+  @override
+  String get catCleaning => 'Cleaning';
+
+  @override
+  String get catConstruction => 'Construction';
+
+  @override
+  String get catConstructionFund => 'Building fund';
+
+  @override
+  String get catDonationBox => 'Donation box';
+
+  @override
+  String get catElectricity => 'Electricity';
+
+  @override
+  String get catImamSalary => 'Imam salary';
+
+  @override
+  String get catJumma => 'Jumma';
+
+  @override
+  String get catOther => 'Other';
+
+  @override
+  String get catRamadanFund => 'Ramadan fund';
+
+  @override
+  String get catRepair => 'Repair';
+
+  @override
+  String get catSadaqah => 'Sadaqah';
+
+  @override
+  String get catWater => 'Water';
+
+  @override
+  String get catZakat => 'Zakat';
+
+  @override
+  String get givers => 'Givers';
+
+  @override
+  String get howMuch => 'How much?';
+
+  @override
+  String get moneyInSaved => 'Money in saved';
+
+  @override
+  String get moneyLoadFailed => 'Unable to load the money totals.';
+
+  @override
+  String get moneyOutSaved => 'Money out saved';
+
+  @override
+  String get noGiversYet => 'No givers yet';
+
+  @override
+  String get noMoneyInYet => 'No money in yet';
+
+  @override
+  String get noMoneyOutYet => 'No money out yet';
+
+  @override
+  String get nothingMatches => 'Nothing matches';
+
+  @override
+  String get payCash => 'Cash';
+
+  @override
+  String get payOnline => 'Online';
+
+  @override
+  String get phoneOptional => 'Phone (optional)';
+
+  @override
+  String get pickAnother => 'Pick someone else';
+
+  @override
+  String get pickMember => 'Pick a member';
+
+  @override
+  String get someoneElse => 'Not a member';
+
+  @override
+  String get whatFor => 'What for?';
+
+  @override
+  String get whatKind => 'What kind?';
+
+  @override
+  String get whoGave => 'Who gave?';
 }

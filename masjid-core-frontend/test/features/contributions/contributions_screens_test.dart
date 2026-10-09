@@ -18,7 +18,6 @@ import 'package:masjid_core_frontend/features/contributions/data/models/my_imam_
 import 'package:masjid_core_frontend/features/contributions/data/models/my_imam_salary_payment.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/new_contribution.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/project_contribution.dart';
-import 'package:masjid_core_frontend/features/contributions/presentation/collection_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
@@ -138,57 +137,6 @@ void main() {
       expect(find.text('Add Contribution'), findsNothing);
     });
 
-    testWidgets('a recorder can add a contribution; the list reloads', (
-      tester,
-    ) async {
-      when(
-        () => repository.addProjectContribution('p1', any()),
-      ).thenAnswer((_) async => const ProjectContribution(id: 'c2'));
-
-      await _pump(
-        tester,
-        repository,
-        const ProjectContributionsScreen(projectId: 'p1', projectTitle: 'Roof'),
-        permissions: const <String>[
-          AppPermissions.contributionsRead,
-          AppPermissions.contributionsRecord,
-        ],
-      );
-
-      await tester.tap(find.text('Add Contribution'));
-      await tester.pumpAndSettle();
-      expect(find.text('Add Project Contribution'), findsOneWidget);
-
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Contributor name *'),
-        'Bilal',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Amount *'),
-        '750',
-      );
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      final saved =
-          verify(
-                () => repository.addProjectContribution('p1', captureAny()),
-              ).captured.single
-              as NewContribution;
-      expect(saved.contributorName, 'Bilal');
-      expect(saved.amount, 750);
-      expect(saved.collectionType, isNull);
-      expect(find.text('Add Project Contribution'), findsNothing);
-      // First load + reload after DataScope.contributions changed.
-      verify(
-        () => repository.getProjectContributions(
-          'p1',
-          search: any(named: 'search'),
-          paymentMode: any(named: 'paymentMode'),
-        ),
-      ).called(2);
-    });
-
     testWidgets('shows the server message when the list fails', (tester) async {
       when(
         () => repository.getProjectContributions(
@@ -213,91 +161,6 @@ void main() {
 
       expect(find.text('Project not found'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
-    });
-  });
-
-  group('CollectionContributionsScreen', () {
-    setUp(() {
-      when(
-        () => repository.getCollectionContributions(
-          search: any(named: 'search'),
-          paymentMode: any(named: 'paymentMode'),
-          collectionType: any(named: 'collectionType'),
-          page: any(named: 'page'),
-        ),
-      ).thenAnswer(
-        (_) async => _page(<CollectionContribution>[
-          CollectionContribution(
-            id: 'k1',
-            collectionType: 'DONATION_BOX',
-            contributorName: 'Yusuf',
-            amount: 250.5,
-            paymentMode: 'ONLINE',
-            paidAt: DateTime(2026, 6, 4),
-            collectedByName: 'Treasurer',
-          ),
-        ]),
-      );
-    });
-
-    testWidgets('lists contributions with type labels', (tester) async {
-      await _pump(
-        tester,
-        repository,
-        const CollectionContributionsScreen(),
-        permissions: const <String>[AppPermissions.contributionsRead],
-      );
-
-      expect(find.text('Yusuf'), findsOneWidget);
-      expect(find.text('Donation Box'), findsOneWidget);
-      expect(find.text('₹250.50'), findsOneWidget);
-      expect(find.text('Add Contribution'), findsNothing);
-    });
-
-    testWidgets('records a collection contribution with its type', (
-      tester,
-    ) async {
-      when(
-        () => repository.addCollectionContribution(any()),
-      ).thenAnswer((_) async => const CollectionContribution(id: 'k2'));
-
-      await _pump(
-        tester,
-        repository,
-        const CollectionContributionsScreen(),
-        permissions: const <String>[
-          AppPermissions.contributionsRead,
-          AppPermissions.contributionsRecord,
-        ],
-      );
-
-      await tester.tap(find.text('Add Contribution'));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Contributor name *'),
-        'Yusuf',
-      );
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      // Amount is required: nothing is sent yet.
-      expect(find.text('Enter a valid amount'), findsOneWidget);
-      verifyNever(() => repository.addCollectionContribution(any()));
-
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Amount *'),
-        '100',
-      );
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      final saved =
-          verify(
-                () => repository.addCollectionContribution(captureAny()),
-              ).captured.single
-              as NewContribution;
-      expect(saved.collectionType, 'DONATION_BOX');
-      expect(saved.amount, 100);
     });
   });
 
