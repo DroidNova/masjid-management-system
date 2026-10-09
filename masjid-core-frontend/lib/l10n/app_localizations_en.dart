@@ -35,4 +35,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardLoadFailed => 'Unable to load dashboard';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get pickDate => 'Pick date';
+
+  @override
+  String get readAloud => 'Read aloud';
+
+  @override
+  String get stopReading => 'Stop';
+
+  @override
+  String get pleaseWait => 'Please wait…';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get nothingFound => 'Nothing found';
+
+  @override
+  String get searchPeople => 'Search by name or phone';
+
+  @override
+  String get amountHint => 'Enter amount';
+
+  @override
+  String get deleteDigit => 'Delete';
+
+  @override
+  String get pressAndHold => 'Press and hold';
+
+  @override
+  String holdTo(String action) {
+    return 'Hold to $action';
+  }
+
+  @override
+  String stepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get chooseLanguage => 'Choose language';
+
+  @override
+  String get largeText => 'Large text';
 }

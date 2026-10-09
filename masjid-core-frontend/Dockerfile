@@ -1,4 +1,5 @@
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+# Same Flutter version as CI (.github/workflows/ci.yml); bump both together.
+FROM ghcr.io/cirruslabs/flutter:3.41.6 AS build
 WORKDIR /app
 # APP_ENV picks env/<APP_ENV>.json (dev | staging | prod).
 # API_BASE_URL, when set, overrides the URL in that file.

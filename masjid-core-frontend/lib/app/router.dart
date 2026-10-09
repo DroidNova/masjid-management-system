@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/core/config/api_config.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/announcements/data/models/announcement_model.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/add_announcement_screen.dart';
@@ -20,6 +21,7 @@ import 'package:masjid_core_frontend/features/contributions/presentation/my_cont
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/namaz_time_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/home_dashboard_screen.dart';
+import 'package:masjid_core_frontend/features/dev_gallery/presentation/design_gallery_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/add_collection_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/add_expense_screen.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/finance_screen.dart';
@@ -60,7 +62,11 @@ const Set<String> publicLocations = <String>{
   '/masjid-request',
   '/masjid-request/submitted',
   '/masjid-request/track',
+  designGalleryLocation,
 };
+
+/// Design-system gallery; registered only outside production builds.
+const String designGalleryLocation = '/dev/gallery';
 
 /// Login pages: a signed-in user is sent home from these.
 const Set<String> _loginLocations = <String>{
@@ -135,6 +141,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 final List<RouteBase> _routes = <RouteBase>[
   GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+  if (!ApiConfig.isProduction)
+    GoRoute(
+      path: designGalleryLocation,
+      builder: (context, state) => const DesignGalleryScreen(),
+    ),
   GoRoute(
     path: '/auth',
     builder: (context, state) => const AuthLandingScreen(),

@@ -9,5 +9,40 @@
   "notAllowedMessage": "You do not have permission to perform this action.",
   "sessionExpired": "Your session has expired. Please login again.",
   "noMasjidAssigned": "You are not assigned to any masjid yet.",
-  "dashboardLoadFailed": "Unable to load dashboard"
+  "dashboardLoadFailed": "Unable to load dashboard",
+
+  "next": "Next",
+  "back": "Back",
+  "done": "Done",
+  "cancel": "Cancel",
+  "ok": "OK",
+  "save": "Save",
+  "close": "Close",
+  "search": "Search",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "pickDate": "Pick date",
+  "readAloud": "Read aloud",
+  "stopReading": "Stop",
+  "pleaseWait": "Please wait…",
+  "somethingWentWrong": "Something went wrong",
+  "tryAgain": "Try again",
+  "nothingFound": "Nothing found",
+  "searchPeople": "Search by name or phone",
+  "amountHint": "Enter amount",
+  "deleteDigit": "Delete",
+  "@deleteDigit": { "description": "Backspace key on the amount number pad (screen reader label)." },
+  "pressAndHold": "Press and hold",
+  "@pressAndHold": { "description": "Hint under a dangerous button that must be held for 2 seconds." },
+  "holdTo": "Hold to {action}",
+  "@holdTo": {
+    "description": "Screen reader label for a hold-to-confirm button. {action} is the button's own label, e.g. 'Leave'.",
+    "placeholders": { "action": { "type": "String" } }
+  },
+  "stepOf": "Step {current} of {total}",
+  "@stepOf": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "chooseLanguage": "Choose language",
+  "largeText": "Large text"
 }

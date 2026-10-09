@@ -6,10 +6,10 @@ Update the checkboxes and the status table as work lands.
 
 ## Checkpoint (read this first in a new session)
 
-Last updated 2026-10-08.
+Last updated 2026-10-09.
 
 - **Done:** M0 to M5, plus an API audit and optimization pass (2026-10-08): fewer queries per request, race-safe money/OTP/approval writes, Prisma errors mapped to API errors, query-tuning indexes. Both apps lint, build, and test clean. CI runs on every push to `main`.
-- **Next:** the owner's list of fixes and features for the existing app (2026-10-08). Deployment (M6) waits until the product is finished; then the owner decides domain and SMS provider. The VPS will be a small one.
+- **Next:** the UI redesign, phase by phase (`docs/UI_REDESIGN_PLAN.md`; U0 design foundation done 2026-10-09, next U1). Deployment (M6) waits until the product is finished; then the owner decides domain and SMS provider. The VPS will be a small one.
 - **App rules:** auth state lives only in `AuthController`; widgets read `currentUserProvider`/`currentPermissionsProvider`, never secure storage. Network calls go through `ApiClient` (`apiClientProvider`) and fail with `ApiException` (switch on `code`). Logging out = `authControllerProvider.notifier.signOut()`; the router redirect does the navigation.
 - **Money rule:** amounts are Decimal in the database and in all arithmetic (`src/common/money.ts`); convert to numbers only in responses. Finance totals come only from `FinanceCalculator`. Every money or membership change writes an `AuditLog` entry in the same transaction.
 - **Access rule:** who can do what lives only in `masjid-core/src/access/permissions.ts`. Every route needs `@RequirePermissions`; the app reads `user.permissions`. Three role decisions await owner confirmation (see section 1).
@@ -35,7 +35,7 @@ Deployment goal: website + Android app on Play Store (iOS maybe later), backend 
 ### Owner's standing rules (2026-10-07)
 
 - **Dev auth:** while developing, the OTP is fixed to `1111` and the default password is `12345678` (passwords are at least 8 characters). These are env-driven dev values. The real OTP generator and SMS provider are built, configured, and tested only when shipping (M6). Production refuses to start with dev auth enabled.
-- **No UI work now.** Functionality first. Visual polish of the Flutter app happens at the end.
+- **UI redesign started 2026-10-09.** The owner lifted the "no UI work" rule; the redesign plan is `docs/UI_REDESIGN_PLAN.md` (simple, visual, for low-literacy users).
 - **Low budget, full features.** This is a startup with very little money. Every choice is optimised for cost: one small VPS, self-hosted Postgres, free tiers for CI, monitoring, and backups, cheap Indian SMS. Saving money never removes a feature.
 - **Role matrix** (the product rule; implemented in M2):
 

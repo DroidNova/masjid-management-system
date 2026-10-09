@@ -6,6 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_hi.dart';
+import 'app_localizations_ur.dart';
 
 // ignore_for_file: type=lint
 
@@ -92,7 +94,11 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('hi'),
+    Locale('ur'),
+  ];
 
   /// App name shown in the window title and splash screen.
   ///
@@ -147,6 +153,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to load dashboard'**
   String get dashboardLoadFailed;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @pickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get pickDate;
+
+  /// No description provided for @readAloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get readAloud;
+
+  /// No description provided for @stopReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopReading;
+
+  /// No description provided for @pleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait…'**
+  String get pleaseWait;
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get somethingWentWrong;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @nothingFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found'**
+  String get nothingFound;
+
+  /// No description provided for @searchPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or phone'**
+  String get searchPeople;
+
+  /// No description provided for @amountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter amount'**
+  String get amountHint;
+
+  /// Backspace key on the amount number pad (screen reader label).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteDigit;
+
+  /// Hint under a dangerous button that must be held for 2 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and hold'**
+  String get pressAndHold;
+
+  /// Screen reader label for a hold-to-confirm button. {action} is the button's own label, e.g. 'Leave'.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to {action}'**
+  String holdTo(String action);
+
+  /// No description provided for @stepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String stepOf(int current, int total);
+
+  /// No description provided for @chooseLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose language'**
+  String get chooseLanguage;
+
+  /// No description provided for @largeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Large text'**
+  String get largeText;
 }
 
 class _AppLocalizationsDelegate
@@ -160,7 +316,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en'].contains(locale.languageCode);
+      <String>['en', 'hi', 'ur'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -171,6 +327,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
+    case 'hi':
+      return AppLocalizationsHi();
+    case 'ur':
+      return AppLocalizationsUr();
   }
 
   throw FlutterError(
