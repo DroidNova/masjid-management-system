@@ -2331,6 +2331,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Salary for this month has already started.'**
   String get errorSalaryMonthStarted;
+
+  /// No description provided for @mySalaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Imam salary · {month}'**
+  String mySalaryTitle(String month);
+
+  /// No description provided for @salaryPaidThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month is paid'**
+  String get salaryPaidThisMonth;
+
+  /// No description provided for @salaryToPayThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} to pay this month'**
+  String salaryToPayThisMonth(String amount);
+
+  /// No description provided for @olderMonthsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier months: {amount} to pay'**
+  String olderMonthsDue(String amount);
+
+  /// No description provided for @allSalaryPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is paid. Thank you!'**
+  String get allSalaryPaid;
+
+  /// No description provided for @salaryDueTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} to pay in all'**
+  String salaryDueTotal(String amount);
+
+  /// No description provided for @seeMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'See all months'**
+  String get seeMonths;
 }
 
 class _AppLocalizationsDelegate

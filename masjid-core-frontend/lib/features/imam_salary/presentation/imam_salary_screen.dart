@@ -304,23 +304,23 @@ class _CommitteeLedgerState extends ConsumerState<_CommitteeLedger> {
       ..._monthHeader(context, ref, canManage: true),
       if (started) ...<Widget>[
         const SizedBox(height: AppSpace.m),
-        SegmentedButton<bool>(
-          showSelectedIcon: false,
-          segments: <ButtonSegment<bool>>[
-            ButtonSegment<bool>(
+        PillTabs<bool>(
+          tabs: <PillTab<bool>>[
+            PillTab<bool>(
               value: false,
-              icon: const Icon(AppIcons.people),
-              label: Text(l10n.families),
+              icon: AppIcons.people,
+              label: l10n.families,
+              tone: AppTones.people,
             ),
-            ButtonSegment<bool>(
+            PillTab<bool>(
               value: true,
-              icon: const Icon(AppIcons.myPayments),
-              label: Text(l10n.payments),
+              icon: AppIcons.myPayments,
+              label: l10n.payments,
+              tone: AppTones.salary,
             ),
           ],
-          selected: <bool>{_showPayments},
-          onSelectionChanged: (selection) =>
-              setState(() => _showPayments = selection.first),
+          selected: _showPayments,
+          onChanged: (payments) => setState(() => _showPayments = payments),
         ),
         const SizedBox(height: AppSpace.m),
         TextField(

@@ -371,5 +371,12 @@
   "errorNotFound": "यह नहीं मिला। शायद हटा दिया गया है।",
   "errorPhoneOtherPerson": "यह फ़ोन नंबर किसी और जानकारी वाले व्यक्ति का है।",
   "errorRequestDecided": "इस अर्ज़ी पर पहले ही फ़ैसला हो चुका है।",
-  "errorSalaryMonthStarted": "इस महीने की तनख्वाह पहले ही शुरू हो चुकी है।"
+  "errorSalaryMonthStarted": "इस महीने की तनख्वाह पहले ही शुरू हो चुकी है।",
+  "mySalaryTitle": "इमाम की तनख़्वाह · {month}",
+  "salaryPaidThisMonth": "इस महीने की तनख़्वाह जमा है",
+  "salaryToPayThisMonth": "इस महीने {amount} देना बाकी है",
+  "olderMonthsDue": "पिछले महीनों के {amount} बाकी हैं",
+  "allSalaryPaid": "सब जमा है। शुक्रिया!",
+  "salaryDueTotal": "कुल {amount} देना बाकी है",
+  "seeMonths": "सारे महीने देखें"
 }

@@ -1223,4 +1223,33 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get errorSalaryMonthStarted =>
       'اس مہینے کی تنخواہ پہلے ہی شروع ہو چکی ہے۔';
+
+  @override
+  String mySalaryTitle(String month) {
+    return 'امام کی تنخواہ · $month';
+  }
+
+  @override
+  String get salaryPaidThisMonth => 'اس مہینے کی تنخواہ جمع ہے';
+
+  @override
+  String salaryToPayThisMonth(String amount) {
+    return 'اس مہینے $amount دینا باقی ہے';
+  }
+
+  @override
+  String olderMonthsDue(String amount) {
+    return 'پچھلے مہینوں کے $amount باقی ہیں';
+  }
+
+  @override
+  String get allSalaryPaid => 'سب جمع ہے۔ شکریہ!';
+
+  @override
+  String salaryDueTotal(String amount) {
+    return 'کل $amount دینا باقی ہے';
+  }
+
+  @override
+  String get seeMonths => 'سارے مہینے دیکھیں';
 }

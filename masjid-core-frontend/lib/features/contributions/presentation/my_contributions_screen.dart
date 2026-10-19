@@ -59,28 +59,29 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
         data: (data) => _TotalsHero(summary: data),
       ),
       const SizedBox(height: AppSpace.l),
-      SegmentedButton<_Section>(
-        showSelectedIcon: false,
-        segments: <ButtonSegment<_Section>>[
-          ButtonSegment<_Section>(
+      PillTabs<_Section>(
+        tabs: <PillTab<_Section>>[
+          PillTab<_Section>(
             value: _Section.salary,
-            icon: const Icon(AppIcons.salary),
-            label: Text(l10n.salary),
+            icon: AppIcons.salary,
+            label: l10n.salary,
+            tone: AppTones.salary,
           ),
-          ButtonSegment<_Section>(
+          PillTab<_Section>(
             value: _Section.projects,
-            icon: const Icon(AppIcons.projects),
-            label: Text(l10n.tabProjects),
+            icon: AppIcons.projects,
+            label: l10n.tabProjects,
+            tone: AppTones.projects,
           ),
-          ButtonSegment<_Section>(
+          PillTab<_Section>(
             value: _Section.donations,
-            icon: const Icon(AppIcons.zakat),
-            label: Text(l10n.donations),
+            icon: AppIcons.zakat,
+            label: l10n.donations,
+            tone: AppTones.moneyIn,
           ),
         ],
-        selected: <_Section>{_section},
-        onSelectionChanged: (selection) =>
-            setState(() => _section = selection.first),
+        selected: _section,
+        onChanged: (section) => setState(() => _section = section),
       ),
       const SizedBox(height: AppSpace.s),
     ];

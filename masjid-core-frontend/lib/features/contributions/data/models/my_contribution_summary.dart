@@ -42,8 +42,29 @@ abstract class ImamSalaryContributionSummary
     @Default(0) int paidMonths,
     @Default(0) int partialMonths,
     @Default(0) int unpaidMonths,
+
+    /// This month's salary for this person (India time), or null when the
+    /// committee has not opened this month yet.
+    MySalaryThisMonth? currentMonth,
   }) = _ImamSalaryContributionSummary;
 
   factory ImamSalaryContributionSummary.fromJson(Map<String, dynamic> json) =>
       _$ImamSalaryContributionSummaryFromJson(json);
+}
+
+/// This month's salary: what is expected, paid, still due, and the status
+/// (PAID, PARTIAL, UNPAID).
+@freezed
+abstract class MySalaryThisMonth with _$MySalaryThisMonth {
+  const factory MySalaryThisMonth({
+    required int month,
+    required int year,
+    @Default(0) double expectedAmount,
+    @Default(0) double paidAmount,
+    @Default(0) double dueAmount,
+    @Default('UNPAID') String status,
+  }) = _MySalaryThisMonth;
+
+  factory MySalaryThisMonth.fromJson(Map<String, dynamic> json) =>
+      _$MySalaryThisMonthFromJson(json);
 }

@@ -116,23 +116,24 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         ],
       ),
       const SizedBox(height: AppSpace.xl),
-      SegmentedButton<bool>(
-        showSelectedIcon: false,
-        segments: <ButtonSegment<bool>>[
-          ButtonSegment<bool>(
+      PillTabs<bool>(
+        tabs: <PillTab<bool>>[
+          PillTab<bool>(
             value: false,
-            icon: Icon(AppIcons.moneyIn, color: AppTones.moneyIn.color),
-            label: Text(l10n.moneyIn),
+            icon: AppIcons.moneyIn,
+            label: l10n.moneyIn,
+            tone: AppTones.moneyIn,
           ),
-          ButtonSegment<bool>(
+          PillTab<bool>(
             value: true,
-            icon: Icon(AppIcons.moneyOut, color: AppTones.moneyOut.color),
-            label: Text(l10n.moneyOut),
+            icon: AppIcons.moneyOut,
+            label: l10n.moneyOut,
+            tone: AppTones.moneyOut,
           ),
         ],
-        selected: <bool>{_showingOut},
-        onSelectionChanged: (selection) => setState(() {
-          _showingOut = selection.first;
+        selected: _showingOut,
+        onChanged: (out) => setState(() {
+          _showingOut = out;
           if (_showingOut) _outOpened = true;
         }),
       ),

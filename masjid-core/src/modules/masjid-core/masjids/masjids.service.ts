@@ -14,6 +14,7 @@ import {
 } from '../../../common/audit/audit.service';
 import { requireMasjidId } from '../../../common/tenant';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { syncSalaryRoster } from '../imam-salaries/salary-roster';
 import { AppConfig } from '../../../config/app-config';
 import { hasPermission, PERMISSIONS } from '../../../access/permissions';
 import { Prisma } from '../../../generated/prisma/client';
@@ -229,6 +230,7 @@ export class MasjidsService {
         });
       }
 
+      await syncSalaryRoster(tx, created.id);
       await this.audit.record(
         {
           masjidId,
@@ -339,6 +341,7 @@ export class MasjidsService {
         },
         select: masjidMemberSelect,
       });
+      await syncSalaryRoster(tx, user.id);
       await this.audit.record(
         {
           masjidId: user.masjidId ?? target.masjidId,
@@ -374,6 +377,7 @@ export class MasjidsService {
         data: { status: dto.status },
         select: masjidMemberSelect,
       });
+      await syncSalaryRoster(tx, user.id);
       await this.audit.record(
         {
           masjidId: user.masjidId ?? target.masjidId,
@@ -460,6 +464,7 @@ export class MasjidsService {
         where: { id: masjidId, imamUserId: actor.id },
         data: { imamUserId: null },
       });
+      await syncSalaryRoster(tx, actor.id);
       await this.audit.record(
         {
           masjidId,
@@ -547,6 +552,7 @@ export class MasjidsService {
             select: { id: true },
           });
         }
+        await syncSalaryRoster(tx, userId);
         await this.audit.record(
           {
             masjidId,

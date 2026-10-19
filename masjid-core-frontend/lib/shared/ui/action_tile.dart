@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/responsive.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 import 'package:masjid_core_frontend/shared/ui/tone_icon.dart';
@@ -35,66 +36,70 @@ class ActionTile extends StatelessWidget {
       selected: selected,
       label: label,
       excludeSemantics: true,
-      child: Card(
-        color: selected ? tone.container : null,
-        shape: selected
-            ? RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.l),
-                side: BorderSide(color: tone.color, width: 3),
-              )
-            : null,
-        child: InkWell(
-          onTap: onTap,
-          hoverColor: tone.container.withValues(alpha: 0.5),
-          child: Stack(
-            // Fill the tile so the picture and label sit in its centre.
-            fit: StackFit.expand,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.all(AppSpace.m),
-                child: LayoutBuilder(
-                  // Small tiles (narrow phones, large text) get a smaller
-                  // picture so a two-line label still fits.
-                  builder: (context, constraints) => Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      ToneIcon(
-                        icon: icon,
-                        tone: tone,
-                        size: (constraints.maxHeight * 0.42).clamp(36, 64),
-                      ),
-                      const SizedBox(height: AppSpace.s),
-                      Flexible(
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium,
+      child: Pressable(
+        child: Card(
+          color: selected ? tone.container : null,
+          elevation: selected ? 0 : 2,
+          shadowColor: tone.color.withValues(alpha: 0.18),
+          shape: selected
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                  side: BorderSide(color: tone.color, width: 3),
+                )
+              : null,
+          child: InkWell(
+            onTap: onTap,
+            hoverColor: tone.container.withValues(alpha: 0.5),
+            child: Stack(
+              // Fill the tile so the picture and label sit in its centre.
+              fit: StackFit.expand,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.all(AppSpace.m),
+                  child: LayoutBuilder(
+                    // Small tiles (narrow phones, large text) get a smaller
+                    // picture so a two-line label still fits.
+                    builder: (context, constraints) => Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        ToneIcon(
+                          icon: icon,
+                          tone: tone,
+                          size: (constraints.maxHeight * 0.42).clamp(36, 64),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppSpace.s),
+                        Flexible(
+                          child: Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (selected)
-                PositionedDirectional(
-                  top: AppSpace.s,
-                  end: AppSpace.s,
-                  child: Icon(Icons.check_circle_rounded, color: tone.color),
-                ),
-              if (count != null && count > 0)
-                PositionedDirectional(
-                  top: AppSpace.m,
-                  end: AppSpace.m,
-                  child: Badge.count(
-                    count: count,
-                    backgroundColor: AppTones.danger.color,
-                    largeSize: 24,
-                    textStyle: Theme.of(context).textTheme.labelMedium,
+                if (selected)
+                  PositionedDirectional(
+                    top: AppSpace.s,
+                    end: AppSpace.s,
+                    child: Icon(Icons.check_circle_rounded, color: tone.color),
                   ),
-                ),
-            ],
+                if (count != null && count > 0)
+                  PositionedDirectional(
+                    top: AppSpace.m,
+                    end: AppSpace.m,
+                    child: Badge.count(
+                      count: count,
+                      backgroundColor: AppTones.danger.color,
+                      largeSize: 24,
+                      textStyle: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -129,7 +134,14 @@ class ActionTileGrid extends StatelessWidget {
           childAspectRatio: (shape / textScale).clamp(0.6, shape),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          children: tiles,
+          children: <Widget>[
+            for (var i = 0; i < tiles.length; i++)
+              FadeSlideIn.stagger(
+                index: i,
+                base: const Duration(milliseconds: 120),
+                child: tiles[i],
+              ),
+          ],
         );
       },
     );

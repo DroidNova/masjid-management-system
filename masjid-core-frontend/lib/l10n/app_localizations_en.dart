@@ -1228,4 +1228,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorSalaryMonthStarted =>
       'Salary for this month has already started.';
+
+  @override
+  String mySalaryTitle(String month) {
+    return 'Imam salary · $month';
+  }
+
+  @override
+  String get salaryPaidThisMonth => 'This month is paid';
+
+  @override
+  String salaryToPayThisMonth(String amount) {
+    return '$amount to pay this month';
+  }
+
+  @override
+  String olderMonthsDue(String amount) {
+    return 'Earlier months: $amount to pay';
+  }
+
+  @override
+  String get allSalaryPaid => 'Everything is paid. Thank you!';
+
+  @override
+  String salaryDueTotal(String amount) {
+    return '$amount to pay in all';
+  }
+
+  @override
+  String get seeMonths => 'See all months';
 }

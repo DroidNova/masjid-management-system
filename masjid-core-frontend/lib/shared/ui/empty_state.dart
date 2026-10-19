@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 import 'package:masjid_core_frontend/shared/ui/tone_icon.dart';
 
@@ -37,46 +38,57 @@ class EmptyState extends StatelessWidget {
         : FilledButton.styleFrom(backgroundColor: tone.color);
 
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpace.xl),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ToneIcon(icon: icon, tone: tone, size: 112, circle: true),
-              const SizedBox(height: AppSpace.xl),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: textTheme.titleLarge,
-              ),
-              if (detail != null) ...<Widget>[
-                const SizedBox(height: AppSpace.s),
-                Text(
-                  detail,
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
+      child: FadeSlideIn(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpace.xl),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Breathing(
+                  color: tone.color,
+                  size: 150,
+                  child: ToneIcon(
+                    icon: icon,
+                    tone: tone,
+                    size: 112,
+                    circle: true,
                   ),
                 ),
-              ],
-              if (label != null && onAction != null) ...<Widget>[
                 const SizedBox(height: AppSpace.xl),
-                buttonIcon == null
-                    ? FilledButton(
-                        style: buttonStyle,
-                        onPressed: onAction,
-                        child: Text(label),
-                      )
-                    : FilledButton.icon(
-                        style: buttonStyle,
-                        onPressed: onAction,
-                        icon: Icon(buttonIcon),
-                        label: Text(label),
-                      ),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleLarge,
+                ),
+                if (detail != null) ...<Widget>[
+                  const SizedBox(height: AppSpace.s),
+                  Text(
+                    detail,
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+                if (label != null && onAction != null) ...<Widget>[
+                  const SizedBox(height: AppSpace.xl),
+                  buttonIcon == null
+                      ? FilledButton(
+                          style: buttonStyle,
+                          onPressed: onAction,
+                          child: Text(label),
+                        )
+                      : FilledButton.icon(
+                          style: buttonStyle,
+                          onPressed: onAction,
+                          icon: Icon(buttonIcon),
+                          label: Text(label),
+                        ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -22,7 +22,14 @@ class ToneIcon extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: tone.container,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color.lerp(tone.container, Colors.white, 0.35)!,
+            Color.lerp(tone.container, tone.color, 0.10)!,
+          ],
+        ),
         shape: circle ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: circle ? null : BorderRadius.circular(size * 0.3),
       ),

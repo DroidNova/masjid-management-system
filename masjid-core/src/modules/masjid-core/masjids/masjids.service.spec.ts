@@ -9,6 +9,11 @@ import {
 } from './dto/create-masjid-user.dto';
 import { MasjidsService } from './masjids.service';
 
+// Salary roster sync has its own tests (salary-roster.spec.ts).
+jest.mock('../imam-salaries/salary-roster', () => ({
+  syncSalaryRoster: jest.fn().mockResolvedValue({ added: 0, removed: 0 }),
+}));
+
 jest.mock('bcrypt', () => ({
   hash: jest.fn(() => Promise.resolve('hashed')),
 }));

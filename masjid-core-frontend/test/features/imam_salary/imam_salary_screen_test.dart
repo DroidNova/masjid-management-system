@@ -202,7 +202,7 @@ void main() {
 
       await tester.tap(
         find.descendant(
-          of: find.byType(SegmentedButton<bool>),
+          of: find.byType(PillTabs<bool>),
           matching: find.text('Payments'),
         ),
       );

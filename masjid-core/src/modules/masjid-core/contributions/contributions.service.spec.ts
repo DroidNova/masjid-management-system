@@ -4,6 +4,8 @@ describe('ContributionsService', () => {
   const prisma = {
     imamSalaryAssignment: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+      groupBy: jest.fn(),
       count: jest.fn(),
     },
     projectContribution: {
@@ -40,42 +42,59 @@ describe('ContributionsService', () => {
     });
   });
 
-  it('calculates the latest six-month summary without exposing masjidId', async () => {
-    prisma.imamSalaryAssignment.findMany.mockResolvedValue([
-      { expectedAmount: 50, paidAmount: 50, dueAmount: 0, status: 'PAID' },
-      { expectedAmount: 50, paidAmount: 20, dueAmount: 30, status: 'PARTIAL' },
-      { expectedAmount: 50, paidAmount: 0, dueAmount: 50, status: 'UNPAID' },
+  it('sums salary over all months and shows this month, without exposing masjidId', async () => {
+    const row = (status: string, count: number, e: number, p: number) => ({
+      status,
+      _count: { _all: count },
+      _sum: { expectedAmount: e, paidAmount: p, dueAmount: e - p },
+    });
+    // Ten months in total: an old unpaid month must still count as due.
+    prisma.imamSalaryAssignment.groupBy.mockResolvedValue([
+      row('PAID', 8, 400, 400),
+      row('PARTIAL', 1, 50, 20),
+      row('UNPAID', 1, 50, 0),
     ]);
+    prisma.imamSalaryAssignment.findFirst.mockResolvedValue({
+      expectedAmount: 50,
+      paidAmount: 20,
+      dueAmount: 30,
+      status: 'PARTIAL',
+    });
 
     const response = await service.getSummary(actor);
 
-    expect(prisma.imamSalaryAssignment.findMany).toHaveBeenCalledWith(
+    expect(prisma.imamSalaryAssignment.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { memberId: 'current-user', masjidId: 'current-masjid' },
-        take: 6,
       }),
     );
-    expect(response.data).toEqual({
-      user: {
-        id: 'current-user',
-        fullName: 'Saleem',
-        phone: '+919876543210',
-        isFamilyHead: true,
-      },
-      projectContributionTotal: 0,
-      collectionContributionTotal: 0,
-      totalContributionAmount: 70,
-      imamSalary: {
-        monthsShown: 6,
-        totalExpected: 150,
-        totalPaid: 70,
+    const data = response.data!;
+    expect(data.totalContributionAmount).toBe(420);
+    expect(data.imamSalary).toEqual(
+      expect.objectContaining({
+        monthsShown: 10,
+        totalExpected: 500,
+        totalPaid: 420,
         totalDue: 80,
-        paidMonths: 1,
+        paidMonths: 8,
         partialMonths: 1,
         unpaidMonths: 1,
-      },
-    });
-    expect(response.data?.user).not.toHaveProperty('masjidId');
+      }),
+    );
+    expect(data.imamSalary.currentMonth).toEqual(
+      expect.objectContaining({ dueAmount: 30, status: 'PARTIAL' }),
+    );
+    expect(data.user).not.toHaveProperty('masjidId');
+  });
+
+  it('has no current month when no salary month exists for it', async () => {
+    prisma.imamSalaryAssignment.groupBy.mockResolvedValue([]);
+    prisma.imamSalaryAssignment.findFirst.mockResolvedValue(null);
+
+    const response = await service.getSummary(actor);
+
+    expect(response.data!.imamSalary.currentMonth).toBeNull();
+    expect(response.data!.imamSalary.totalDue).toBe(0);
   });
 
   it('always scopes payment history to the authenticated user and masjid', async () => {

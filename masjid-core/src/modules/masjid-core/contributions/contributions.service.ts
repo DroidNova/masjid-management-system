@@ -9,6 +9,7 @@ import { Prisma } from '../../../generated/prisma/client';
 import { ImamSalaryAssignmentStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
+import { currentIndiaMonth } from '../imam-salaries/salary-roster';
 import { dateRange } from '../shared-date';
 import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
 import { MyContributionQueryDto } from './dto/my-contribution-query.dto';
@@ -37,12 +38,22 @@ export class ContributionsService {
   async getSummary(actor: AuthenticatedUser) {
     const masjidId = requireMasjidId(actor);
     const mine = { memberId: actor.id, masjidId };
-    const [assignments, projectAggregate, collectionAggregate] =
+    const now = currentIndiaMonth();
+    // All-time salary totals per status (one GROUP BY), so an old unpaid
+    // month is never hidden from the person's dues.
+    const [byStatus, current, projectAggregate, collectionAggregate] =
       await Promise.all([
-        this.prisma.imamSalaryAssignment.findMany({
+        this.prisma.imamSalaryAssignment.groupBy({
+          by: ['status'],
           where: mine,
-          take: 6,
-          orderBy: salaryMonthOrderBy,
+          _count: { _all: true },
+          _sum: { expectedAmount: true, paidAmount: true, dueAmount: true },
+        }),
+        this.prisma.imamSalaryAssignment.findFirst({
+          where: {
+            ...mine,
+            imamSalaryMonth: { month: now.month, year: now.year },
+          },
           select: {
             expectedAmount: true,
             paidAmount: true,
@@ -63,9 +74,10 @@ export class ContributionsService {
     const collectionContributionTotal = money(collectionAggregate._sum.amount);
 
     const sum = (field: 'expectedAmount' | 'paidAmount' | 'dueAmount') =>
-      sumMoney(assignments.map((assignment) => assignment[field]));
+      sumMoney(byStatus.map((row) => row._sum[field]));
     const countStatus = (status: ImamSalaryAssignmentStatus) =>
-      assignments.filter((assignment) => assignment.status === status).length;
+      byStatus.find((row) => row.status === status)?._count._all ?? 0;
+    const months = byStatus.reduce((total, row) => total + row._count._all, 0);
 
     return successResponse('Contribution summary fetched successfully', {
       user: {
@@ -82,13 +94,23 @@ export class ContributionsService {
           .plus(collectionContributionTotal),
       ),
       imamSalary: {
-        monthsShown: 6,
+        monthsShown: months,
         totalExpected: toAmount(sum('expectedAmount')),
         totalPaid: toAmount(sum('paidAmount')),
         totalDue: toAmount(sum('dueAmount')),
         paidMonths: countStatus('PAID'),
         partialMonths: countStatus('PARTIAL'),
         unpaidMonths: countStatus('UNPAID'),
+        currentMonth: current
+          ? {
+              month: now.month,
+              year: now.year,
+              expectedAmount: toAmount(current.expectedAmount),
+              paidAmount: toAmount(current.paidAmount),
+              dueAmount: toAmount(current.dueAmount),
+              status: current.status,
+            }
+          : null,
       },
     });
   }

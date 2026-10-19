@@ -601,5 +601,40 @@
   "errorNotFound": "This was not found. It may have been removed.",
   "errorPhoneOtherPerson": "This phone number belongs to someone with other details.",
   "errorRequestDecided": "This request was already approved or rejected.",
-  "errorSalaryMonthStarted": "Salary for this month has already started."
+  "errorSalaryMonthStarted": "Salary for this month has already started.",
+  "mySalaryTitle": "Imam salary · {month}",
+  "@mySalaryTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "salaryPaidThisMonth": "This month is paid",
+  "salaryToPayThisMonth": "{amount} to pay this month",
+  "@salaryToPayThisMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "olderMonthsDue": "Earlier months: {amount} to pay",
+  "@olderMonthsDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "allSalaryPaid": "Everything is paid. Thank you!",
+  "salaryDueTotal": "{amount} to pay in all",
+  "@salaryDueTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "seeMonths": "See all months"
 }

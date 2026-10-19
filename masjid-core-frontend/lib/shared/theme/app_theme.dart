@@ -75,12 +75,15 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         margin: EdgeInsets.zero,
-        elevation: 0,
+        // A soft green-tinted shadow and a hairline edge: cards float a
+        // little above the page instead of sitting in boxes.
+        elevation: 1.5,
+        shadowColor: const Color(0x2600332B),
         color: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.l),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border.withValues(alpha: 0.6)),
         ),
         clipBehavior: Clip.antiAlias,
       ),

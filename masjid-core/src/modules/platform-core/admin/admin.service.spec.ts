@@ -3,6 +3,11 @@ import { AdminService } from './admin.service';
 import { AdminUserStatus } from './dto/update-user-status.dto';
 import { MasjidStatus } from '../../../generated/prisma/enums';
 
+// Salary roster sync has its own tests (salary-roster.spec.ts).
+jest.mock('../../masjid-core/imam-salaries/salary-roster', () => ({
+  syncSalaryRoster: jest.fn().mockResolvedValue({ added: 0, removed: 0 }),
+}));
+
 async function expectCode(promise: Promise<unknown>, errorCode: string) {
   await expect(promise).rejects.toMatchObject({
     response: expect.objectContaining({ errorCode }),

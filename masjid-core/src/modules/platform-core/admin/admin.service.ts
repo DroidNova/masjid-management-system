@@ -5,6 +5,7 @@ import {
   AuditService,
 } from '../../../common/audit/audit.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { syncSalaryRoster } from '../../masjid-core/imam-salaries/salary-roster';
 import { Prisma } from '../../../generated/prisma/client';
 import {
   MasjidRegistrationStatus,
@@ -221,6 +222,7 @@ export class AdminService {
             updatedAt: true,
           },
         });
+        await syncSalaryRoster(tx, id);
         const sessions = signOut
           ? await tx.session.deleteMany({ where: { userId: id } })
           : { count: 0 };

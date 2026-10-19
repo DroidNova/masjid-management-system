@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 import 'package:masjid_core_frontend/shared/ui/tone_icon.dart';
 
@@ -29,38 +30,44 @@ class ScreenHeader extends StatelessWidget {
     final line = subtitle;
     final extra = trailing;
 
-    return Column(
-      children: <Widget>[
-        ToneIcon(icon: icon, tone: tone, size: 88, circle: true),
-        const SizedBox(height: AppSpace.l),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Flexible(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: textTheme.headlineSmall,
+    return FadeSlideIn(
+      child: Column(
+        children: <Widget>[
+          Breathing(
+            color: tone.color,
+            size: 116,
+            child: ToneIcon(icon: icon, tone: tone, size: 88, circle: true),
+          ),
+          const SizedBox(height: AppSpace.l),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Flexible(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineSmall,
+                  ),
                 ),
               ),
-            ),
-            ?extra,
-          ],
-        ),
-        if (line != null) ...<Widget>[
-          const SizedBox(height: AppSpace.xs),
-          Text(
-            line,
-            textAlign: TextAlign.center,
-            style: textTheme.bodyLarge?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+              ?extra,
+            ],
           ),
+          if (line != null) ...<Widget>[
+            const SizedBox(height: AppSpace.xs),
+            Text(
+              line,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpace.xl),
         ],
-        const SizedBox(height: AppSpace.xl),
-      ],
+      ),
     );
   }
 }

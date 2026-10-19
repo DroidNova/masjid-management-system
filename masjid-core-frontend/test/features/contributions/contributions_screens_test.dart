@@ -20,6 +20,7 @@ import 'package:masjid_core_frontend/features/contributions/data/models/project_
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/project_contributions_screen.dart';
+import 'package:masjid_core_frontend/shared/ui/pill_tabs.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../shared/ui/ui_test_helpers.dart';
@@ -233,7 +234,7 @@ void main() {
 
     await tester.tap(
       find.descendant(
-        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        of: find.byWidgetPredicate((w) => w is PillTabs),
         matching: find.text('Projects'),
       ),
     );
@@ -243,7 +244,7 @@ void main() {
 
     await tester.tap(
       find.descendant(
-        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        of: find.byWidgetPredicate((w) => w is PillTabs),
         matching: find.text('Donations'),
       ),
     );

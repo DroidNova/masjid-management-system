@@ -7,6 +7,7 @@ import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
 import 'package:masjid_core_frontend/shared/ui/day_label.dart';
 import 'package:masjid_core_frontend/shared/ui/empty_state.dart';
 import 'package:masjid_core_frontend/shared/ui/message_banner.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/skeleton.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 
@@ -89,6 +90,7 @@ class PagedListView<T> extends StatelessWidget {
           return;
         }
         DateTime? lastDay;
+        var index = 0;
         for (final item in state.items) {
           final day = dayOf?.call(item);
           if (day != null) {
@@ -120,7 +122,10 @@ class PagedListView<T> extends StatelessWidget {
             centered(
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-                child: itemBuilder(context, item),
+                child: FadeSlideIn.stagger(
+                  index: index++,
+                  child: itemBuilder(context, item),
+                ),
               ),
             ),
           );

@@ -57,6 +57,11 @@ _ImamSalaryContributionSummary _$ImamSalaryContributionSummaryFromJson(
   paidMonths: (json['paidMonths'] as num?)?.toInt() ?? 0,
   partialMonths: (json['partialMonths'] as num?)?.toInt() ?? 0,
   unpaidMonths: (json['unpaidMonths'] as num?)?.toInt() ?? 0,
+  currentMonth: json['currentMonth'] == null
+      ? null
+      : MySalaryThisMonth.fromJson(
+          json['currentMonth'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$ImamSalaryContributionSummaryToJson(
@@ -69,4 +74,25 @@ Map<String, dynamic> _$ImamSalaryContributionSummaryToJson(
   'paidMonths': instance.paidMonths,
   'partialMonths': instance.partialMonths,
   'unpaidMonths': instance.unpaidMonths,
+  'currentMonth': instance.currentMonth?.toJson(),
 };
+
+_MySalaryThisMonth _$MySalaryThisMonthFromJson(Map<String, dynamic> json) =>
+    _MySalaryThisMonth(
+      month: (json['month'] as num).toInt(),
+      year: (json['year'] as num).toInt(),
+      expectedAmount: (json['expectedAmount'] as num?)?.toDouble() ?? 0,
+      paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0,
+      dueAmount: (json['dueAmount'] as num?)?.toDouble() ?? 0,
+      status: json['status'] as String? ?? 'UNPAID',
+    );
+
+Map<String, dynamic> _$MySalaryThisMonthToJson(_MySalaryThisMonth instance) =>
+    <String, dynamic>{
+      'month': instance.month,
+      'year': instance.year,
+      'expectedAmount': instance.expectedAmount,
+      'paidAmount': instance.paidAmount,
+      'dueAmount': instance.dueAmount,
+      'status': instance.status,
+    };

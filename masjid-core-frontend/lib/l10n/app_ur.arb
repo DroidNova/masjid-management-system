@@ -371,5 +371,12 @@
   "errorNotFound": "یہ نہیں ملا۔ شاید ہٹا دیا گیا ہے۔",
   "errorPhoneOtherPerson": "یہ فون نمبر کسی اور تفصیل والے شخص کا ہے۔",
   "errorRequestDecided": "اس درخواست پر پہلے ہی فیصلہ ہو چکا ہے۔",
-  "errorSalaryMonthStarted": "اس مہینے کی تنخواہ پہلے ہی شروع ہو چکی ہے۔"
+  "errorSalaryMonthStarted": "اس مہینے کی تنخواہ پہلے ہی شروع ہو چکی ہے۔",
+  "mySalaryTitle": "امام کی تنخواہ · {month}",
+  "salaryPaidThisMonth": "اس مہینے کی تنخواہ جمع ہے",
+  "salaryToPayThisMonth": "اس مہینے {amount} دینا باقی ہے",
+  "olderMonthsDue": "پچھلے مہینوں کے {amount} باقی ہیں",
+  "allSalaryPaid": "سب جمع ہے۔ شکریہ!",
+  "salaryDueTotal": "کل {amount} دینا باقی ہے",
+  "seeMonths": "سارے مہینے دیکھیں"
 }

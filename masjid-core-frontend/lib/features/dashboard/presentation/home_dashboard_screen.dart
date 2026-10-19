@@ -6,6 +6,7 @@ import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/announcements/application/news_seen.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
+import 'package:masjid_core_frontend/features/contributions/presentation/widgets/my_salary_card.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/announcement_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_response.dart';
@@ -107,6 +108,10 @@ class _HomeContent extends ConsumerWidget {
                     )
                   else
                     hero,
+                  if (PermissionHelper.canViewOwnContributions(permissions))
+                    MySalaryCard(
+                      onOpen: () => context.go(MainTab.myPayments.path),
+                    ),
                   const SizedBox(height: AppSpace.xl),
                   ActionTileGrid(
                     tiles: homeActions(context, permissions)

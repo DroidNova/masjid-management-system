@@ -20,6 +20,7 @@ import 'package:masjid_core_frontend/features/contributions/data/models/my_imam_
 import 'package:masjid_core_frontend/features/contributions/data/models/project_contribution.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/imam_salary_payment_history_screen.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/my_contributions_screen.dart';
+import 'package:masjid_core_frontend/shared/ui/pill_tabs.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../shared/ui/ui_test_helpers.dart';
@@ -64,12 +65,12 @@ Future<void> _openFirstPerson(WidgetTester tester) async {
 
 Future<void> _openSection(WidgetTester tester, int index) async {
   await tester.scrollUntilVisible(
-    find.byWidgetPredicate((widget) => widget is SegmentedButton),
+    find.byWidgetPredicate((widget) => widget is PillTabs),
     300,
     scrollable: find.byType(Scrollable).first,
   );
   final segments = find.descendant(
-    of: find.byWidgetPredicate((widget) => widget is SegmentedButton),
+    of: find.byWidgetPredicate((widget) => widget is PillTabs),
     matching: find.byType(Icon),
   );
   await tester.tap(segments.at(index));

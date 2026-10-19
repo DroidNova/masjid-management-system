@@ -62,55 +62,62 @@ class LanguageScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const ScreenHeader(icon: AppIcons.language, title: title),
-                  for (final language in AppLanguage.values)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpace.m),
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.l),
-                          side: BorderSide(
-                            color: language == current
-                                ? AppTones.brand.color
-                                : AppColors.border,
-                            width: language == current ? 3 : 1,
-                          ),
-                        ),
-                        child: InkWell(
-                          onTap: () => _choose(context, ref, language),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpace.l),
-                            child: Row(
-                              children: <Widget>[
-                                Container(
-                                  width: 64,
-                                  height: 64,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: _tones[language]!.container,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    _letters[language]!,
-                                    style: textTheme.headlineMedium?.copyWith(
-                                      color: _tones[language]!.color,
-                                      height: 1.2,
+                  for (final (index, language) in AppLanguage.values.indexed)
+                    FadeSlideIn.stagger(
+                      index: index,
+                      base: const Duration(milliseconds: 150),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpace.m),
+                        child: Pressable(
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.l),
+                              side: BorderSide(
+                                color: language == current
+                                    ? AppTones.brand.color
+                                    : AppColors.border,
+                                width: language == current ? 3 : 1,
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () => _choose(context, ref, language),
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpace.l),
+                                child: Row(
+                                  children: <Widget>[
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: _tones[language]!.container,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        _letters[language]!,
+                                        style: textTheme.headlineMedium
+                                            ?.copyWith(
+                                              color: _tones[language]!.color,
+                                              height: 1.2,
+                                            ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: AppSpace.l),
+                                    Expanded(
+                                      child: Text(
+                                        language.nativeName,
+                                        style: textTheme.headlineSmall,
+                                      ),
+                                    ),
+                                    if (language == current)
+                                      Icon(
+                                        AppIcons.done,
+                                        size: 32,
+                                        color: AppTones.brand.color,
+                                      ),
+                                  ],
                                 ),
-                                const SizedBox(width: AppSpace.l),
-                                Expanded(
-                                  child: Text(
-                                    language.nativeName,
-                                    style: textTheme.headlineSmall,
-                                  ),
-                                ),
-                                if (language == current)
-                                  Icon(
-                                    AppIcons.done,
-                                    size: 32,
-                                    color: AppTones.brand.color,
-                                  ),
-                              ],
+                              ),
                             ),
                           ),
                         ),

@@ -598,7 +598,9 @@ as bool,
 /// @nodoc
 mixin _$ImamSalaryContributionSummary {
 
- int get monthsShown; double get totalExpected; double get totalPaid; double get totalDue; int get paidMonths; int get partialMonths; int get unpaidMonths;
+ int get monthsShown; double get totalExpected; double get totalPaid; double get totalDue; int get paidMonths; int get partialMonths; int get unpaidMonths;/// This month's salary for this person (India time), or null when the
+/// committee has not opened this month yet.
+ MySalaryThisMonth? get currentMonth;
 /// Create a copy of ImamSalaryContributionSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -611,16 +613,16 @@ $ImamSalaryContributionSummaryCopyWith<ImamSalaryContributionSummary> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImamSalaryContributionSummary&&(identical(other.monthsShown, monthsShown) || other.monthsShown == monthsShown)&&(identical(other.totalExpected, totalExpected) || other.totalExpected == totalExpected)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.totalDue, totalDue) || other.totalDue == totalDue)&&(identical(other.paidMonths, paidMonths) || other.paidMonths == paidMonths)&&(identical(other.partialMonths, partialMonths) || other.partialMonths == partialMonths)&&(identical(other.unpaidMonths, unpaidMonths) || other.unpaidMonths == unpaidMonths));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImamSalaryContributionSummary&&(identical(other.monthsShown, monthsShown) || other.monthsShown == monthsShown)&&(identical(other.totalExpected, totalExpected) || other.totalExpected == totalExpected)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.totalDue, totalDue) || other.totalDue == totalDue)&&(identical(other.paidMonths, paidMonths) || other.paidMonths == paidMonths)&&(identical(other.partialMonths, partialMonths) || other.partialMonths == partialMonths)&&(identical(other.unpaidMonths, unpaidMonths) || other.unpaidMonths == unpaidMonths)&&(identical(other.currentMonth, currentMonth) || other.currentMonth == currentMonth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,monthsShown,totalExpected,totalPaid,totalDue,paidMonths,partialMonths,unpaidMonths);
+int get hashCode => Object.hash(runtimeType,monthsShown,totalExpected,totalPaid,totalDue,paidMonths,partialMonths,unpaidMonths,currentMonth);
 
 @override
 String toString() {
-  return 'ImamSalaryContributionSummary(monthsShown: $monthsShown, totalExpected: $totalExpected, totalPaid: $totalPaid, totalDue: $totalDue, paidMonths: $paidMonths, partialMonths: $partialMonths, unpaidMonths: $unpaidMonths)';
+  return 'ImamSalaryContributionSummary(monthsShown: $monthsShown, totalExpected: $totalExpected, totalPaid: $totalPaid, totalDue: $totalDue, paidMonths: $paidMonths, partialMonths: $partialMonths, unpaidMonths: $unpaidMonths, currentMonth: $currentMonth)';
 }
 
 
@@ -631,11 +633,11 @@ abstract mixin class $ImamSalaryContributionSummaryCopyWith<$Res>  {
   factory $ImamSalaryContributionSummaryCopyWith(ImamSalaryContributionSummary value, $Res Function(ImamSalaryContributionSummary) _then) = _$ImamSalaryContributionSummaryCopyWithImpl;
 @useResult
 $Res call({
- int monthsShown, double totalExpected, double totalPaid, double totalDue, int paidMonths, int partialMonths, int unpaidMonths
+ int monthsShown, double totalExpected, double totalPaid, double totalDue, int paidMonths, int partialMonths, int unpaidMonths, MySalaryThisMonth? currentMonth
 });
 
 
-
+$MySalaryThisMonthCopyWith<$Res>? get currentMonth;
 
 }
 /// @nodoc
@@ -648,7 +650,7 @@ class _$ImamSalaryContributionSummaryCopyWithImpl<$Res>
 
 /// Create a copy of ImamSalaryContributionSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? monthsShown = null,Object? totalExpected = null,Object? totalPaid = null,Object? totalDue = null,Object? paidMonths = null,Object? partialMonths = null,Object? unpaidMonths = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? monthsShown = null,Object? totalExpected = null,Object? totalPaid = null,Object? totalDue = null,Object? paidMonths = null,Object? partialMonths = null,Object? unpaidMonths = null,Object? currentMonth = freezed,}) {
   return _then(_self.copyWith(
 monthsShown: null == monthsShown ? _self.monthsShown : monthsShown // ignore: cast_nullable_to_non_nullable
 as int,totalExpected: null == totalExpected ? _self.totalExpected : totalExpected // ignore: cast_nullable_to_non_nullable
@@ -657,10 +659,23 @@ as double,totalDue: null == totalDue ? _self.totalDue : totalDue // ignore: cast
 as double,paidMonths: null == paidMonths ? _self.paidMonths : paidMonths // ignore: cast_nullable_to_non_nullable
 as int,partialMonths: null == partialMonths ? _self.partialMonths : partialMonths // ignore: cast_nullable_to_non_nullable
 as int,unpaidMonths: null == unpaidMonths ? _self.unpaidMonths : unpaidMonths // ignore: cast_nullable_to_non_nullable
-as int,
+as int,currentMonth: freezed == currentMonth ? _self.currentMonth : currentMonth // ignore: cast_nullable_to_non_nullable
+as MySalaryThisMonth?,
   ));
 }
+/// Create a copy of ImamSalaryContributionSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MySalaryThisMonthCopyWith<$Res>? get currentMonth {
+    if (_self.currentMonth == null) {
+    return null;
+  }
 
+  return $MySalaryThisMonthCopyWith<$Res>(_self.currentMonth!, (value) {
+    return _then(_self.copyWith(currentMonth: value));
+  });
+}
 }
 
 
@@ -742,10 +757,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths,  MySalaryThisMonth? currentMonth)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImamSalaryContributionSummary() when $default != null:
-return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths);case _:
+return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths,_that.currentMonth);case _:
   return orElse();
 
 }
@@ -763,10 +778,10 @@ return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.tota
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths,  MySalaryThisMonth? currentMonth)  $default,) {final _that = this;
 switch (_that) {
 case _ImamSalaryContributionSummary():
-return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths);case _:
+return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths,_that.currentMonth);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -783,10 +798,10 @@ return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.tota
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int monthsShown,  double totalExpected,  double totalPaid,  double totalDue,  int paidMonths,  int partialMonths,  int unpaidMonths,  MySalaryThisMonth? currentMonth)?  $default,) {final _that = this;
 switch (_that) {
 case _ImamSalaryContributionSummary() when $default != null:
-return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths);case _:
+return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.totalDue,_that.paidMonths,_that.partialMonths,_that.unpaidMonths,_that.currentMonth);case _:
   return null;
 
 }
@@ -798,7 +813,7 @@ return $default(_that.monthsShown,_that.totalExpected,_that.totalPaid,_that.tota
 @JsonSerializable()
 
 class _ImamSalaryContributionSummary implements ImamSalaryContributionSummary {
-  const _ImamSalaryContributionSummary({this.monthsShown = 0, this.totalExpected = 0, this.totalPaid = 0, this.totalDue = 0, this.paidMonths = 0, this.partialMonths = 0, this.unpaidMonths = 0});
+  const _ImamSalaryContributionSummary({this.monthsShown = 0, this.totalExpected = 0, this.totalPaid = 0, this.totalDue = 0, this.paidMonths = 0, this.partialMonths = 0, this.unpaidMonths = 0, this.currentMonth});
   factory _ImamSalaryContributionSummary.fromJson(Map<String, dynamic> json) => _$ImamSalaryContributionSummaryFromJson(json);
 
 @override@JsonKey() final  int monthsShown;
@@ -808,6 +823,9 @@ class _ImamSalaryContributionSummary implements ImamSalaryContributionSummary {
 @override@JsonKey() final  int paidMonths;
 @override@JsonKey() final  int partialMonths;
 @override@JsonKey() final  int unpaidMonths;
+/// This month's salary for this person (India time), or null when the
+/// committee has not opened this month yet.
+@override final  MySalaryThisMonth? currentMonth;
 
 /// Create a copy of ImamSalaryContributionSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -822,16 +840,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImamSalaryContributionSummary&&(identical(other.monthsShown, monthsShown) || other.monthsShown == monthsShown)&&(identical(other.totalExpected, totalExpected) || other.totalExpected == totalExpected)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.totalDue, totalDue) || other.totalDue == totalDue)&&(identical(other.paidMonths, paidMonths) || other.paidMonths == paidMonths)&&(identical(other.partialMonths, partialMonths) || other.partialMonths == partialMonths)&&(identical(other.unpaidMonths, unpaidMonths) || other.unpaidMonths == unpaidMonths));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImamSalaryContributionSummary&&(identical(other.monthsShown, monthsShown) || other.monthsShown == monthsShown)&&(identical(other.totalExpected, totalExpected) || other.totalExpected == totalExpected)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.totalDue, totalDue) || other.totalDue == totalDue)&&(identical(other.paidMonths, paidMonths) || other.paidMonths == paidMonths)&&(identical(other.partialMonths, partialMonths) || other.partialMonths == partialMonths)&&(identical(other.unpaidMonths, unpaidMonths) || other.unpaidMonths == unpaidMonths)&&(identical(other.currentMonth, currentMonth) || other.currentMonth == currentMonth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,monthsShown,totalExpected,totalPaid,totalDue,paidMonths,partialMonths,unpaidMonths);
+int get hashCode => Object.hash(runtimeType,monthsShown,totalExpected,totalPaid,totalDue,paidMonths,partialMonths,unpaidMonths,currentMonth);
 
 @override
 String toString() {
-  return 'ImamSalaryContributionSummary(monthsShown: $monthsShown, totalExpected: $totalExpected, totalPaid: $totalPaid, totalDue: $totalDue, paidMonths: $paidMonths, partialMonths: $partialMonths, unpaidMonths: $unpaidMonths)';
+  return 'ImamSalaryContributionSummary(monthsShown: $monthsShown, totalExpected: $totalExpected, totalPaid: $totalPaid, totalDue: $totalDue, paidMonths: $paidMonths, partialMonths: $partialMonths, unpaidMonths: $unpaidMonths, currentMonth: $currentMonth)';
 }
 
 
@@ -842,11 +860,11 @@ abstract mixin class _$ImamSalaryContributionSummaryCopyWith<$Res> implements $I
   factory _$ImamSalaryContributionSummaryCopyWith(_ImamSalaryContributionSummary value, $Res Function(_ImamSalaryContributionSummary) _then) = __$ImamSalaryContributionSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- int monthsShown, double totalExpected, double totalPaid, double totalDue, int paidMonths, int partialMonths, int unpaidMonths
+ int monthsShown, double totalExpected, double totalPaid, double totalDue, int paidMonths, int partialMonths, int unpaidMonths, MySalaryThisMonth? currentMonth
 });
 
 
-
+@override $MySalaryThisMonthCopyWith<$Res>? get currentMonth;
 
 }
 /// @nodoc
@@ -859,7 +877,7 @@ class __$ImamSalaryContributionSummaryCopyWithImpl<$Res>
 
 /// Create a copy of ImamSalaryContributionSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? monthsShown = null,Object? totalExpected = null,Object? totalPaid = null,Object? totalDue = null,Object? paidMonths = null,Object? partialMonths = null,Object? unpaidMonths = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? monthsShown = null,Object? totalExpected = null,Object? totalPaid = null,Object? totalDue = null,Object? paidMonths = null,Object? partialMonths = null,Object? unpaidMonths = null,Object? currentMonth = freezed,}) {
   return _then(_ImamSalaryContributionSummary(
 monthsShown: null == monthsShown ? _self.monthsShown : monthsShown // ignore: cast_nullable_to_non_nullable
 as int,totalExpected: null == totalExpected ? _self.totalExpected : totalExpected // ignore: cast_nullable_to_non_nullable
@@ -868,7 +886,298 @@ as double,totalDue: null == totalDue ? _self.totalDue : totalDue // ignore: cast
 as double,paidMonths: null == paidMonths ? _self.paidMonths : paidMonths // ignore: cast_nullable_to_non_nullable
 as int,partialMonths: null == partialMonths ? _self.partialMonths : partialMonths // ignore: cast_nullable_to_non_nullable
 as int,unpaidMonths: null == unpaidMonths ? _self.unpaidMonths : unpaidMonths // ignore: cast_nullable_to_non_nullable
-as int,
+as int,currentMonth: freezed == currentMonth ? _self.currentMonth : currentMonth // ignore: cast_nullable_to_non_nullable
+as MySalaryThisMonth?,
+  ));
+}
+
+/// Create a copy of ImamSalaryContributionSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MySalaryThisMonthCopyWith<$Res>? get currentMonth {
+    if (_self.currentMonth == null) {
+    return null;
+  }
+
+  return $MySalaryThisMonthCopyWith<$Res>(_self.currentMonth!, (value) {
+    return _then(_self.copyWith(currentMonth: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$MySalaryThisMonth {
+
+ int get month; int get year; double get expectedAmount; double get paidAmount; double get dueAmount; String get status;
+/// Create a copy of MySalaryThisMonth
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MySalaryThisMonthCopyWith<MySalaryThisMonth> get copyWith => _$MySalaryThisMonthCopyWithImpl<MySalaryThisMonth>(this as MySalaryThisMonth, _$identity);
+
+  /// Serializes this MySalaryThisMonth to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MySalaryThisMonth&&(identical(other.month, month) || other.month == month)&&(identical(other.year, year) || other.year == year)&&(identical(other.expectedAmount, expectedAmount) || other.expectedAmount == expectedAmount)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.dueAmount, dueAmount) || other.dueAmount == dueAmount)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,month,year,expectedAmount,paidAmount,dueAmount,status);
+
+@override
+String toString() {
+  return 'MySalaryThisMonth(month: $month, year: $year, expectedAmount: $expectedAmount, paidAmount: $paidAmount, dueAmount: $dueAmount, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MySalaryThisMonthCopyWith<$Res>  {
+  factory $MySalaryThisMonthCopyWith(MySalaryThisMonth value, $Res Function(MySalaryThisMonth) _then) = _$MySalaryThisMonthCopyWithImpl;
+@useResult
+$Res call({
+ int month, int year, double expectedAmount, double paidAmount, double dueAmount, String status
+});
+
+
+
+
+}
+/// @nodoc
+class _$MySalaryThisMonthCopyWithImpl<$Res>
+    implements $MySalaryThisMonthCopyWith<$Res> {
+  _$MySalaryThisMonthCopyWithImpl(this._self, this._then);
+
+  final MySalaryThisMonth _self;
+  final $Res Function(MySalaryThisMonth) _then;
+
+/// Create a copy of MySalaryThisMonth
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? month = null,Object? year = null,Object? expectedAmount = null,Object? paidAmount = null,Object? dueAmount = null,Object? status = null,}) {
+  return _then(_self.copyWith(
+month: null == month ? _self.month : month // ignore: cast_nullable_to_non_nullable
+as int,year: null == year ? _self.year : year // ignore: cast_nullable_to_non_nullable
+as int,expectedAmount: null == expectedAmount ? _self.expectedAmount : expectedAmount // ignore: cast_nullable_to_non_nullable
+as double,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
+as double,dueAmount: null == dueAmount ? _self.dueAmount : dueAmount // ignore: cast_nullable_to_non_nullable
+as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [MySalaryThisMonth].
+extension MySalaryThisMonthPatterns on MySalaryThisMonth {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MySalaryThisMonth value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _MySalaryThisMonth() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MySalaryThisMonth value)  $default,){
+final _that = this;
+switch (_that) {
+case _MySalaryThisMonth():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MySalaryThisMonth value)?  $default,){
+final _that = this;
+switch (_that) {
+case _MySalaryThisMonth() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int month,  int year,  double expectedAmount,  double paidAmount,  double dueAmount,  String status)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _MySalaryThisMonth() when $default != null:
+return $default(_that.month,_that.year,_that.expectedAmount,_that.paidAmount,_that.dueAmount,_that.status);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int month,  int year,  double expectedAmount,  double paidAmount,  double dueAmount,  String status)  $default,) {final _that = this;
+switch (_that) {
+case _MySalaryThisMonth():
+return $default(_that.month,_that.year,_that.expectedAmount,_that.paidAmount,_that.dueAmount,_that.status);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int month,  int year,  double expectedAmount,  double paidAmount,  double dueAmount,  String status)?  $default,) {final _that = this;
+switch (_that) {
+case _MySalaryThisMonth() when $default != null:
+return $default(_that.month,_that.year,_that.expectedAmount,_that.paidAmount,_that.dueAmount,_that.status);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _MySalaryThisMonth implements MySalaryThisMonth {
+  const _MySalaryThisMonth({required this.month, required this.year, this.expectedAmount = 0, this.paidAmount = 0, this.dueAmount = 0, this.status = 'UNPAID'});
+  factory _MySalaryThisMonth.fromJson(Map<String, dynamic> json) => _$MySalaryThisMonthFromJson(json);
+
+@override final  int month;
+@override final  int year;
+@override@JsonKey() final  double expectedAmount;
+@override@JsonKey() final  double paidAmount;
+@override@JsonKey() final  double dueAmount;
+@override@JsonKey() final  String status;
+
+/// Create a copy of MySalaryThisMonth
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MySalaryThisMonthCopyWith<_MySalaryThisMonth> get copyWith => __$MySalaryThisMonthCopyWithImpl<_MySalaryThisMonth>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$MySalaryThisMonthToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MySalaryThisMonth&&(identical(other.month, month) || other.month == month)&&(identical(other.year, year) || other.year == year)&&(identical(other.expectedAmount, expectedAmount) || other.expectedAmount == expectedAmount)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.dueAmount, dueAmount) || other.dueAmount == dueAmount)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,month,year,expectedAmount,paidAmount,dueAmount,status);
+
+@override
+String toString() {
+  return 'MySalaryThisMonth(month: $month, year: $year, expectedAmount: $expectedAmount, paidAmount: $paidAmount, dueAmount: $dueAmount, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MySalaryThisMonthCopyWith<$Res> implements $MySalaryThisMonthCopyWith<$Res> {
+  factory _$MySalaryThisMonthCopyWith(_MySalaryThisMonth value, $Res Function(_MySalaryThisMonth) _then) = __$MySalaryThisMonthCopyWithImpl;
+@override @useResult
+$Res call({
+ int month, int year, double expectedAmount, double paidAmount, double dueAmount, String status
+});
+
+
+
+
+}
+/// @nodoc
+class __$MySalaryThisMonthCopyWithImpl<$Res>
+    implements _$MySalaryThisMonthCopyWith<$Res> {
+  __$MySalaryThisMonthCopyWithImpl(this._self, this._then);
+
+  final _MySalaryThisMonth _self;
+  final $Res Function(_MySalaryThisMonth) _then;
+
+/// Create a copy of MySalaryThisMonth
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? month = null,Object? year = null,Object? expectedAmount = null,Object? paidAmount = null,Object? dueAmount = null,Object? status = null,}) {
+  return _then(_MySalaryThisMonth(
+month: null == month ? _self.month : month // ignore: cast_nullable_to_non_nullable
+as int,year: null == year ? _self.year : year // ignore: cast_nullable_to_non_nullable
+as int,expectedAmount: null == expectedAmount ? _self.expectedAmount : expectedAmount // ignore: cast_nullable_to_non_nullable
+as double,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
+as double,dueAmount: null == dueAmount ? _self.dueAmount : dueAmount // ignore: cast_nullable_to_non_nullable
+as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

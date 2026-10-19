@@ -99,7 +99,7 @@ Future<void> _pump(
 
 /// One half of the money in / money out switch.
 Finder _segment(String label) => find.descendant(
-  of: find.byType(SegmentedButton<bool>),
+  of: find.byType(PillTabs<bool>),
   matching: find.text(label),
 );
 

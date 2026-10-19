@@ -17,72 +17,108 @@ class AuthLandingScreen extends ConsumerWidget {
     final language = ref.watch(appSettingsProvider).language;
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: PageBody.form(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            BrandBackdrop(
+              icon: AppIcons.mosque,
+              // Change language: a light button on the green, so it wraps
+              // instead of overflowing with large text.
+              top: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  onPressed: () => context.push(
+                    Uri(
+                      path: '/language',
+                      queryParameters: <String, String>{'from': '/auth'},
+                    ).toString(),
+                  ),
+                  icon: const Icon(AppIcons.language),
+                  label: Text(language?.nativeName ?? l10n.chooseLanguage),
+                ),
+              ),
+              child: Column(
+                children: <Widget>[
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      l10n.appTitle,
+                      style: textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.xs),
+                  Text(
+                    l10n.appTagline,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PageBody.form(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // Change language: on the page rather than in a top bar,
-                  // so it wraps instead of overflowing with large text.
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push(
-                        Uri(
-                          path: '/language',
-                          queryParameters: <String, String>{'from': '/auth'},
-                        ).toString(),
-                      ),
-                      icon: const Icon(AppIcons.language),
-                      label: Text(language?.nativeName ?? l10n.chooseLanguage),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpace.l),
-                  ScreenHeader(
-                    icon: AppIcons.mosque,
-                    title: l10n.appTitle,
-                    subtitle: l10n.appTagline,
-                  ),
                   SizedBox(
                     height: 176,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
                         Expanded(
-                          child: ActionTile(
-                            icon: AppIcons.login,
-                            label: l10n.login,
-                            tone: AppTones.brand,
-                            onTap: () => context.push('/login-phone'),
+                          child: FadeSlideIn(
+                            delay: const Duration(milliseconds: 250),
+                            child: ActionTile(
+                              icon: AppIcons.login,
+                              label: l10n.login,
+                              tone: AppTones.brand,
+                              onTap: () => context.push('/login-phone'),
+                            ),
                           ),
                         ),
                         const SizedBox(width: AppSpace.m),
                         Expanded(
-                          child: ActionTile(
-                            icon: AppIcons.registerMasjid,
-                            label: l10n.registerMasjid,
-                            tone: AppTones.namaz,
-                            onTap: () => context.push('/masjid-request'),
+                          child: FadeSlideIn(
+                            delay: const Duration(milliseconds: 330),
+                            child: ActionTile(
+                              icon: AppIcons.registerMasjid,
+                              label: l10n.registerMasjid,
+                              tone: AppTones.namaz,
+                              onTap: () => context.push('/masjid-request'),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpace.l),
-                  TextButton.icon(
-                    onPressed: () => context.push('/masjid-request/track'),
-                    icon: const Icon(AppIcons.track),
-                    label: Text(
-                      l10n.trackRequest,
-                      style: textTheme.titleMedium,
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 420),
+                    child: TextButton.icon(
+                      onPressed: () => context.push('/masjid-request/track'),
+                      icon: const Icon(AppIcons.track),
+                      label: Text(
+                        l10n.trackRequest,
+                        style: textTheme.titleMedium,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

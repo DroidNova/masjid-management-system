@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 
 /// Whether an amount is money coming in, going out, or just a figure.
@@ -16,7 +17,12 @@ class AmountText extends StatelessWidget {
     this.kind = AmountKind.neutral,
     this.size = AmountSize.medium,
     this.color,
+    this.animate,
   });
+
+  /// Counts up to the amount when it appears. Defaults to on for the
+  /// large and hero sizes.
+  final bool? animate;
 
   final num amount;
   final AmountKind kind;
@@ -50,8 +56,8 @@ class AmountText extends StatelessWidget {
       AmountSize.large => textTheme.headlineMedium,
       AmountSize.hero => textTheme.displayMedium,
     };
-    return Text(
-      format(amount, kind: kind),
+    Widget text(num value) => Text(
+      format(value, kind: kind),
       // Digits keep their order in Urdu (right-to-left) text.
       textDirection: TextDirection.ltr,
       maxLines: 1,
@@ -59,6 +65,17 @@ class AmountText extends StatelessWidget {
       style: base?.copyWith(
         color: color ?? colorFor(kind),
         fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+      ),
+    );
+    final countUp =
+        animate ?? (size == AmountSize.hero || size == AmountSize.large);
+    if (!countUp) return text(amount);
+    return Semantics(
+      label: format(amount, kind: kind),
+      excludeSemantics: true,
+      child: CountUp(
+        value: amount.toDouble(),
+        builder: (context, value) => text(value),
       ),
     );
   }
