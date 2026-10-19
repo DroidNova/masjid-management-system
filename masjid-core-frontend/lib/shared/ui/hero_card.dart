@@ -53,6 +53,9 @@ class HeroCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         child: Stack(
+          // The content gets the card's full width (a Column inside then
+          // centres like it would outside the card).
+          fit: StackFit.passthrough,
           children: <Widget>[
             // Star lattice, strongest at the top corner and fading out.
             Positioned.fill(

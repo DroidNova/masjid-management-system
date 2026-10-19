@@ -13,6 +13,7 @@ import 'package:masjid_core_frontend/features/dashboard/data/models/dashboard_re
 import 'package:masjid_core_frontend/features/dashboard/data/models/finance_summary.dart';
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/next_namaz_card.dart';
 import 'package:masjid_core_frontend/features/main_shell/main_tabs.dart';
+import 'package:masjid_core_frontend/features/namaz_time/application/prayer_schedule.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -77,10 +78,14 @@ class _HomeContent extends ConsumerWidget {
         )
         .length;
 
+    final times = dashboard.namazTime;
     final hero = NextNamazCard(
-      times: dashboard.namazTime,
+      times: times,
       canUpdate: canUpdateTimes,
-      onOpen: () => context.go(MainTab.times.path),
+      // No times yet: "Set times" opens the editor straight away.
+      onOpen: nextPrayer(times, DateTime.now()) == null && canUpdateTimes
+          ? () => context.push('/namaz-time/update')
+          : () => context.go(MainTab.times.path),
     );
     final latest = news.isEmpty ? null : _LatestNewsCard(item: news.first);
 

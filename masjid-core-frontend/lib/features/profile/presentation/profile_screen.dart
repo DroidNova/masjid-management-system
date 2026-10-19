@@ -81,41 +81,76 @@ class _Header extends StatelessWidget {
       if (user.isFamilyHead) (l10n.familyHead, AppIcons.family),
     ];
 
-    return Column(
-      children: <Widget>[
-        const SizedBox(height: AppSpace.l),
-        PersonAvatar(name: user.fullName, size: 96),
-        const SizedBox(height: AppSpace.m),
-        Text(
-          user.fullName,
-          textAlign: TextAlign.center,
-          style: textTheme.headlineSmall,
-        ),
-        if (phone != null && phone.isNotEmpty)
-          Text(
-            phone,
-            textDirection: TextDirection.ltr,
-            style: textTheme.titleMedium?.copyWith(
-              color: AppColors.textSecondary,
+    // A green card with the star pattern: the person, big, at the top.
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.l),
+      child: HeroCard(
+        tone: AppTones.brand,
+        child: Column(
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+              child: PersonAvatar(name: user.fullName, size: 92),
             ),
-          ),
-        const SizedBox(height: AppSpace.m),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: AppSpace.s,
-          runSpacing: AppSpace.s,
-          children: badges
-              .map(
-                (badge) => Chip(
-                  avatar: Icon(badge.$2, size: 20, color: AppTones.brand.color),
-                  label: Text(badge.$1),
-                  backgroundColor: AppTones.brand.container,
-                  side: BorderSide.none,
+            const SizedBox(height: AppSpace.m),
+            Text(
+              user.fullName,
+              textAlign: TextAlign.center,
+              style: textTheme.headlineSmall?.copyWith(color: Colors.white),
+            ),
+            if (phone != null && phone.isNotEmpty)
+              Text(
+                phone,
+                textDirection: TextDirection.ltr,
+                style: textTheme.titleMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
                 ),
-              )
-              .toList(),
+              ),
+            const SizedBox(height: AppSpace.m),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpace.s,
+              runSpacing: AppSpace.s,
+              children: badges
+                  .map(
+                    (badge) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.m,
+                        vertical: AppSpace.xs + 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(badge.$2, size: 18, color: Colors.white),
+                          const SizedBox(width: AppSpace.xs),
+                          Flexible(
+                            child: Text(
+                              badge.$1,
+                              style: textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
