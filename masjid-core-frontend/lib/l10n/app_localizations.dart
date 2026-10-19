@@ -2391,6 +2391,35 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All months {amount}'**
   String allMonthsAmount(String amount);
+
+  /// No description provided for @remind.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind'**
+  String get remind;
+
+  /// No description provided for @callPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callPerson;
+
+  /// No description provided for @couldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open it on this phone.'**
+  String get couldNotOpen;
+
+  /// No description provided for @salaryReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Assalamu alaikum {name}, imam salary for {month}: {amount} is still to pay. — {masjid}'**
+  String salaryReminder(
+    String name,
+    String month,
+    String amount,
+    String masjid,
+  );
 }
 
 class _AppLocalizationsDelegate

@@ -1265,4 +1265,23 @@ class AppLocalizationsUr extends AppLocalizations {
   String allMonthsAmount(String amount) {
     return 'سارے مہینے $amount';
   }
+
+  @override
+  String get remind => 'یاد دلائیں';
+
+  @override
+  String get callPerson => 'کال کریں';
+
+  @override
+  String get couldNotOpen => 'اس فون پر نہیں کھل سکا۔';
+
+  @override
+  String salaryReminder(
+    String name,
+    String month,
+    String amount,
+    String masjid,
+  ) {
+    return 'السلام علیکم $name، $month کی امام تنخواہ کے $amount باقی ہیں۔ — $masjid';
+  }
 }

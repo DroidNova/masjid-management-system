@@ -381,5 +381,9 @@
   "seeMonths": "सारे महीने देखें",
   "paysFor": "इससे जमा होगा:",
   "thisMonthAmount": "सिर्फ़ यह महीना {amount}",
-  "allMonthsAmount": "सारे महीने {amount}"
+  "allMonthsAmount": "सारे महीने {amount}",
+  "remind": "याद दिलाएँ",
+  "callPerson": "कॉल करें",
+  "couldNotOpen": "इस फ़ोन पर नहीं खुल सका।",
+  "salaryReminder": "अस्सलामु अलैकुम {name}, {month} की इमाम तनख़्वाह के {amount} बाकी हैं। — {masjid}"
 }

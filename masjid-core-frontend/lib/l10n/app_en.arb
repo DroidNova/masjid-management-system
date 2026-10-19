@@ -653,5 +653,25 @@
         "type": "String"
       }
     }
+  },
+  "remind": "Remind",
+  "callPerson": "Call",
+  "couldNotOpen": "Could not open it on this phone.",
+  "salaryReminder": "Assalamu alaikum {name}, imam salary for {month}: {amount} is still to pay. — {masjid}",
+  "@salaryReminder": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "masjid": {
+        "type": "String"
+      }
+    }
   }
 }

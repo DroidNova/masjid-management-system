@@ -1270,4 +1270,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String allMonthsAmount(String amount) {
     return 'All months $amount';
   }
+
+  @override
+  String get remind => 'Remind';
+
+  @override
+  String get callPerson => 'Call';
+
+  @override
+  String get couldNotOpen => 'Could not open it on this phone.';
+
+  @override
+  String salaryReminder(
+    String name,
+    String month,
+    String amount,
+    String masjid,
+  ) {
+    return 'Assalamu alaikum $name, imam salary for $month: $amount is still to pay. — $masjid';
+  }
 }

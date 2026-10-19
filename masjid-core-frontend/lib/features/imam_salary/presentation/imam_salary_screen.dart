@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masjid_core_frontend/core/contact/contact_launcher.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/giver_tile.dart';
+import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
 import 'package:masjid_core_frontend/features/imam_salary/presentation/widgets/salary_sheets.dart';
@@ -426,23 +428,66 @@ class _CommitteeLedgerState extends ConsumerState<_CommitteeLedger> {
         title: l10n.noFamiliesYet,
         filtered: filter.search.isNotEmpty || filter.status != null,
       ),
-      itemBuilder: (context, assignment) => FamilyDueTile(
-        assignment: assignment,
-        onTap: assignment.dueAmount > 0
-            ? () => showSalaryPaymentSheet(context, assignment)
-            : null,
-      ),
+      itemBuilder: (context, assignment) {
+        final canReach =
+            assignment.dueAmount > 0 && assignment.memberPhone.isNotEmpty;
+        return FamilyDueTile(
+          assignment: assignment,
+          onTap: assignment.dueAmount > 0
+              ? () => showSalaryPaymentSheet(context, assignment)
+              : null,
+          onRemind: canReach ? () => _remind(context, assignment) : null,
+          onCall: canReach
+              ? () =>
+                    _open(context, ContactLauncher.call(assignment.memberPhone))
+              : null,
+        );
+      },
     );
+  }
+
+  /// A polite reminder already written in the app's language (WhatsApp or
+  /// SMS); the committee member presses send.
+  void _remind(BuildContext context, SalaryAssignment assignment) {
+    final l10n = AppLocalizations.of(context);
+    final period = ref.read(salaryPeriodProvider);
+    final masjid =
+        ref.read(dashboardControllerProvider).valueOrNull?.masjid?.name ?? '';
+    final message = l10n.salaryReminder(
+      assignment.memberName,
+      AppFormat.monthYear(period.month, period.year),
+      AppFormat.rupees(assignment.dueAmount),
+      masjid,
+    );
+    _open(context, ContactLauncher.message(assignment.memberPhone, message));
+  }
+
+  Future<void> _open(BuildContext context, Future<bool> opening) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final text = AppLocalizations.of(context).couldNotOpen;
+    if (!await opening) {
+      messenger.showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 }
 
 /// One family head: name, paid / due badge, and what is still owed. Tapping
 /// a family that owes records its payment.
 class FamilyDueTile extends StatelessWidget {
-  const FamilyDueTile({super.key, required this.assignment, this.onTap});
+  const FamilyDueTile({
+    super.key,
+    required this.assignment,
+    this.onTap,
+    this.onRemind,
+    this.onCall,
+  });
 
   final SalaryAssignment assignment;
   final VoidCallback? onTap;
+
+  /// WhatsApp reminder and phone call, for a family that still owes.
+  final VoidCallback? onRemind;
+  final VoidCallback? onCall;
 
   @override
   Widget build(BuildContext context) {
@@ -451,56 +496,95 @@ class FamilyDueTile extends StatelessWidget {
     final (kind, label) = salaryStatusLook(l10n, assignment.status);
     final owes = assignment.dueAmount > 0;
 
+    final remind = onRemind;
+    final call = onCall;
     return Card(
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(AppSpace.m),
-          child: Row(
+          child: Column(
             children: <Widget>[
-              PersonAvatar(name: assignment.memberName),
-              const SizedBox(width: AppSpace.m),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                children: <Widget>[
+                  PersonAvatar(name: assignment.memberName),
+                  const SizedBox(width: AppSpace.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          assignment.memberName,
+                          style: textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSpace.xs),
+                        StatusBadge(kind: kind, label: label),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: <Widget>[
+                        Text(
+                          AppFormat.rupees(
+                            owes ? assignment.dueAmount : assignment.paidAmount,
+                          ),
+                          textDirection: TextDirection.ltr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleLarge?.copyWith(
+                            color: owes
+                                ? AppTones.waiting.color
+                                : AppTones.done.color,
+                          ),
+                        ),
+                        Text(
+                          owes ? l10n.due : l10n.salaryPaid,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onTap != null) ...<Widget>[
+                    const SizedBox(width: AppSpace.xs),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppTones.salary.color,
+                    ),
+                  ],
+                ],
+              ),
+              if (remind != null || call != null) ...<Widget>[
+                const SizedBox(height: AppSpace.s),
+                Row(
                   children: <Widget>[
-                    Text(assignment.memberName, style: textTheme.titleMedium),
-                    const SizedBox(height: AppSpace.xs),
-                    StatusBadge(kind: kind, label: label),
+                    if (remind != null)
+                      Expanded(
+                        child: _ReachButton(
+                          icon: Icons.chat_rounded,
+                          label: l10n.remind,
+                          tone: AppTones.moneyIn,
+                          onPressed: remind,
+                        ),
+                      ),
+                    if (remind != null && call != null)
+                      const SizedBox(width: AppSpace.s),
+                    if (call != null)
+                      Expanded(
+                        child: _ReachButton(
+                          icon: Icons.call_rounded,
+                          label: l10n.callPerson,
+                          tone: AppTones.namaz,
+                          onPressed: call,
+                        ),
+                      ),
                   ],
                 ),
-              ),
-              const SizedBox(width: AppSpace.s),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 140),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      AppFormat.rupees(
-                        owes ? assignment.dueAmount : assignment.paidAmount,
-                      ),
-                      textDirection: TextDirection.ltr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleLarge?.copyWith(
-                        color: owes
-                            ? AppTones.waiting.color
-                            : AppTones.done.color,
-                      ),
-                    ),
-                    Text(
-                      owes ? l10n.due : l10n.salaryPaid,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (onTap != null) ...<Widget>[
-                const SizedBox(width: AppSpace.xs),
-                Icon(Icons.chevron_right_rounded, color: AppTones.salary.color),
               ],
             ],
           ),
@@ -636,6 +720,38 @@ class MySalaryMonthCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A soft coloured button under a family: Remind (WhatsApp) or Call.
+class _ReachButton extends StatelessWidget {
+  const _ReachButton({
+    required this.icon,
+    required this.label,
+    required this.tone,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final AppTone tone;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          backgroundColor: tone.container,
+          foregroundColor: tone.color,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.m),
+        ),
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
       ),
     );
   }
