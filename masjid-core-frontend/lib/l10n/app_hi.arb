@@ -389,5 +389,6 @@
   "giverPerson": "कोई व्यक्ति",
   "giverPersonHint": "उनके भुगतान में दिखेगा",
   "giverNoName": "नाम नहीं",
-  "giverNoNameHint": "बक्सा, भीड़, या पता नहीं"
+  "giverNoNameHint": "बक्सा, भीड़, या पता नहीं",
+  "salaryAllPaid": "तनख़्वाह: सब जमा"
 }

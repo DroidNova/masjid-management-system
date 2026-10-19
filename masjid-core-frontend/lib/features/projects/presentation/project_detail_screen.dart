@@ -242,32 +242,47 @@ class _Details extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: AppSpace.xl),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTones.projects.color,
-                  ),
-                  onPressed: () => context.push(
-                    '/projects/${project.id}/contributions',
-                    extra: project.title,
-                  ),
-                  icon: const Icon(AppIcons.zakat),
-                  label: Text(l10n.givers),
-                ),
+                // The committee's main job here is adding a gift; everyone
+                // else mostly looks at who gave.
                 if (canRecord && !cancelled) ...<Widget>[
+                  Pressable(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTones.projects.color,
+                      ),
+                      onPressed: () => context.push(
+                        Uri(
+                          path: '/contributions/new',
+                          queryParameters: <String, String>{
+                            'project': project.id,
+                          },
+                        ).toString(),
+                      ),
+                      icon: const Icon(AppIcons.add),
+                      label: Text(l10n.addGiver),
+                    ),
+                  ),
                   const SizedBox(height: AppSpace.m),
                   OutlinedButton.icon(
                     onPressed: () => context.push(
-                      Uri(
-                        path: '/contributions/new',
-                        queryParameters: <String, String>{
-                          'project': project.id,
-                        },
-                      ).toString(),
+                      '/projects/${project.id}/contributions',
+                      extra: project.title,
                     ),
-                    icon: const Icon(AppIcons.add),
-                    label: Text(l10n.addGiver),
+                    icon: const Icon(AppIcons.zakat),
+                    label: Text(l10n.givers),
                   ),
-                ],
+                ] else
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTones.projects.color,
+                    ),
+                    onPressed: () => context.push(
+                      '/projects/${project.id}/contributions',
+                      extra: project.title,
+                    ),
+                    icon: const Icon(AppIcons.zakat),
+                    label: Text(l10n.givers),
+                  ),
                 if (canManage) ...<Widget>[
                   const SizedBox(height: AppSpace.m),
                   OutlinedButton.icon(

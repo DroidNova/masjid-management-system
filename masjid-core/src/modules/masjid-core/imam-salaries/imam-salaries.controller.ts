@@ -111,7 +111,7 @@ export class ImamSalariesController {
   }
 
   @Get('members/:memberId/dues')
-  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_READ)
   memberDues(
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Req() req: AuthenticatedRequest,

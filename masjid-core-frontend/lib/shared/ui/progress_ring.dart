@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 
 /// How far along something is, as a ring with the percent in the middle:
@@ -24,13 +25,20 @@ class ProgressRing extends StatelessWidget {
     final percent = (clamped * 100).round();
     return Semantics(
       value: '$percent%',
+      child: _FillUp(value: clamped, builder: _ring),
+    );
+  }
+
+  Widget _ring(BuildContext context, double shown) {
+    final percent = (shown * 100).round();
+    return ExcludeSemantics(
       child: SizedBox.square(
         dimension: size,
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
             CircularProgressIndicator(
-              value: clamped,
+              value: shown,
               strokeWidth: size / 9,
               strokeCap: StrokeCap.round,
               color: color,
@@ -74,12 +82,34 @@ class ProgressBar extends StatelessWidget {
     final clamped = value.isNaN ? 0.0 : value.clamp(0.0, 1.0);
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: LinearProgressIndicator(
+      child: _FillUp(
         value: clamped,
-        minHeight: 12,
-        color: tone.color,
-        backgroundColor: tone.container,
+        builder: (context, shown) => LinearProgressIndicator(
+          value: shown,
+          minHeight: 12,
+          color: tone.color,
+          backgroundColor: tone.container,
+        ),
       ),
+    );
+  }
+}
+
+/// Animates from empty (first time) or the old value to [value].
+class _FillUp extends StatelessWidget {
+  const _FillUp({required this.value, required this.builder});
+
+  final double value;
+  final Widget Function(BuildContext context, double shown) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion(context)) return builder(context, value);
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value),
+      duration: const Duration(milliseconds: 1100),
+      curve: Curves.easeOutCubic,
+      builder: (context, shown, _) => builder(context, shown),
     );
   }
 }

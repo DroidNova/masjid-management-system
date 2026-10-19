@@ -2444,6 +2444,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Box, crowd, or not known'**
   String get giverNoNameHint;
+
+  /// No description provided for @salaryAllPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary: all paid'**
+  String get salaryAllPaid;
 }
 
 class _AppLocalizationsDelegate

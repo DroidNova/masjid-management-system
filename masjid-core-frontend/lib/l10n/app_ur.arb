@@ -389,5 +389,6 @@
   "giverPerson": "کوئی شخص",
   "giverPersonHint": "ان کی ادائیگی میں دکھے گا",
   "giverNoName": "نام نہیں",
-  "giverNoNameHint": "بکس، مجمع، یا معلوم نہیں"
+  "giverNoNameHint": "بکس، مجمع، یا معلوم نہیں",
+  "salaryAllPaid": "تنخواہ: سب جمع"
 }

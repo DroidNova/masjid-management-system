@@ -1296,4 +1296,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get giverNoNameHint => 'बक्सा, भीड़, या पता नहीं';
+
+  @override
+  String get salaryAllPaid => 'तनख़्वाह: सब जमा';
 }

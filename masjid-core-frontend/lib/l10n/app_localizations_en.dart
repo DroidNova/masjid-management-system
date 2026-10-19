@@ -1301,4 +1301,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get giverNoNameHint => 'Box, crowd, or not known';
+
+  @override
+  String get salaryAllPaid => 'Salary: all paid';
 }

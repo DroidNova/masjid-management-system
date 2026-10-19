@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
+import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/community/application/community_controller.dart';
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
+import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -459,6 +461,13 @@ class _PersonDetails extends ConsumerWidget {
               ],
             ),
           ),
+        if (person.isFamilyHead &&
+            PermissionHelper.canViewImamSalary(
+              ref.watch(currentPermissionsProvider),
+            )) ...<Widget>[
+          const SizedBox(height: AppSpace.m),
+          _SalaryDues(memberId: person.id),
+        ],
         const SizedBox(height: AppSpace.xl),
         if (canManage) ...<Widget>[
           FilledButton.icon(
@@ -543,6 +552,80 @@ class _PersonDetails extends ConsumerWidget {
             child: Text(l10n.close),
           ),
       ],
+    );
+  }
+}
+
+/// A family head's imam salary at a glance: all paid, or what is owed and
+/// for which months (so the committee can answer "have I paid?" at once).
+class _SalaryDues extends ConsumerWidget {
+  const _SalaryDues({required this.memberId});
+
+  final String memberId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final dues = ref.watch(memberDuesProvider(memberId));
+    return dues.when(
+      loading: () => const SkeletonBox(height: 64, radius: AppRadius.m),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (dues) {
+        final paid = dues.totalDue <= 0;
+        final tone = paid ? AppTones.done : AppTones.waiting;
+        return FadeSlideIn(
+          offset: 12,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpace.m),
+            decoration: BoxDecoration(
+              color: tone.container,
+              borderRadius: BorderRadius.circular(AppRadius.m),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(
+                      paid ? AppIcons.done : AppIcons.salary,
+                      color: tone.color,
+                    ),
+                    const SizedBox(width: AppSpace.s),
+                    Expanded(
+                      child: Text(
+                        paid
+                            ? l10n.salaryAllPaid
+                            : l10n.salaryDueTotal(
+                                AppFormat.rupees(dues.totalDue),
+                              ),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: tone.color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (!paid) ...<Widget>[
+                  const SizedBox(height: AppSpace.s),
+                  Wrap(
+                    spacing: AppSpace.s,
+                    runSpacing: AppSpace.s,
+                    children: <Widget>[
+                      for (final month in dues.months)
+                        StatusBadge(
+                          kind: StatusKind.waiting,
+                          label:
+                              '${AppFormat.monthYear(month.month, month.year)} · ${AppFormat.rupees(month.dueAmount)}',
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
