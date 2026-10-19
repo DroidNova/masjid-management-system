@@ -50,25 +50,30 @@ class _Body extends StatelessWidget {
     final allPaid = salary.totalDue <= 0;
     final thisMonthPaid = now != null && now.status == SalaryStatus.paid;
 
-    final tone = allPaid || (thisMonthPaid && earlierDue <= 0)
-        ? AppTones.done
-        : AppTones.waiting;
-    final headline = now == null
-        ? (allPaid
-              ? l10n.allSalaryPaid
-              : l10n.salaryDueTotal(AppFormat.rupees(salary.totalDue)))
-        : thisMonthPaid
-        ? l10n.salaryPaidThisMonth
-        : l10n.salaryToPayThisMonth(AppFormat.rupees(nowDue));
+    // The big line answers "do I owe anything?"; the small lines say for
+    // which months.
+    final tone = allPaid ? AppTones.done : AppTones.waiting;
+    final headline = allPaid
+        ? (thisMonthPaid ? l10n.salaryPaidThisMonth : l10n.allSalaryPaid)
+        : l10n.salaryDueTotal(AppFormat.rupees(salary.totalDue));
     final title = now == null
         ? l10n.salary
         : l10n.mySalaryTitle(AppFormat.monthYear(now.month, now.year));
     final share = now == null || now.expectedAmount <= 0
         ? (allPaid ? 1.0 : 0.0)
         : (now.paidAmount / now.expectedAmount).clamp(0.0, 1.0);
-    final earlier = earlierDue > 0 && now != null
-        ? l10n.olderMonthsDue(AppFormat.rupees(earlierDue))
-        : null;
+    // Detail lines only when something is owed.
+    final details = <(String, AppTone)>[
+      if (!allPaid && now != null)
+        thisMonthPaid
+            ? (l10n.salaryPaidThisMonth, AppTones.done)
+            : (
+                l10n.salaryToPayThisMonth(AppFormat.rupees(nowDue)),
+                AppTones.waiting,
+              ),
+      if (!allPaid && earlierDue > 0 && now != null)
+        (l10n.olderMonthsDue(AppFormat.rupees(earlierDue)), AppTones.problem),
+    ];
 
     final icon = tone == AppTones.done ? AppIcons.done : AppIcons.waiting;
     return Pressable(
@@ -113,24 +118,38 @@ class _Body extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpace.s),
                       _AnimatedBar(value: share, tone: tone),
-                      if (earlier != null) ...<Widget>[
-                        const SizedBox(height: AppSpace.s),
-                        Text(
-                          earlier,
-                          style: textTheme.titleSmall?.copyWith(
-                            color: AppTones.problem.color,
-                          ),
+                      for (final (line, lineTone) in details) ...<Widget>[
+                        const SizedBox(height: AppSpace.xs),
+                        Row(
+                          children: <Widget>[
+                            Icon(
+                              lineTone == AppTones.done
+                                  ? AppIcons.done
+                                  : AppIcons.waiting,
+                              size: 18,
+                              color: lineTone.color,
+                            ),
+                            const SizedBox(width: AppSpace.xs),
+                            Expanded(
+                              child: Text(
+                                line,
+                                style: textTheme.titleSmall?.copyWith(
+                                  color: lineTone.color,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
                   ),
                 ),
                 ReadAloudButton(
-                  text: <String?>[
+                  text: <String>[
                     title,
                     headline,
-                    earlier,
-                  ].whereType<String>().join('. '),
+                    for (final (line, _) in details) line,
+                  ].join('. '),
                   color: tone.color,
                 ),
               ],
