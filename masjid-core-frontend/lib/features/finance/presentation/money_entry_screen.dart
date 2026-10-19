@@ -45,11 +45,82 @@ class _MoneyEntryScreenState extends ConsumerState<MoneyEntryScreen> {
     super.dispose();
   }
 
-  void _pick(MoneyCategory category) {
+  /// Kinds usually given by one known person: ask who, so it shows in
+  /// their own payments. Jumma and the donation box have no name.
+  static const Set<String> _personalKinds = <String>{
+    'RAMADAN_FUND',
+    'ZAKAT',
+    'SADAQAH',
+    'CONSTRUCTION_FUND',
+    'OTHER',
+  };
+
+  Future<void> _pick(MoneyCategory category) async {
     setState(() => _category = category);
+    if (!widget.isExpense && _personalKinds.contains(category.value)) {
+      final person = await _askWhoGave();
+      if (!mounted || person == null) return;
+      if (person) {
+        // The givers flow records it against the person; this kind is set.
+        final saved = await context.push<bool>(
+          Uri(
+            path: '/contributions/new',
+            queryParameters: <String, String>{'category': category.value},
+          ).toString(),
+        );
+        if (mounted && saved == true) context.pop(true);
+        return;
+      }
+    }
     // Choosing the kind is the whole step: go on to the amount.
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _flow.currentState?.next(),
+    );
+  }
+
+  /// "Who gave?": a person (true), no name (false), or closed (null).
+  Future<bool?> _askWhoGave() {
+    final l10n = AppLocalizations.of(context);
+    return showAppSheet<bool>(
+      context,
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ScreenHeader(
+            icon: AppIcons.person,
+            title: l10n.whoGave,
+            tone: AppTones.moneyIn,
+          ),
+          SizedBox(
+            height: 190,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Expanded(
+                  child: _GiverChoice(
+                    icon: AppIcons.person,
+                    label: l10n.giverPerson,
+                    hint: l10n.giverPersonHint,
+                    tone: AppTones.people,
+                    onTap: () => Navigator.of(sheetContext).pop(true),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.m),
+                Expanded(
+                  child: _GiverChoice(
+                    icon: AppIcons.donationBox,
+                    label: l10n.giverNoName,
+                    hint: l10n.giverNoNameHint,
+                    tone: AppTones.neutral,
+                    onTap: () => Navigator.of(sheetContext).pop(false),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -187,6 +258,59 @@ class _MoneyEntryScreenState extends ConsumerState<MoneyEntryScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One big choice in "Who gave?": picture, word, and a short hint.
+class _GiverChoice extends StatelessWidget {
+  const _GiverChoice({
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.tone,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String hint;
+  final AppTone tone;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Pressable(
+      child: Card(
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.m),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                ToneIcon(icon: icon, tone: tone, size: 56),
+                const SizedBox(height: AppSpace.s),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleMedium,
+                ),
+                Text(
+                  hint,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

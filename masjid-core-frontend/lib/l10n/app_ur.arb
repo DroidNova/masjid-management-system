@@ -385,5 +385,9 @@
   "remind": "یاد دلائیں",
   "callPerson": "کال کریں",
   "couldNotOpen": "اس فون پر نہیں کھل سکا۔",
-  "salaryReminder": "السلام علیکم {name}، {month} کی امام تنخواہ کے {amount} باقی ہیں۔ — {masjid}"
+  "salaryReminder": "السلام علیکم {name}، {month} کی امام تنخواہ کے {amount} باقی ہیں۔ — {masjid}",
+  "giverPerson": "کوئی شخص",
+  "giverPersonHint": "ان کی ادائیگی میں دکھے گا",
+  "giverNoName": "نام نہیں",
+  "giverNoNameHint": "بکس، مجمع، یا معلوم نہیں"
 }

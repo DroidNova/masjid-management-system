@@ -17,16 +17,17 @@ Future<bool> showSalaryPaymentSheet(
   BuildContext context,
   SalaryAssignment assignment,
 ) async {
-  final saved = await showAppSheet<bool>(
+  // The sheet closes with the amount saved.
+  final paid = await showAppSheet<double>(
     context,
     builder: (_) => _PaymentSheet(assignment: assignment),
   );
-  if (saved != true || !context.mounted) return false;
+  if (paid == null || !context.mounted) return false;
   final l10n = AppLocalizations.of(context);
   await showSuccess(
     context,
     title: l10n.salaryPaymentSaved,
-    detail: assignment.memberName,
+    detail: '${AppFormat.rupees(paid)} · ${assignment.memberName}',
     icon: AppIcons.salary,
     tone: AppTones.salary,
   );
@@ -130,7 +131,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
           paidAt: _date,
         );
       }
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(amount.toDouble());
     } catch (error) {
       if (mounted) {
         setState(() {

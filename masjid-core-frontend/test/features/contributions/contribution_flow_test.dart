@@ -143,7 +143,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Projects have no "what for" step.
-    expect(find.text('How much?'), findsOneWidget);
+    expect(find.text('How much? · Guest'), findsOneWidget);
     await tester.tap(find.text('₹500'));
     await tester.pump();
     await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));

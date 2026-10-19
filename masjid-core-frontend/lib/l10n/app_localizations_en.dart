@@ -1289,4 +1289,16 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Assalamu alaikum $name, imam salary for $month: $amount is still to pay. — $masjid';
   }
+
+  @override
+  String get giverPerson => 'A person';
+
+  @override
+  String get giverPersonHint => 'It shows in their payments';
+
+  @override
+  String get giverNoName => 'No name';
+
+  @override
+  String get giverNoNameHint => 'Box, crowd, or not known';
 }

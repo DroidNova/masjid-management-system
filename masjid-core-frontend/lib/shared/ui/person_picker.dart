@@ -180,7 +180,8 @@ class _PersonPickerBodyState extends State<_PersonPickerBody> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.l),
           child: TextField(
-            autofocus: true,
+            // No keyboard until asked for: most people scroll and tap a
+            // face, and the keyboard would hide half the list.
             onChanged: _onQueryChanged,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(

@@ -318,6 +318,7 @@ final List<RouteBase> _routes = <RouteBase>[
       isAllowed: PermissionHelper.canRecordContributions,
       child: ContributionFlowScreen(
         projectId: state.uri.queryParameters['project'],
+        category: state.uri.queryParameters['category'],
       ),
     ),
   ),

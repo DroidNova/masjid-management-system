@@ -322,6 +322,14 @@ void main() {
       expect(request.description, 'October bill');
     });
 
+    testWidgets('Jumma has no name: straight to the amount', (tester) async {
+      await pumpEntry(tester, isExpense: false);
+      await tester.tap(find.text('Jumma'));
+      await tester.pumpAndSettle();
+      expect(find.text('Who gave?'), findsNothing);
+      expect(find.byType(NumberKeypad), findsOneWidget);
+    });
+
     testWidgets('a refused save shows the reason and stays', (tester) async {
       when(() => repository.createCollection(any())).thenThrow(
         const ApiException(
@@ -333,6 +341,10 @@ void main() {
       await pumpEntry(tester, isExpense: false);
 
       await tester.tap(find.text('Zakat'));
+      await tester.pumpAndSettle();
+      // Zakat is usually from one person: the app asks who gave.
+      expect(find.text('Who gave?'), findsOneWidget);
+      await tester.tap(find.text('No name'));
       await tester.pumpAndSettle();
       await tapKeypad(tester, '5');
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));

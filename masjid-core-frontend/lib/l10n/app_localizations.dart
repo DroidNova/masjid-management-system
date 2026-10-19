@@ -2420,6 +2420,30 @@ abstract class AppLocalizations {
     String amount,
     String masjid,
   );
+
+  /// No description provided for @giverPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'A person'**
+  String get giverPerson;
+
+  /// No description provided for @giverPersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It shows in their payments'**
+  String get giverPersonHint;
+
+  /// No description provided for @giverNoName.
+  ///
+  /// In en, this message translates to:
+  /// **'No name'**
+  String get giverNoName;
+
+  /// No description provided for @giverNoNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Box, crowd, or not known'**
+  String get giverNoNameHint;
 }
 
 class _AppLocalizationsDelegate

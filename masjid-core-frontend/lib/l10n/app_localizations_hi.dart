@@ -1284,4 +1284,16 @@ class AppLocalizationsHi extends AppLocalizations {
   ) {
     return 'अस्सलामु अलैकुम $name, $month की इमाम तनख़्वाह के $amount बाकी हैं। — $masjid';
   }
+
+  @override
+  String get giverPerson => 'कोई व्यक्ति';
+
+  @override
+  String get giverPersonHint => 'उनके भुगतान में दिखेगा';
+
+  @override
+  String get giverNoName => 'नाम नहीं';
+
+  @override
+  String get giverNoNameHint => 'बक्सा, भीड़, या पता नहीं';
 }

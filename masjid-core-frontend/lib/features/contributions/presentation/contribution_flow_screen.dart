@@ -16,9 +16,18 @@ import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
 /// much, cash or online, and which day. With [projectId] it records a
 /// project contribution; without, a general collection contribution.
 class ContributionFlowScreen extends ConsumerStatefulWidget {
-  const ContributionFlowScreen({super.key, this.projectId, this.today});
+  const ContributionFlowScreen({
+    super.key,
+    this.projectId,
+    this.category,
+    this.today,
+  });
 
   final String? projectId;
+
+  /// A kind of money in already chosen (from Money in): the "What for?"
+  /// step is skipped.
+  final String? category;
 
   /// Overrides "now" in tests.
   final DateTime? today;
@@ -41,7 +50,9 @@ class _ContributionFlowScreenState
 
   ContributorOption? _member;
   bool _someoneElse = false;
-  MoneyCategory? _category;
+  late MoneyCategory? _category = moneyInCategories
+      .where((option) => option.value == widget.category)
+      .firstOrNull;
   String _amount = '';
   String _mode = 'CASH';
   late DateTime _date = DateUtils.dateOnly(widget.today ?? DateTime.now());
@@ -260,7 +271,7 @@ class _ContributionFlowScreenState
                 ],
               ),
             ),
-            if (widget.isCollection)
+            if (widget.isCollection && widget.category == null)
               FlowStep(
                 title: l10n.whatFor,
                 icon: AppIcons.money,
@@ -280,8 +291,14 @@ class _ContributionFlowScreenState
                 ),
               ),
             FlowStep(
-              title: l10n.howMuch,
-              icon: AppIcons.salary,
+              // Who and what for stay in sight while typing the amount.
+              title: <String>[
+                l10n.howMuch,
+                if (_giverName.isNotEmpty) _giverName,
+                if (widget.isCollection && _category != null)
+                  _category!.label(l10n),
+              ].join(' · '),
+              icon: _category?.icon ?? AppIcons.salary,
               canContinue: AmountPad.parse(_amount) != null && !_saving,
               builder: (_) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

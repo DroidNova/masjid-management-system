@@ -673,5 +673,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "giverPerson": "A person",
+  "giverPersonHint": "It shows in their payments",
+  "giverNoName": "No name",
+  "giverNoNameHint": "Box, crowd, or not known"
 }
