@@ -11,6 +11,7 @@ import 'package:masjid_core_frontend/features/auth/data/models/app_user.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/imam_salary_repository.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/member_dues.dart';
 import 'package:masjid_core_frontend/features/imam_salary/presentation/imam_salary_screen.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -176,6 +177,61 @@ void main() {
         ),
       ).called(1);
       expect(find.text('Payment saved'), findsOneWidget);
+    });
+
+    testWidgets('older months due: one amount covers them, oldest first', (
+      tester,
+    ) async {
+      when(() => repository.getMemberDues(any())).thenAnswer(
+        (_) async => const MemberDues(
+          totalDue: 1200,
+          months: <DueMonth>[
+            DueMonth(assignmentId: 'old', month: 5, year: 2026, dueAmount: 800),
+            DueMonth(assignmentId: 'a1', month: 6, year: 2026, dueAmount: 400),
+          ],
+        ),
+      );
+      when(
+        () => repository.spreadPayment(
+          memberId: any(named: 'memberId'),
+          amount: any(named: 'amount'),
+          paymentMode: any(named: 'paymentMode'),
+          paidAt: any(named: 'paidAt'),
+          note: any(named: 'note'),
+        ),
+      ).thenAnswer((_) async {});
+      await _pump(tester, repository, _committee);
+
+      await tester.tap(find.byType(FamilyDueTile));
+      await tester.pumpAndSettle();
+      expect(find.text('Earlier months: ₹800 to pay'), findsOneWidget);
+      await tester.tap(find.text('All months ₹1,200'));
+      await tester.pumpAndSettle();
+      // Where the money goes, before saving.
+      expect(find.text('This pays for:'), findsOneWidget);
+      expect(find.text('May 2026'), findsOneWidget);
+      expect(find.text('June 2026'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.spreadPayment(
+          memberId: _assignment.memberId,
+          amount: 1200,
+          paymentMode: 'CASH',
+          paidAt: any(named: 'paidAt'),
+          note: any(named: 'note'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => repository.addPayment(
+          assignmentId: any(named: 'assignmentId'),
+          amount: any(named: 'amount'),
+          paymentMode: any(named: 'paymentMode'),
+          paidAt: any(named: 'paidAt'),
+          note: any(named: 'note'),
+        ),
+      );
     });
 
     testWidgets('more than is due is refused before sending', (tester) async {

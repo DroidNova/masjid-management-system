@@ -1252,4 +1252,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get seeMonths => 'सारे महीने देखें';
+
+  @override
+  String get paysFor => 'इससे जमा होगा:';
+
+  @override
+  String thisMonthAmount(String amount) {
+    return 'सिर्फ़ यह महीना $amount';
+  }
+
+  @override
+  String allMonthsAmount(String amount) {
+    return 'सारे महीने $amount';
+  }
 }

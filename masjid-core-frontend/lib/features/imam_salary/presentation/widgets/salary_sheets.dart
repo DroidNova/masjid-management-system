@@ -5,6 +5,7 @@ import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/member_dues.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -83,11 +84,22 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
   bool _saving = false;
   String? _error;
 
+  /// Everything this family owes over all months, once loaded.
+  MemberDues? get _dues =>
+      ref.watch(memberDuesProvider(widget.assignment.memberId)).valueOrNull;
+
+  /// The most that can be paid now: all months when known, else this one.
+  double get _maxDue => _dues?.totalDue ?? widget.assignment.dueAmount;
+
+  /// More than this month's due goes over all months, oldest first.
+  bool _spreads(num amount) =>
+      _paise(amount) > _paise(widget.assignment.dueAmount);
+
   String? _problem(AppLocalizations l10n) {
     final amount = AmountPad.parse(_amount);
     if (amount == null) return null;
-    if (_paise(amount) > _paise(widget.assignment.dueAmount)) {
-      return l10n.payMoreThanDue(AppFormat.rupees(widget.assignment.dueAmount));
+    if (_paise(amount) > _paise(_maxDue)) {
+      return l10n.payMoreThanDue(AppFormat.rupees(_maxDue));
     }
     return null;
   }
@@ -101,14 +113,23 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
       _error = null;
     });
     try {
-      await ref
-          .read(salaryMonthProvider.notifier)
-          .addPayment(
-            assignment: widget.assignment,
-            amount: amount.toDouble(),
-            paymentMode: _mode,
-            paidAt: _date,
-          );
+      final controller = ref.read(salaryMonthProvider.notifier);
+      if (_spreads(amount)) {
+        await controller.spreadPayment(
+          assignment: widget.assignment,
+          amount: amount.toDouble(),
+          totalDue: _maxDue,
+          paymentMode: _mode,
+          paidAt: _date,
+        );
+      } else {
+        await controller.addPayment(
+          assignment: widget.assignment,
+          amount: amount.toDouble(),
+          paymentMode: _mode,
+          paidAt: _date,
+        );
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
@@ -127,6 +148,11 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
     final assignment = widget.assignment;
     final problem = _problem(l10n);
     final error = problem ?? _error;
+    final dues = _dues;
+    final earlier = dues == null
+        ? 0.0
+        : (dues.totalDue - assignment.dueAmount).clamp(0.0, double.infinity);
+    final typed = AmountPad.parse(_amount);
 
     return PopScope(
       canPop: !_saving,
@@ -149,11 +175,48 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                         color: AppTones.waiting.color,
                       ),
                     ),
+                    if (earlier > 0)
+                      Text(
+                        l10n.olderMonthsDue(AppFormat.rupees(earlier)),
+                        style: textTheme.titleSmall?.copyWith(
+                          color: AppTones.problem.color,
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
+          if (dues != null && earlier > 0) ...<Widget>[
+            const SizedBox(height: AppSpace.m),
+            Wrap(
+              spacing: AppSpace.s,
+              runSpacing: AppSpace.s,
+              children: <Widget>[
+                for (final (label, value) in <(String, double)>[
+                  (
+                    l10n.thisMonthAmount(
+                      AppFormat.rupees(assignment.dueAmount),
+                    ),
+                    assignment.dueAmount,
+                  ),
+                  (
+                    l10n.allMonthsAmount(AppFormat.rupees(dues.totalDue)),
+                    dues.totalDue,
+                  ),
+                ])
+                  ChoiceChip(
+                    label: Text(label),
+                    selected: typed != null && _paise(typed) == _paise(value),
+                    selectedColor: AppTones.salary.container,
+                    onSelected: (_) => setState(() {
+                      _amount = AmountPad.textOf(value);
+                      _error = null;
+                    }),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpace.l),
           AmountPad(
             value: _amount,
@@ -164,6 +227,13 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
               _error = null;
             }),
           ),
+          if (dues != null &&
+              typed != null &&
+              problem == null &&
+              _spreads(typed)) ...<Widget>[
+            const SizedBox(height: AppSpace.m),
+            _Coverage(parts: dues.cover(typed.toDouble())),
+          ],
           const SizedBox(height: AppSpace.l),
           Wrap(
             spacing: AppSpace.s,
@@ -197,6 +267,95 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
             onPressed: AmountPad.parse(_amount) == null || problem != null
                 ? null
                 : _save,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "This pays for:" and a chip per month the amount reaches: a tick when
+/// the month is fully paid, the part otherwise. Shown when one amount
+/// covers several months, so the committee sees where the money goes.
+class _Coverage extends StatelessWidget {
+  const _Coverage({required this.parts});
+
+  final List<(DueMonth, double)> parts;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    return FadeSlideIn(
+      offset: 12,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpace.m),
+        decoration: BoxDecoration(
+          color: AppTones.done.container,
+          borderRadius: BorderRadius.circular(AppRadius.m),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(l10n.paysFor, style: textTheme.titleSmall),
+            const SizedBox(height: AppSpace.s),
+            Wrap(
+              spacing: AppSpace.s,
+              runSpacing: AppSpace.s,
+              children: <Widget>[
+                for (final (month, part) in parts)
+                  _MonthPart(
+                    label: AppFormat.monthYear(month.month, month.year),
+                    full: _paise(part) >= _paise(month.dueAmount),
+                    part: part,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthPart extends StatelessWidget {
+  const _MonthPart({
+    required this.label,
+    required this.full,
+    required this.part,
+  });
+
+  final String label;
+  final bool full;
+  final double part;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = full ? AppTones.done : AppTones.waiting;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.m,
+        vertical: AppSpace.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: tone.color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            full ? AppIcons.done : AppIcons.waiting,
+            size: 18,
+            color: tone.color,
+          ),
+          const SizedBox(width: AppSpace.xs),
+          Text(
+            full ? label : '$label · ${AppFormat.rupees(part)}',
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: tone.color),
           ),
         ],
       ),

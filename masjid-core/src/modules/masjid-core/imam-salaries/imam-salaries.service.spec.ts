@@ -734,3 +734,92 @@ describe('ImamSalariesService: salary carries on by itself', () => {
     ).resolves.toBeUndefined();
   });
 });
+
+describe('ImamSalariesService: one amount for several months', () => {
+  const tx = { imamSalaryAssignment: { findMany: jest.fn() } };
+  const prisma = {
+    imamSalaryAssignment: { findMany: jest.fn() },
+    $transaction: jest.fn((fn: (client: typeof tx) => unknown) => fn(tx)),
+  };
+  const actor = {
+    id: 'committee-1',
+    fullName: 'Committee',
+    masjidId: 'masjid-1',
+  } as never;
+  const due = (id: string, month: number, amount: number) => ({
+    id,
+    dueAmount: money(amount),
+    imamSalaryMonth: { month, year: 2026 },
+  });
+  let service: ImamSalariesService;
+  let pay: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new ImamSalariesService(prisma as never, {} as never);
+    pay = jest
+      .spyOn(
+        service as unknown as { payAssignment: () => unknown },
+        'payAssignment',
+      )
+      .mockImplementation(((...args: unknown[]) => ({
+        id: `pay-${String(args[2])}`,
+        amount: args[3],
+      })) as never);
+    tx.imamSalaryAssignment.findMany.mockResolvedValue([
+      due('aug', 8, 500),
+      due('sep', 9, 300),
+      due('oct', 10, 500),
+    ]);
+  });
+
+  const spread = (amount: number) =>
+    service.spreadPayment(
+      {
+        memberId: '11111111-1111-1111-1111-111111111111',
+        amount,
+        paymentMode: PaymentModeDto.CASH,
+        paidAt: '2026-10-20T00:00:00.000Z',
+      },
+      actor,
+    );
+
+  it('pays the oldest month first and stops when the money runs out', async () => {
+    const result = await spread(1000);
+
+    const parts = pay.mock.calls.map((call: unknown[]) => [
+      call[2],
+      String(call[3]),
+    ]);
+    expect(parts).toEqual([
+      ['aug', '500'],
+      ['sep', '300'],
+      ['oct', '200'],
+    ]);
+    expect(result.totalPaid).toBe(1000);
+    expect(result.payments).toHaveLength(3);
+  });
+
+  it('refuses more than everything the family owes', async () => {
+    await expect(spread(1301)).rejects.toMatchObject({
+      status: HttpStatus.BAD_REQUEST,
+    });
+    expect(pay).not.toHaveBeenCalled();
+  });
+
+  it('lists what a family owes, oldest first, with the total', async () => {
+    prisma.imamSalaryAssignment.findMany.mockResolvedValue([
+      due('aug', 8, 500),
+      due('oct', 10, 250.5),
+    ]);
+    const dues = await service.memberDues('member-1', actor);
+    expect(dues).toEqual({
+      memberId: 'member-1',
+      totalDue: 750.5,
+      months: [
+        { assignmentId: 'aug', month: 8, year: 2026, dueAmount: 500 },
+        { assignmentId: 'oct', month: 10, year: 2026, dueAmount: 250.5 },
+      ],
+    });
+  });
+});

@@ -7,6 +7,7 @@ import 'package:masjid_core_frontend/features/auth/application/auth_controller.d
 import 'package:masjid_core_frontend/features/imam_salary/application/salary_validation.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/imam_salary_repository.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/member_dues.dart';
 
 /// What the signed-in user sees on the imam salary screen.
 enum SalaryView {
@@ -146,7 +147,37 @@ class SalaryMonthController extends AutoDisposeAsyncNotifier<ImamSalaryMonth?> {
     );
     ref.markChanged(salaryChanges);
   }
+
+  /// Records one amount from a family over all their unpaid months, oldest
+  /// first (when they pay more than this month's due).
+  Future<void> spreadPayment({
+    required SalaryAssignment assignment,
+    required double amount,
+    required double totalDue,
+    required String paymentMode,
+    required DateTime paidAt,
+    String? note,
+  }) async {
+    final problem = paymentAmountError(amount, due: totalDue);
+    if (problem != null) throw invalidInput('amount', problem);
+
+    await _repository.spreadPayment(
+      memberId: assignment.memberId,
+      amount: amount,
+      paymentMode: paymentMode,
+      paidAt: paidAt,
+      note: note,
+    );
+    ref.markChanged(salaryChanges);
+  }
 }
+
+/// What one family head still owes over all months (committee).
+final memberDuesProvider = FutureProvider.autoDispose
+    .family<MemberDues, String>(
+      (ref, memberId) =>
+          ref.watch(imamSalaryRepositoryProvider).getMemberDues(memberId),
+    );
 
 // ---------------------------------------------------------------------------
 // Committee lists for the selected month.

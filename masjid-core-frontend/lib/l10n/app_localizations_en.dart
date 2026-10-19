@@ -1257,4 +1257,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get seeMonths => 'See all months';
+
+  @override
+  String get paysFor => 'This pays for:';
+
+  @override
+  String thisMonthAmount(String amount) {
+    return 'This month $amount';
+  }
+
+  @override
+  String allMonthsAmount(String amount) {
+    return 'All months $amount';
+  }
 }

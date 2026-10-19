@@ -10,6 +10,7 @@ import {
   Max,
   MaxLength,
   Min,
+  IsUUID,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
@@ -90,6 +91,43 @@ export class CreateSalaryPaymentDto {
     example: 250.5,
     minimum: 0.01,
     description: 'Must not exceed the assignment due amount.',
+  })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  amount!: number;
+
+  @ApiProperty({ enum: PaymentModeDto, example: PaymentModeDto.CASH })
+  @IsEnum(PaymentModeDto)
+  paymentMode!: PaymentModeDto;
+
+  @ApiProperty({ example: '2026-06-05T10:30:00.000Z' })
+  @IsDateString()
+  paidAt!: string;
+
+  @ApiPropertyOptional({ example: 'Paid after Jumma', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+/**
+ * One amount from a family head, spread over their unpaid months, oldest
+ * first (a family often pays two or three months at once).
+ */
+export class SpreadSalaryPaymentDto {
+  @ApiProperty({
+    example: '3f1c2a4e-8b7d-4c1e-9a2b-5d6e7f8a9b0c',
+    description: 'Family head (user id)',
+  })
+  @IsUUID()
+  memberId!: string;
+
+  @ApiProperty({
+    example: 1500,
+    minimum: 0.01,
+    description: 'Must not exceed everything the family still owes.',
   })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

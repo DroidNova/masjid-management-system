@@ -636,5 +636,22 @@
       }
     }
   },
-  "seeMonths": "See all months"
+  "seeMonths": "See all months",
+  "paysFor": "This pays for:",
+  "thisMonthAmount": "This month {amount}",
+  "@thisMonthAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "allMonthsAmount": "All months {amount}",
+  "@allMonthsAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

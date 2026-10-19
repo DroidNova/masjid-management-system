@@ -3,6 +3,7 @@ import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/core/providers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/imam_salary_api.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/member_dues.dart';
 
 final imamSalaryRepositoryProvider = Provider<ImamSalaryRepository>(
   (ref) => ImamSalaryRepository(ImamSalaryApi(ref.watch(apiClientProvider))),
@@ -57,6 +58,23 @@ class ImamSalaryRepository {
     String? note,
   }) => _api.addPayment(
     assignmentId: assignmentId,
+    amount: amount,
+    paymentMode: paymentMode,
+    paidAt: paidAt,
+    note: note,
+  );
+
+  Future<MemberDues> getMemberDues(String memberId) =>
+      _api.getMemberDues(memberId);
+
+  Future<void> spreadPayment({
+    required String memberId,
+    required double amount,
+    required String paymentMode,
+    required DateTime paidAt,
+    String? note,
+  }) => _api.spreadPayment(
+    memberId: memberId,
     amount: amount,
     paymentMode: paymentMode,
     paidAt: paidAt,

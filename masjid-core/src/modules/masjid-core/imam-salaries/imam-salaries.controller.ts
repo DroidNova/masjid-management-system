@@ -20,6 +20,7 @@ import {
   SalaryAssignmentsQueryDto,
   SalaryMonthsQueryDto,
   SalaryPaymentsQueryDto,
+  SpreadSalaryPaymentDto,
   UpdateSalaryAmountDto,
 } from './dto/imam-salary-ledger.dto';
 import { ImamSalariesService } from './imam-salaries.service';
@@ -98,6 +99,24 @@ export class ImamSalariesController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.service.addPayment(dto, req.user);
+  }
+
+  @Post('payments/spread')
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
+  spreadPayment(
+    @Body() dto: SpreadSalaryPaymentDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.spreadPayment(dto, req.user);
+  }
+
+  @Get('members/:memberId/dues')
+  @RequirePermissions(PERMISSIONS.IMAM_SALARY_MANAGE)
+  memberDues(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.memberDues(memberId, req.user);
   }
 
   @Get('payments')

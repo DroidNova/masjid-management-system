@@ -378,5 +378,8 @@
   "olderMonthsDue": "پچھلے مہینوں کے {amount} باقی ہیں",
   "allSalaryPaid": "سب جمع ہے۔ شکریہ!",
   "salaryDueTotal": "کل {amount} دینا باقی ہے",
-  "seeMonths": "سارے مہینے دیکھیں"
+  "seeMonths": "سارے مہینے دیکھیں",
+  "paysFor": "اس سے جمع ہوگا:",
+  "thisMonthAmount": "صرف یہ مہینہ {amount}",
+  "allMonthsAmount": "سارے مہینے {amount}"
 }

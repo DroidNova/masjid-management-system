@@ -1,6 +1,7 @@
 import 'package:masjid_core_frontend/core/network/api_client.dart';
 import 'package:masjid_core_frontend/core/pagination/page.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
+import 'package:masjid_core_frontend/features/imam_salary/data/models/member_dues.dart';
 
 /// Imam salary ledger endpoints. Errors surface as ApiException (with `code`,
 /// e.g. IMAM_SALARY_NOT_FOUND, IMAM_SALARY_ALREADY_EXISTS).
@@ -104,6 +105,35 @@ class ImamSalaryApi {
       },
     );
     return SalaryPayment.fromJson(data);
+  }
+
+  /// Everything [memberId] still owes, month by month.
+  Future<MemberDues> getMemberDues(String memberId) async {
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/imam-salaries/members/$memberId/dues',
+    );
+    return MemberDues.fromJson(data);
+  }
+
+  /// One amount from a family, paid into their unpaid months oldest first.
+  Future<void> spreadPayment({
+    required String memberId,
+    required double amount,
+    required String paymentMode,
+    required DateTime paidAt,
+    String? note,
+  }) async {
+    final trimmedNote = note?.trim();
+    await _apiClient.post<Map<String, dynamic>>(
+      '/imam-salaries/payments/spread',
+      body: <String, dynamic>{
+        'memberId': memberId,
+        'amount': amount,
+        'paymentMode': paymentMode,
+        'paidAt': paidAt.toUtc().toIso8601String(),
+        if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
+      },
+    );
   }
 
   Future<PageResult<SalaryPayment>> getPayments({

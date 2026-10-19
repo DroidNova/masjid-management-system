@@ -2373,6 +2373,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'See all months'**
   String get seeMonths;
+
+  /// No description provided for @paysFor.
+  ///
+  /// In en, this message translates to:
+  /// **'This pays for:'**
+  String get paysFor;
+
+  /// No description provided for @thisMonthAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'This month {amount}'**
+  String thisMonthAmount(String amount);
+
+  /// No description provided for @allMonthsAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'All months {amount}'**
+  String allMonthsAmount(String amount);
 }
 
 class _AppLocalizationsDelegate

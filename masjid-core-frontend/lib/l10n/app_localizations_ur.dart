@@ -1252,4 +1252,17 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get seeMonths => 'سارے مہینے دیکھیں';
+
+  @override
+  String get paysFor => 'اس سے جمع ہوگا:';
+
+  @override
+  String thisMonthAmount(String amount) {
+    return 'صرف یہ مہینہ $amount';
+  }
+
+  @override
+  String allMonthsAmount(String amount) {
+    return 'سارے مہینے $amount';
+  }
 }
