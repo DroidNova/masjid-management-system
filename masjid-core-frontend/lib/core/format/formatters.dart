@@ -22,9 +22,14 @@ class AppFormat {
   );
 
   /// ₹12,34,567.50 — paise shown only when there are any (₹500, ₹700.75).
+  ///
+  /// In Urdu the amount is wrapped in invisible left-to-right isolate marks:
+  /// inside a right-to-left sentence the rupee sign would otherwise jump
+  /// to the other side ("500₹").
   static String rupees(num amount) {
     final hasPaise = (amount * 100).round() % 100 != 0;
-    return (hasPaise ? _rupees : _wholeRupees).format(amount);
+    final text = (hasPaise ? _rupees : _wholeRupees).format(amount);
+    return Intl.defaultLocale == 'ur' ? '\u2066$text\u2069' : text;
   }
 
   /// Locale for dates: Hindi and Urdu month names, else Indian English.

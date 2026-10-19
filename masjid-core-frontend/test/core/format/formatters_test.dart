@@ -14,6 +14,12 @@ void main() {
     expect(AppFormat.rupees(0), '₹0');
   });
 
+  test('in Urdu an amount keeps the rupee sign in front', () {
+    Intl.defaultLocale = 'ur';
+    // Left-to-right isolate marks stop the sign moving in Urdu sentences.
+    expect(AppFormat.rupees(500), '\u2066₹500\u2069');
+  });
+
   test('dates are short and readable', () {
     expect(AppFormat.date(DateTime(2026, 10, 7, 12)), '7 Oct 2026');
     expect(AppFormat.monthYear(9, 2026), 'September 2026');
