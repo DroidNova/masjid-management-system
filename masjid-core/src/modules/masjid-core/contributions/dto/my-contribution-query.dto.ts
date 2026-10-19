@@ -7,13 +7,13 @@ export class MyContributionQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     minimum: 1,
     maximum: 24,
-    default: 6,
-    description: 'Imam salary months to include',
+    description:
+      'Only the latest N salary months. Leave out for every month (paged).',
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(24)
-  monthsBack: number = 6;
+  monthsBack?: number;
 }

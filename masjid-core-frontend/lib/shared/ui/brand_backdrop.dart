@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:masjid_core_frontend/shared/ui/geometric_pattern.dart';
 import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
@@ -30,78 +31,82 @@ class BrandBackdrop extends StatelessWidget {
     final extraTop = top;
     final body = child;
 
-    return ClipPath(
-      clipper: _CurvedBottom(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[darker, tone.color, lighter],
-          ),
-        ),
-        child: Stack(
-          children: <Widget>[
-            const Positioned.fill(
-              child: GeometricPattern(opacity: 0.10, cell: 64),
+    // White status bar icons on the dark green.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: ClipPath(
+        clipper: _CurvedBottom(),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[darker, tone.color, lighter],
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpace.l,
-                padding.top + AppSpace.s,
-                AppSpace.l,
-                AppSpace.xxl + AppSpace.l,
+          ),
+          child: Stack(
+            children: <Widget>[
+              const Positioned.fill(
+                child: GeometricPattern(opacity: 0.10, cell: 64),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  ?extraTop,
-                  const SizedBox(height: AppSpace.m),
-                  FadeSlideIn(
-                    scale: 0.7,
-                    offset: 0,
-                    duration: const Duration(milliseconds: 700),
-                    child: Center(
-                      child: Breathing(
-                        color: Colors.white,
-                        size: 150,
-                        child: Container(
-                          width: 104,
-                          height: 104,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 24,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Icon(icon, size: 60, color: tone.color),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (body != null) ...<Widget>[
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpace.l,
+                  padding.top + AppSpace.s,
+                  AppSpace.l,
+                  AppSpace.xxl + AppSpace.l,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    ?extraTop,
                     const SizedBox(height: AppSpace.m),
                     FadeSlideIn(
-                      delay: const Duration(milliseconds: 150),
-                      child: DefaultTextStyle.merge(
-                        style: const TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                        child: IconTheme(
-                          data: const IconThemeData(color: Colors.white),
-                          child: body,
+                      scale: 0.7,
+                      offset: 0,
+                      duration: const Duration(milliseconds: 700),
+                      child: Center(
+                        child: Breathing(
+                          color: Colors.white,
+                          size: 150,
+                          child: Container(
+                            width: 104,
+                            height: 104,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Icon(icon, size: 60, color: tone.color),
+                          ),
                         ),
                       ),
                     ),
+                    if (body != null) ...<Widget>[
+                      const SizedBox(height: AppSpace.m),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 150),
+                        child: DefaultTextStyle.merge(
+                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                          child: IconTheme(
+                            data: const IconThemeData(color: Colors.white),
+                            child: body,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

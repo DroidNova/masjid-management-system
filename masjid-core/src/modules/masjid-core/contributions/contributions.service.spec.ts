@@ -23,7 +23,8 @@ describe('ContributionsService', () => {
       count: jest.fn(),
     },
   };
-  const service = new ContributionsService(prisma as never);
+  const salaries = { ensureCurrentMonth: jest.fn() };
+  const service = new ContributionsService(prisma as never, salaries as never);
   const actor = {
     id: 'current-user',
     fullName: 'Saleem',

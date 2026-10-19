@@ -33,12 +33,14 @@ class ScreenHeader extends StatelessWidget {
     return FadeSlideIn(
       child: Column(
         children: <Widget>[
+          // Room for the glow, which spills 14 px around the picture.
+          const SizedBox(height: 14),
           Breathing(
             color: tone.color,
             size: 116,
             child: ToneIcon(icon: icon, tone: tone, size: 88, circle: true),
           ),
-          const SizedBox(height: AppSpace.l),
+          const SizedBox(height: AppSpace.l + 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[

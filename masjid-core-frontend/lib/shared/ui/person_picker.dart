@@ -33,6 +33,7 @@ Future<PickablePerson?> showPersonPicker(
   final body = _PersonPickerBody(search: search, title: title);
   if (ScreenSize.of(context) == ScreenSize.compact) {
     return showModalBottomSheet<PickablePerson>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

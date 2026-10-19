@@ -9,6 +9,7 @@ import { Prisma } from '../../../generated/prisma/client';
 import { ImamSalaryAssignmentStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
+import { ImamSalariesService } from '../imam-salaries/imam-salaries.service';
 import { currentIndiaMonth } from '../imam-salaries/salary-roster';
 import { dateRange } from '../shared-date';
 import { MyContributionListQueryDto } from './dto/contribution-list-query.dto';
@@ -33,11 +34,15 @@ const salaryMonthOrderBy = [
  */
 @Injectable()
 export class ContributionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly salaries: ImamSalariesService,
+  ) {}
 
   async getSummary(actor: AuthenticatedUser) {
     const masjidId = requireMasjidId(actor);
     const mine = { memberId: actor.id, masjidId };
+    await this.salaries.ensureCurrentMonth(masjidId);
     const now = currentIndiaMonth();
     // All-time salary totals per status (one GROUP BY), so an old unpaid
     // month is never hidden from the person's dues.
@@ -208,7 +213,10 @@ export class ContributionsService {
       masjidId: requireMasjidId(actor),
     };
     const { page, limit, skip } = pageArgs(query);
-    const monthsBack = query.monthsBack ?? 6;
+    // Every month unless the caller asks for the latest few: an old unpaid
+    // month must stay visible to the family.
+    const monthsBack = query.monthsBack ?? Number.MAX_SAFE_INTEGER;
+    await this.salaries.ensureCurrentMonth(where.masjidId as string);
     const take = Math.min(limit, monthsBack - skip);
 
     const [totalAvailable, assignments] = await Promise.all([

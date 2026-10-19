@@ -18,6 +18,8 @@ Future<T?> showAppSheet<T>(
 }) {
   if (ScreenSize.of(context) == ScreenSize.compact) {
     return showModalBottomSheet<T>(
+      // Above the bottom tab bar, not behind it.
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -28,7 +30,10 @@ Future<T?> showAppSheet<T>(
           AppSpace.xl,
           0,
           AppSpace.xl,
-          AppSpace.xl + MediaQuery.viewInsetsOf(sheetContext).bottom,
+          // Clear of the keyboard and of the phone's own button bar.
+          AppSpace.xl +
+              MediaQuery.viewInsetsOf(sheetContext).bottom +
+              MediaQuery.paddingOf(sheetContext).bottom,
         ),
         child: builder(sheetContext),
       ),

@@ -7,5 +7,6 @@ import { ImamSalariesService } from './imam-salaries.service';
   imports: [PrismaModule],
   controllers: [ImamSalariesController],
   providers: [ImamSalariesService],
+  exports: [ImamSalariesService],
 })
 export class ImamSalariesModule {}

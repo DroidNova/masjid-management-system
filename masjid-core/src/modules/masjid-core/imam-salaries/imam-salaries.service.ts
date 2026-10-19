@@ -36,6 +36,7 @@ import {
 import { pageArgs, paged } from '../../../common/pagination';
 import { requireMasjidId } from '../../../common/tenant';
 import { isPrismaError } from '../prisma-errors';
+import { currentIndiaMonth } from './salary-roster';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -119,6 +120,9 @@ export class ImamSalariesService {
     private readonly audit: AuditService,
   ) {}
 
+  /** Masjid id -> "year-month" already checked by [ensureCurrentMonth]. */
+  private readonly openedThisMonth = new Map<string, string>();
+
   /**
    * Creates a month and one assignment per active family head. A second
    * month for the same masjid/month/year hits the unique key (P2002) and
@@ -126,61 +130,17 @@ export class ImamSalariesService {
    */
   async createMonth(dto: CreateSalaryMonthDto, actor: AuthenticatedUser) {
     const masjidId = this.masjidId(actor);
-    const amountPerHead = money(dto.amountPerHead);
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Read inside the transaction so the head list and the month agree.
-        const heads = await tx.user.findMany({
-          where: {
-            masjidId,
-            status: UserStatus.ACTIVE,
-            isFamilyHead: true,
-            userRoles: { some: { role: { name: RoleName.MEMBER } } },
-          },
-          select: { id: true, fullName: true, phone: true },
-        });
-        const total = amountPerHead.times(heads.length);
-        const month = await tx.imamSalaryMonth.create({
-          data: {
-            masjidId,
-            month: dto.month,
-            year: dto.year,
-            amountPerHead,
-            totalExpected: total,
-            totalDue: total,
-            unpaidCount: heads.length,
-            note: dto.note?.trim() || null,
-            createdById: actor.id,
-            createdByName: actor.fullName,
-          },
-          select: monthSelect,
-        });
-        if (heads.length)
-          await tx.imamSalaryAssignment.createMany({
-            data: heads.map((member) => ({
-              masjidId,
-              imamSalaryMonthId: month.id,
-              memberId: member.id,
-              memberName: member.fullName,
-              memberPhone: member.phone ?? '',
-              expectedAmount: amountPerHead,
-              dueAmount: amountPerHead,
-            })),
-          });
-        await this.audit.record(
-          {
-            masjidId,
-            actor,
-            action: AUDIT_ACTION.CREATE,
-            entity: AUDIT_ENTITY.SALARY_MONTH,
-            entityId: month.id,
-            summary: `Salary month ${month.month}/${month.year} at ${formatMoney(month.amountPerHead)} per head for ${heads.length} heads, total ${formatMoney(month.totalExpected)}`,
-            after: { ...month, masjidId },
-          },
-          tx,
-        );
-        return this.toMonth(month);
-      });
+      return await this.prisma.$transaction((tx) =>
+        this.openMonth(tx, {
+          masjidId,
+          month: dto.month,
+          year: dto.year,
+          amountPerHead: money(dto.amountPerHead),
+          note: dto.note?.trim() || null,
+          actor,
+        }),
+      );
     } catch (error) {
       if (isPrismaError(error, 'P2002'))
         this.fail(
@@ -192,7 +152,127 @@ export class ImamSalariesService {
     }
   }
 
+  /**
+   * Salary carries on by itself: when this month (India time) has no salary
+   * month yet but the masjid ran one in the last two months, this month is
+   * opened at the latest amount per family, so families see what they owe
+   * without anyone remembering to press "Start month". Cheap: after the
+   * first check it is remembered in memory until the month changes.
+   */
+  async ensureCurrentMonth(masjidId: string): Promise<void> {
+    const { month, year } = currentIndiaMonth();
+    const key = `${year}-${month}`;
+    if (this.openedThisMonth.get(masjidId) === key) return;
+
+    const [current, latest] = await Promise.all([
+      this.prisma.imamSalaryMonth.findUnique({
+        where: { masjidId_month_year: { masjidId, month, year } },
+        select: { id: true },
+      }),
+      this.prisma.imamSalaryMonth.findFirst({
+        where: {
+          masjidId,
+          OR: [{ year: { lt: year } }, { year, month: { lt: month } }],
+        },
+        orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        select: { month: true, year: true, amountPerHead: true },
+      }),
+    ]);
+    if (current) {
+      this.openedThisMonth.set(masjidId, key);
+      return;
+    }
+    const gap = latest
+      ? year * 12 + month - (latest.year * 12 + latest.month)
+      : 0;
+    if (!latest || gap > 2) return; // salary not run here (lately)
+
+    try {
+      await this.prisma.$transaction((tx) =>
+        this.openMonth(tx, {
+          masjidId,
+          month,
+          year,
+          amountPerHead: money(latest.amountPerHead),
+          note: null,
+          actor: null,
+        }),
+      );
+    } catch (error) {
+      // Another request opened it at the same moment: fine.
+      if (!isPrismaError(error, 'P2002')) throw error;
+    }
+    this.openedThisMonth.set(masjidId, key);
+  }
+
+  /** One salary month with an assignment per active family head, audited. */
+  private async openMonth(
+    tx: Prisma.TransactionClient,
+    params: {
+      masjidId: string;
+      month: number;
+      year: number;
+      amountPerHead: Money;
+      note: string | null;
+      actor: AuthenticatedUser | null;
+    },
+  ) {
+    const { masjidId, amountPerHead, actor } = params;
+    // Read inside the transaction so the head list and the month agree.
+    const heads = await tx.user.findMany({
+      where: {
+        masjidId,
+        status: UserStatus.ACTIVE,
+        isFamilyHead: true,
+        userRoles: { some: { role: { name: RoleName.MEMBER } } },
+      },
+      select: { id: true, fullName: true, phone: true },
+    });
+    const total = amountPerHead.times(heads.length);
+    const month = await tx.imamSalaryMonth.create({
+      data: {
+        masjidId,
+        month: params.month,
+        year: params.year,
+        amountPerHead,
+        totalExpected: total,
+        totalDue: total,
+        unpaidCount: heads.length,
+        note: params.note,
+        createdById: actor?.id ?? null,
+        createdByName: actor?.fullName ?? null,
+      },
+      select: monthSelect,
+    });
+    if (heads.length)
+      await tx.imamSalaryAssignment.createMany({
+        data: heads.map((member) => ({
+          masjidId,
+          imamSalaryMonthId: month.id,
+          memberId: member.id,
+          memberName: member.fullName,
+          memberPhone: member.phone ?? '',
+          expectedAmount: amountPerHead,
+          dueAmount: amountPerHead,
+        })),
+      });
+    await this.audit.record(
+      {
+        masjidId,
+        actor,
+        action: AUDIT_ACTION.CREATE,
+        entity: AUDIT_ENTITY.SALARY_MONTH,
+        entityId: month.id,
+        summary: `${actor ? '' : 'Automatic: '}Salary month ${month.month}/${month.year} at ${formatMoney(month.amountPerHead)} per head for ${heads.length} heads, total ${formatMoney(month.totalExpected)}`,
+        after: { ...month, masjidId },
+      },
+      tx,
+    );
+    return this.toMonth(month);
+  }
+
   async listMonths(query: SalaryMonthsQueryDto, actor: AuthenticatedUser) {
+    await this.ensureCurrentMonth(this.masjidId(actor));
     const where: Prisma.ImamSalaryMonthWhereInput = {
       masjidId: this.masjidId(actor),
       ...(query.month ? { month: query.month } : {}),

@@ -12,6 +12,7 @@ Future<CountryCode?> showCountryPicker(BuildContext context) {
   const body = _CountryList();
   if (ScreenSize.of(context) == ScreenSize.compact) {
     return showModalBottomSheet<CountryCode>(
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

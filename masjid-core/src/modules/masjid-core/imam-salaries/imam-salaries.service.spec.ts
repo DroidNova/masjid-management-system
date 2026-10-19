@@ -621,3 +621,116 @@ describe('ImamSalariesService money math', () => {
     });
   });
 });
+
+describe('ImamSalariesService: salary carries on by itself', () => {
+  const tx = {
+    user: { findMany: jest.fn() },
+    imamSalaryMonth: { create: jest.fn() },
+    imamSalaryAssignment: { createMany: jest.fn() },
+  };
+  const prisma = {
+    imamSalaryMonth: { findUnique: jest.fn(), findFirst: jest.fn() },
+    $transaction: jest.fn((fn: (client: typeof tx) => unknown) => fn(tx)),
+  };
+  const audit = { record: jest.fn() };
+  let service: ImamSalariesService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // 10 Oct 2026 in India.
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-10T06:00:00Z'));
+    service = new ImamSalariesService(prisma as never, audit as never);
+    tx.user.findMany.mockResolvedValue([
+      { id: 'u1', fullName: 'Ahmed', phone: '+911' },
+      { id: 'u2', fullName: 'Bilal', phone: '+912' },
+    ]);
+    tx.imamSalaryMonth.create.mockImplementation(({ data }: { data: Row }) => ({
+      id: 'month-oct',
+      ...data,
+      totalCollected: 0,
+      paidCount: 0,
+      partialCount: 0,
+      status: 'UNPAID',
+    }));
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it("opens this month at last month's amount for every family head", async () => {
+    prisma.imamSalaryMonth.findUnique.mockResolvedValue(null);
+    prisma.imamSalaryMonth.findFirst.mockResolvedValue({
+      month: 9,
+      year: 2026,
+      amountPerHead: money(500),
+    });
+
+    await service.ensureCurrentMonth('masjid-1');
+
+    const created = tx.imamSalaryMonth.create.mock.calls[0][0].data;
+    expect(created).toMatchObject({
+      masjidId: 'masjid-1',
+      month: 10,
+      year: 2026,
+    });
+    expect(String(created.amountPerHead)).toBe('500');
+    expect(String(created.totalExpected)).toBe('1000');
+    expect(created.createdById).toBeNull();
+    expect(tx.imamSalaryAssignment.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({ memberId: 'u1' }),
+        expect.objectContaining({ memberId: 'u2' }),
+      ],
+    });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: null,
+        summary: expect.stringContaining('Automatic'),
+      }),
+      tx,
+    );
+
+    // Remembered: the next request does not even look.
+    await service.ensureCurrentMonth('masjid-1');
+    expect(prisma.imamSalaryMonth.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing when this month is already open', async () => {
+    prisma.imamSalaryMonth.findUnique.mockResolvedValue({ id: 'm' });
+    prisma.imamSalaryMonth.findFirst.mockResolvedValue(null);
+    await service.ensureCurrentMonth('masjid-1');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not start salary for a masjid that never ran it, or stopped long ago', async () => {
+    prisma.imamSalaryMonth.findUnique.mockResolvedValue(null);
+    prisma.imamSalaryMonth.findFirst.mockResolvedValueOnce(null);
+    await service.ensureCurrentMonth('masjid-1');
+
+    prisma.imamSalaryMonth.findFirst.mockResolvedValueOnce({
+      month: 3,
+      year: 2026,
+      amountPerHead: money(500),
+    });
+    await service.ensureCurrentMonth('masjid-2');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('is fine when another request opened the month at the same moment', async () => {
+    prisma.imamSalaryMonth.findUnique.mockResolvedValue(null);
+    prisma.imamSalaryMonth.findFirst.mockResolvedValue({
+      month: 9,
+      year: 2026,
+      amountPerHead: money(500),
+    });
+    tx.imamSalaryMonth.create.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+    await expect(
+      service.ensureCurrentMonth('masjid-1'),
+    ).resolves.toBeUndefined();
+  });
+});

@@ -5,6 +5,7 @@ import { money, toAmount } from '../../../common/money';
 import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { ImamSalariesService } from '../imam-salaries/imam-salaries.service';
 import { FinanceCalculator } from '../finance/finance-calculator';
 import { AuthenticatedUser } from '../../platform-core/auth/types/jwt-payload.type';
 
@@ -94,10 +95,12 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly finance: FinanceCalculator,
+    private readonly salaries: ImamSalariesService,
   ) {}
 
   async getMyMasjidDashboard(actor: AuthenticatedUser) {
     const masjidId = requireMasjidId(actor);
+    await this.salaries.ensureCurrentMonth(masjidId);
 
     // One round trip: the masjid (with counts and latest rows) and the
     // finance totals (same numbers as the finance screen) in parallel.

@@ -23,14 +23,13 @@ class ContributionsApi {
     return MyContributionSummary.fromJson(data);
   }
 
+  /// Every salary month of mine, newest first, a page at a time.
   Future<PageResult<MyImamSalaryMonth>> getMyImamSalaryMonths({
-    int monthsBack = 6,
     int page = 1,
   }) => _page(
     '/contributions/my/imam-salary',
     MyImamSalaryMonth.fromJson,
     page: page,
-    query: <String, dynamic>{'monthsBack': monthsBack},
   );
 
   Future<PageResult<MyImamSalaryPayment>> getMyImamSalaryPayments({
