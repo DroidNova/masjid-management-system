@@ -139,7 +139,11 @@ class _PressableState extends State<Pressable> {
   Widget build(BuildContext context) {
     if (!widget.enabled || reduceMotion(context)) return widget.child;
     return Listener(
-      onPointerDown: (_) => _set(true),
+      // A touch that started on a button inside (see PressableExclude)
+      // belongs to that button: the card stays still.
+      onPointerDown: (event) {
+        if (!PressableExclude._pointers.contains(event.pointer)) _set(true);
+      },
       onPointerUp: (_) => _set(false),
       onPointerCancel: (_) => _set(false),
       child: AnimatedScale(
@@ -148,6 +152,28 @@ class _PressableState extends State<Pressable> {
         curve: _down ? Curves.easeOut : Curves.elasticOut,
         child: widget.child,
       ),
+    );
+  }
+}
+
+/// Wrap a button that sits inside a [Pressable] card (the speaker on the
+/// namaz card): pressing it does not shrink the whole card. Pointer events
+/// reach the inner widget before the card, so the touch is marked here
+/// first and the card skips it.
+class PressableExclude extends StatelessWidget {
+  const PressableExclude({super.key, required this.child});
+
+  final Widget child;
+
+  static final Set<int> _pointers = <int>{};
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (event) => _pointers.add(event.pointer),
+      onPointerUp: (event) => _pointers.remove(event.pointer),
+      onPointerCancel: (event) => _pointers.remove(event.pointer),
+      child: child,
     );
   }
 }

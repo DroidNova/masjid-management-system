@@ -4,9 +4,11 @@ import 'package:masjid_core_frontend/core/settings/app_settings.dart';
 import 'package:masjid_core_frontend/core/settings/speaker.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 
 /// A speaker button that reads [text] aloud in the app's language (rule 6).
-/// Tapping again stops. Hidden when read-aloud is off in Profile.
+/// Tapping again stops. Hidden when read-aloud is off in Profile. On a
+/// tappable card, pressing it does not shrink the card.
 class ReadAloudButton extends ConsumerWidget {
   const ReadAloudButton({super.key, required this.text, this.color});
 
@@ -26,17 +28,20 @@ class ReadAloudButton extends ConsumerWidget {
     final speaking = ref.watch(readAloudControllerProvider) == text;
     final controller = ref.read(readAloudControllerProvider.notifier);
 
-    return IconButton(
-      tooltip: speaking ? l10n.stopReading : l10n.readAloud,
-      color: color,
-      iconSize: 28,
-      icon: Icon(speaking ? AppIcons.stopReading : AppIcons.readAloud),
-      onPressed: () => speaking
-          ? controller.stop()
-          : controller.speak(
-              text,
-              languageCode: Localizations.localeOf(context).languageCode,
-            ),
+    // On a tappable card (the namaz card) only this button reacts.
+    return PressableExclude(
+      child: IconButton(
+        tooltip: speaking ? l10n.stopReading : l10n.readAloud,
+        color: color,
+        iconSize: 28,
+        icon: Icon(speaking ? AppIcons.stopReading : AppIcons.readAloud),
+        onPressed: () => speaking
+            ? controller.stop()
+            : controller.speak(
+                text,
+                languageCode: Localizations.localeOf(context).languageCode,
+              ),
+      ),
     );
   }
 }

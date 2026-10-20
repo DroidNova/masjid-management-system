@@ -72,14 +72,16 @@ class _NextNamazCardState extends State<NextNamazCard> {
             ),
             if (widget.canUpdate) ...<Widget>[
               const SizedBox(height: AppSpace.l),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppTones.namaz.color,
+              PressableExclude(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTones.namaz.color,
+                  ),
+                  onPressed: widget.onOpen,
+                  icon: const Icon(AppIcons.time),
+                  label: Text(l10n.setTimes),
                 ),
-                onPressed: widget.onOpen,
-                icon: const Icon(AppIcons.time),
-                label: Text(l10n.setTimes),
               ),
             ],
           ],
