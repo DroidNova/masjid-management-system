@@ -25,11 +25,26 @@ class _TrackMasjidApplicationScreenState
   CountryCode _country = getDefaultCountryCode();
   String _digits = '';
 
+  /// Marks where the answer appears, so the page can scroll to it: under
+  /// the keypad it is easy to miss on a small phone.
+  final GlobalKey _resultsKey = GlobalKey();
+
   Future<void> _track() async {
     if (!PhoneEntry.isValid(_country, _digits)) return;
     await ref
         .read(trackApplicationControllerProvider.notifier)
         .track(normalizePhone(countryCode: _country, nationalNumber: _digits));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _resultsKey.currentContext;
+      if (target == null || !mounted) return;
+      Scrollable.ensureVisible(
+        target,
+        duration: reduceMotion(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   @override
@@ -85,7 +100,13 @@ class _TrackMasjidApplicationScreenState
                 ),
                 const SizedBox(height: AppSpace.xl),
                 if (result != null && !result.isLoading)
-                  ..._results(l10n, result),
+                  FadeSlideIn(
+                    key: _resultsKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _results(l10n, result),
+                    ),
+                  ),
               ],
             ),
           ),

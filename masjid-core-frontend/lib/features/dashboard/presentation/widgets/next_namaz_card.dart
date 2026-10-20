@@ -104,7 +104,12 @@ class _NextNamazCardState extends State<NextNamazCard> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(next.prayer.prayer.icon, size: 56),
+              // A soft white glow breathes behind the coming prayer.
+              Breathing(
+                color: Colors.white,
+                size: 92,
+                child: Icon(next.prayer.prayer.icon, size: 56),
+              ),
               const SizedBox(width: AppSpace.l),
               Expanded(
                 child: Column(

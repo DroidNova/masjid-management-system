@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
+import 'package:masjid_core_frontend/shared/ui/motion.dart';
 import 'package:masjid_core_frontend/shared/ui/responsive.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 import 'package:masjid_core_frontend/shared/ui/tone_icon.dart';
@@ -60,25 +64,46 @@ class StepFlowState extends State<StepFlow> {
   int _index = 0;
   bool _busy = false;
 
+  /// Which way the last move went, so the next page slides in from that
+  /// side.
+  bool _forward = true;
+  final GlobalKey<ShakeState> _shake = GlobalKey<ShakeState>();
+
   int get index => _index;
   bool get _isLast => _index == widget.steps.length - 1;
 
   void back() {
-    if (_index > 0 && !_busy) setState(() => _index--);
+    if (_index > 0 && !_busy) {
+      setState(() {
+        _forward = false;
+        _index--;
+      });
+    }
   }
 
   /// Jumps to step [index] (a review page's "Edit" buttons).
   void goTo(int index) {
     if (_busy || index < 0 || index >= widget.steps.length) return;
-    setState(() => _index = index);
+    setState(() {
+      _forward = index > _index;
+      _index = index;
+    });
   }
 
   Future<void> next() async {
     final step = widget.steps[_index];
     if (_busy || !step.canContinue) return;
-    if (step.validate?.call() == false) return;
+    if (step.validate?.call() == false) {
+      // Something is missing: a little shake points at the page.
+      unawaited(HapticFeedback.heavyImpact());
+      _shake.currentState?.shake();
+      return;
+    }
     if (!_isLast) {
-      setState(() => _index++);
+      setState(() {
+        _forward = true;
+        _index++;
+      });
       return;
     }
     setState(() => _busy = true);
@@ -147,11 +172,31 @@ class StepFlowState extends State<StepFlow> {
           Expanded(
             child: SingleChildScrollView(
               child: PageBody.form(
-                child: AnimatedSwitcher(
-                  duration: AppDurations.normal,
-                  child: KeyedSubtree(
-                    key: ValueKey<int>(_index),
-                    child: Builder(builder: step.builder),
+                child: Shake(
+                  key: _shake,
+                  child: AnimatedSwitcher(
+                    duration: AppDurations.slow,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    // The new page slides in from the side it comes from.
+                    transitionBuilder: (child, animation) {
+                      final incoming = child.key == ValueKey<int>(_index);
+                      final from = (incoming == _forward ? 1 : -1) * 0.12;
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: Offset(from, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(_index),
+                      child: Builder(builder: step.builder),
+                    ),
                   ),
                 ),
               ),
