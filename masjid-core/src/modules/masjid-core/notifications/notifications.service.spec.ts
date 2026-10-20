@@ -8,6 +8,7 @@ describe('NotificationsService', () => {
       findMany: jest.fn(),
       count: jest.fn(),
       updateMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     $transaction: jest.fn((operations: Promise<unknown>[]) =>
       Promise.all(operations),
@@ -96,6 +97,25 @@ describe('NotificationsService', () => {
     expect(prisma.notification.updateMany).toHaveBeenCalledWith({
       where: { userId: 'member-1', masjidId: 'masjid-1', readAt: null },
       data: { readAt: expect.any(Date) as unknown },
+    });
+  });
+
+  it('deletes read notices after a year and any notice after two', async () => {
+    prisma.notification.deleteMany.mockResolvedValue({ count: 4 });
+
+    const deleted = await service.deleteOld(new Date('2026-10-20T00:00:00Z'));
+
+    expect(deleted).toBe(4);
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          {
+            readAt: { not: null },
+            createdAt: { lt: new Date('2025-10-20T00:00:00Z') },
+          },
+          { createdAt: { lt: new Date('2024-10-20T00:00:00Z') } },
+        ],
+      },
     });
   });
 });

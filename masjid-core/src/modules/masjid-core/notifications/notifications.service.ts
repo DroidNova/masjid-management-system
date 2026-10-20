@@ -123,6 +123,28 @@ export class NotificationsService {
     return { marked: count };
   }
 
+  /**
+   * Deletes notices nobody needs any more: read ones after a year, unread
+   * ones after two (someone who never opens the app). The record and its
+   * history stay; only the bell entry goes.
+   */
+  async deleteOld(now = new Date()): Promise<number> {
+    const yearsAgo = (years: number) => {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - years);
+      return date;
+    };
+    const { count } = await this.prisma.notification.deleteMany({
+      where: {
+        OR: [
+          { readAt: { not: null }, createdAt: { lt: yearsAgo(1) } },
+          { createdAt: { lt: yearsAgo(2) } },
+        ],
+      },
+    });
+    return count;
+  }
+
   /** Only this person's notices, and only for the masjid they are in now. */
   private mine(actor: AuthenticatedUser): Prisma.NotificationWhereInput {
     return { userId: actor.id, masjidId: requireMasjidId(actor) };
