@@ -6,7 +6,9 @@ Update the checkboxes and the status table as work lands.
 
 ## Checkpoint (read this first in a new session)
 
-Last updated 2026-10-09.
+Last updated 2026-10-20.
+
+- **2026-10-20 (overnight testing pass on a real phone):** salary roster follows family heads (`imam-salaries/salary-roster.ts`: add/edit/status/leave/link and admin status add or drop untouched unpaid assignments in the current and later months, India time); salary carries on by itself (`ensureCurrentMonth`: this month opens at the latest amount when the masjid ran salary in the last two months); member summary and salary history are all-time (no 6-month cap) and the summary has `currentMonth`; pay several months at once (`GET /imam-salaries/members/:id/dues`, `POST /imam-salaries/payments/spread`, oldest first). App: home salary card, Remind (WhatsApp/SMS) and Call for unpaid families, Money in asks "Who gave?", person sheet shows dues, motion kit (`shared/ui/motion.dart`), star-lattice pattern, new start screen, PillTabs, Urdu amount isolation, many small fixes. Test masjid "Test Masjid (Claude)" (phones +9180000000xx, committee +918000000002) holds the test data.
 
 - **Done:** M0 to M5, plus an API audit and optimization pass (2026-10-08): fewer queries per request, race-safe money/OTP/approval writes, Prisma errors mapped to API errors, query-tuning indexes. Both apps lint, build, and test clean. CI runs on every push to `main`.
 - **Next:** the UI redesign, phase by phase (`docs/UI_REDESIGN_PLAN.md`; U0 design foundation, U1 start/login, U2 tabs/Home/Profile, U3 times/news, U4 money, U5 salary/projects, U6 people/my payments done 2026-10-09, U7 admin/errors/icon done 2026-10-10, U8 code done 2026-10-10; live for team testing on staging through ngrok since 2026-10-10 (docs/TEAM_TESTING.md); then the villager test in docs/USABILITY_TEST.md). Deployment (M6) waits until the product is finished; then the owner decides domain and SMS provider. The VPS will be a small one.

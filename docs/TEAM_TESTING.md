@@ -48,13 +48,25 @@ Note anything wrong, slow, confusing, or badly translated.
 
 **Committee**
 - Money in (Jumma collection, donation box, zakat…) and money out; cancel
-  a wrong entry.
+  a wrong entry. Zakat, Sadaqah, Ramadan fund, Building fund and Other ask
+  "Who gave?": pick "A person" and check it shows in that person's My
+  payments; "No name" stays anonymous.
 - Imam salary: start a month, record a family's payment, raise the amount.
+  A family that owes older months shows "Earlier months"; try "All months"
+  (one amount pays the oldest months first, "This pays for:" shows where).
+- Remind / Call under an unpaid family: opens WhatsApp (or SMS) with the
+  message already written; nothing is sent until you press send.
+- Add a new family head after a month started: they must owe this month
+  (not past months). Turn a family head off: their unpaid month goes away.
 - Projects: add, edit, add a giver, cancel.
-- People: add a member and a family head; edit; turn off and on.
+- People: add a member and a family head; edit; turn off and on. Tap a
+  family head: their salary dues show in the details.
 
 **Member**
-- My payments: totals, salary months, project gifts, donations.
+- Home: the salary card says what you owe in all, whether this month is
+  paid, and what earlier months still owe.
+- My payments: totals, every salary month (paid / not paid), project gifts,
+  donations.
 - Leave masjid (hold the button), then check you are out.
 
 **Also try**
