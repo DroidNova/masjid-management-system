@@ -1428,25 +1428,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get findMasjidHint => 'Find a masjid to follow its namaz times';
 
   @override
-  String get masjidsIFollow => 'Masjids I follow';
-
-  @override
   String get otherMasjids => 'Other masjids';
 
   @override
   String get masjidCodeLabel => 'Masjid code';
-
-  @override
-  String get masjidCodeHint => '6 letters and numbers, from the masjid';
-
-  @override
-  String get openMasjid => 'Open';
-
-  @override
-  String get orSearchMasjid => 'Or search by name or place';
-
-  @override
-  String get searchMasjidHint => 'Masjid name, village or city';
 
   @override
   String get noMasjidFound => 'No masjid found. Try another name or place.';
@@ -1462,13 +1447,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get followMasjid => 'Follow this masjid';
-
-  @override
-  String get followingMasjid => 'Following';
-
-  @override
-  String get followingMasjidHint =>
-      'It shows on your Home. Tap again to stop following.';
 
   @override
   String get noPublicNews => 'No news for everyone yet';
@@ -1487,4 +1465,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get codeCopied => 'Code copied';
+
+  @override
+  String get masjidTimesTitle => 'Masjid times';
+
+  @override
+  String get findMasjidSearchHint => 'Masjid name, village or code';
+
+  @override
+  String get findMasjidHelp =>
+      'Type the masjid\'s name, its village or city, or the 6-letter code the masjid shared.';
+
+  @override
+  String followingMasjidDone(String masjid) {
+    return 'Following $masjid';
+  }
+
+  @override
+  String get stopFollowing => 'Stop following';
+
+  @override
+  String stopFollowingQuestion(String masjid) {
+    return 'Stop following $masjid?';
+  }
+
+  @override
+  String get stopFollowingMessage =>
+      'It will no longer show in Masjid times or on Home. You can follow it again any time.';
 }

@@ -1423,25 +1423,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get findMasjidHint => 'नमाज़ के वक़्त देखने के लिए मस्जिद ढूँढें';
 
   @override
-  String get masjidsIFollow => 'मेरी फ़ॉलो की हुई मस्जिदें';
-
-  @override
   String get otherMasjids => 'दूसरी मस्जिदें';
 
   @override
   String get masjidCodeLabel => 'मस्जिद कोड';
-
-  @override
-  String get masjidCodeHint => '6 अक्षर और अंक, मस्जिद से मिलेंगे';
-
-  @override
-  String get openMasjid => 'खोलें';
-
-  @override
-  String get orSearchMasjid => 'या नाम या जगह से ढूँढें';
-
-  @override
-  String get searchMasjidHint => 'मस्जिद का नाम, गाँव या शहर';
 
   @override
   String get noMasjidFound => 'कोई मस्जिद नहीं मिली। दूसरा नाम या जगह लिखें।';
@@ -1457,13 +1442,6 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get followMasjid => 'इस मस्जिद को फ़ॉलो करें';
-
-  @override
-  String get followingMasjid => 'फ़ॉलो कर रहे हैं';
-
-  @override
-  String get followingMasjidHint =>
-      'यह आपके होम पर दिखेगी। बंद करने के लिए फिर दबाएँ।';
 
   @override
   String get noPublicNews => 'अभी सबके लिए कोई ख़बर नहीं';
@@ -1482,4 +1460,31 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get codeCopied => 'कोड कॉपी हो गया';
+
+  @override
+  String get masjidTimesTitle => 'मस्जिद के वक़्त';
+
+  @override
+  String get findMasjidSearchHint => 'मस्जिद का नाम, गाँव या कोड';
+
+  @override
+  String get findMasjidHelp =>
+      'मस्जिद का नाम, उसका गाँव या शहर, या मस्जिद का भेजा 6 अक्षर का कोड लिखें।';
+
+  @override
+  String followingMasjidDone(String masjid) {
+    return '$masjid को फ़ॉलो कर रहे हैं';
+  }
+
+  @override
+  String get stopFollowing => 'फ़ॉलो बंद करें';
+
+  @override
+  String stopFollowingQuestion(String masjid) {
+    return '$masjid को फ़ॉलो करना बंद करें?';
+  }
+
+  @override
+  String get stopFollowingMessage =>
+      'यह मस्जिद के वक़्त और होम पर नहीं दिखेगी। आप कभी भी फिर फ़ॉलो कर सकते हैं।';
 }

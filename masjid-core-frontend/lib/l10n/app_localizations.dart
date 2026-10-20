@@ -2655,12 +2655,6 @@ abstract class AppLocalizations {
   /// **'Find a masjid to follow its namaz times'**
   String get findMasjidHint;
 
-  /// No description provided for @masjidsIFollow.
-  ///
-  /// In en, this message translates to:
-  /// **'Masjids I follow'**
-  String get masjidsIFollow;
-
   /// No description provided for @otherMasjids.
   ///
   /// In en, this message translates to:
@@ -2672,30 +2666,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Masjid code'**
   String get masjidCodeLabel;
-
-  /// No description provided for @masjidCodeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'6 letters and numbers, from the masjid'**
-  String get masjidCodeHint;
-
-  /// No description provided for @openMasjid.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get openMasjid;
-
-  /// No description provided for @orSearchMasjid.
-  ///
-  /// In en, this message translates to:
-  /// **'Or search by name or place'**
-  String get orSearchMasjid;
-
-  /// No description provided for @searchMasjidHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Masjid name, village or city'**
-  String get searchMasjidHint;
 
   /// No description provided for @noMasjidFound.
   ///
@@ -2720,18 +2690,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow this masjid'**
   String get followMasjid;
-
-  /// No description provided for @followingMasjid.
-  ///
-  /// In en, this message translates to:
-  /// **'Following'**
-  String get followingMasjid;
-
-  /// No description provided for @followingMasjidHint.
-  ///
-  /// In en, this message translates to:
-  /// **'It shows on your Home. Tap again to stop following.'**
-  String get followingMasjidHint;
 
   /// No description provided for @noPublicNews.
   ///
@@ -2762,6 +2720,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Code copied'**
   String get codeCopied;
+
+  /// No description provided for @masjidTimesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid times'**
+  String get masjidTimesTitle;
+
+  /// No description provided for @findMasjidSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid name, village or code'**
+  String get findMasjidSearchHint;
+
+  /// No description provided for @findMasjidHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the masjid\'s name, its village or city, or the 6-letter code the masjid shared.'**
+  String get findMasjidHelp;
+
+  /// No description provided for @followingMasjidDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Following {masjid}'**
+  String followingMasjidDone(String masjid);
+
+  /// No description provided for @stopFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following'**
+  String get stopFollowing;
+
+  /// No description provided for @stopFollowingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following {masjid}?'**
+  String stopFollowingQuestion(String masjid);
+
+  /// No description provided for @stopFollowingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'It will no longer show in Masjid times or on Home. You can follow it again any time.'**
+  String get stopFollowingMessage;
 }
 
 class _AppLocalizationsDelegate

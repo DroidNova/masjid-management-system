@@ -97,6 +97,19 @@ describe('PublicMasjidsService', () => {
     ]);
   });
 
+  it('finds a masjid by its code in the same search box', async () => {
+    prisma.masjid.findMany.mockResolvedValue([]);
+
+    await service.search('d6u aj4');
+
+    const where = (
+      prisma.masjid.findMany.mock.calls[0] as [
+        { where: { OR: Record<string, unknown>[] } },
+      ]
+    )[0].where;
+    expect(where.OR[0]).toEqual({ publicCode: 'D6UAJ4' });
+  });
+
   it('searches approved masjids only, and needs two letters', async () => {
     prisma.masjid.findMany.mockResolvedValue([]);
 

@@ -96,7 +96,7 @@ class AuthLandingScreen extends ConsumerWidget {
                             // and is a link below.
                             child: ActionTile(
                               icon: AppIcons.mosque,
-                              label: l10n.seeMasjidTimes,
+                              label: l10n.masjidTimesTitle,
                               tone: AppTones.namaz,
                               onTap: () => context.push('/visit'),
                             ),
@@ -106,26 +106,29 @@ class AuthLandingScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpace.l),
+                  // Rare: registering a masjid and following that request.
                   FadeSlideIn(
-                    delay: const Duration(milliseconds: 380),
-                    child: TextButton.icon(
-                      onPressed: () => context.push('/masjid-request'),
-                      icon: const Icon(AppIcons.registerMasjid),
-                      label: Text(
-                        l10n.registerMasjid,
-                        style: textTheme.titleMedium,
-                      ),
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 420),
-                    child: TextButton.icon(
-                      onPressed: () => context.push('/masjid-request/track'),
-                      icon: const Icon(AppIcons.track),
-                      label: Text(
-                        l10n.trackRequest,
-                        style: textTheme.titleMedium,
-                      ),
+                    delay: const Duration(milliseconds: 400),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        TextButton(
+                          onPressed: () => context.push('/masjid-request'),
+                          child: Text(l10n.registerMasjid),
+                        ),
+                        Text(
+                          '·',
+                          style: textTheme.titleMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.push('/masjid-request/track'),
+                          child: Text(l10n.trackRequest),
+                        ),
+                      ],
                     ),
                   ),
                 ],

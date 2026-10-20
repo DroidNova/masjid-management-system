@@ -61,6 +61,7 @@ import 'package:masjid_core_frontend/features/super_admin/presentation/users/adm
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
 import 'package:masjid_core_frontend/features/visit/presentation/find_masjid_screen.dart';
 import 'package:masjid_core_frontend/features/visit/presentation/public_masjid_screen.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/visit_screen.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();

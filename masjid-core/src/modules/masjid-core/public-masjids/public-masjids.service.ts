@@ -49,14 +49,19 @@ const SEARCH_RESULTS = 20;
 export class PublicMasjidsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Approved masjids whose name or place matches, for "find a masjid". */
+  /**
+   * Approved masjids whose name or place matches, or whose code is exactly
+   * the text: one search box takes either.
+   */
   async search(query: string) {
     const text = query.trim();
     if (text.length < 2) return { items: [] };
+    const code = normalizeMasjidCode(text);
     const items = await this.prisma.masjid.findMany({
       where: {
         status: MasjidStatus.APPROVED,
         OR: [
+          ...(code ? [{ publicCode: code }] : []),
           { name: { contains: text, mode: 'insensitive' } },
           { locality: { contains: text, mode: 'insensitive' } },
           { district: { contains: text, mode: 'insensitive' } },

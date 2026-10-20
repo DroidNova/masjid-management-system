@@ -6,8 +6,8 @@ import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/news_form.dart';
 import 'package:masjid_core_frontend/features/visit/application/followed_masjids.dart';
 import 'package:masjid_core_frontend/features/visit/data/public_masjid_api.dart';
-import 'package:masjid_core_frontend/features/visit/presentation/find_masjid_screen.dart';
 import 'package:masjid_core_frontend/features/visit/presentation/public_masjid_screen.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/visit_screen.dart';
 
 import '../shared/ui/ui_test_helpers.dart';
 
@@ -90,7 +90,7 @@ void main() {
     testWidgets('shows the place, times and public news, and can be followed', (
       tester,
     ) async {
-      final container = await pumpUi(
+      final container = await pumpRouted(
         tester,
         const PublicMasjidScreen(code: 'K7M2QX'),
         size: const Size(400, 2400),
@@ -107,16 +107,43 @@ void main() {
       expect(find.text('Everyone'), findsNothing);
 
       await tester.tap(find.text('Follow this masjid'));
-      await tester.pump();
-      expect(find.text('Following'), findsOneWidget);
+      await tester.pumpAndSettle();
       expect(
         container.read(followedMasjidsProvider).map((m) => m.code),
         <String>['K7M2QX'],
       );
+      // Following goes back to where the person came from.
+      expect(find.byType(PublicMasjidScreen), findsNothing);
+    });
 
-      await tester.tap(find.text('Following'));
-      await tester.pump();
+    testWidgets('stopping is in the menu and asks first', (tester) async {
+      final container = await pumpRouted(
+        tester,
+        const PublicMasjidScreen(code: 'K7M2QX'),
+        size: const Size(400, 2400),
+        prefs: <String, Object>{
+          'visit.followedMasjids': jsonEncode(<Map<String, dynamic>>[
+            <String, dynamic>{'code': 'K7M2QX', 'name': 'Jama Masjid'},
+          ]),
+        },
+        overrides: [
+          publicMasjidPageProvider('K7M2QX').overrideWith((ref) async => page),
+        ],
+      );
+      // Already following: no Follow button and no tap-to-undo in the page.
+      expect(find.text('Follow this masjid'), findsNothing);
+
+      // Stopping is in the menu and asks first.
+      await tester.tap(find.byTooltip('Show menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop following').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Stop following Jama Masjid?'), findsOneWidget);
+      expect(container.read(followedMasjidsProvider), hasLength(1));
+      await tester.tap(find.widgetWithText(FilledButton, 'Stop following'));
+      await tester.pumpAndSettle();
       expect(container.read(followedMasjidsProvider), isEmpty);
+      expect(find.text('Follow this masjid'), findsOneWidget);
     });
 
     testWidgets('says so when no masjid has the code', (tester) async {
@@ -156,11 +183,11 @@ void main() {
           ],
         });
 
-    testWidgets('with nothing followed, asks for a code', (tester) async {
+    testWidgets('with nothing followed, shows the finder', (tester) async {
       await pumpUi(tester, const VisitScreen());
 
-      expect(find.text('Masjid code'), findsOneWidget);
-      expect(find.text('Open'), findsOneWidget);
+      expect(find.byType(SearchBar), findsOneWidget);
+      expect(find.text('Masjid name, village or code'), findsOneWidget);
     });
 
     testWidgets('opens straight on the followed masjids, switching by chip', (
@@ -186,7 +213,7 @@ void main() {
       );
 
       // No search form and no extra tap: the first masjid's news is here.
-      expect(find.text('Masjid code'), findsNothing);
+      expect(find.byType(SearchBar), findsNothing);
       expect(find.text('Noor news'), findsOneWidget);
       expect(find.byType(ChoiceChip), findsNWidgets(2));
       expect(find.byTooltip('Find a masjid'), findsOneWidget);
