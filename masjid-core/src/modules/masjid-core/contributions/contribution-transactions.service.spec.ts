@@ -2,7 +2,7 @@ import { ContributionTransactionsService } from './contribution-transactions.ser
 
 describe('ContributionTransactionsService', () => {
   const tx = {
-    project: { updateMany: jest.fn() },
+    project: { updateMany: jest.fn(), findUniqueOrThrow: jest.fn() },
     user: { findFirst: jest.fn() },
     projectContribution: { create: jest.fn() },
     collectionContribution: { create: jest.fn() },
@@ -14,9 +14,11 @@ describe('ContributionTransactionsService', () => {
     ),
   };
   const audit = { record: jest.fn() };
+  const notifications = { paymentNotice: jest.fn() };
   const service = new ContributionTransactionsService(
     prisma as never,
     audit as never,
+    notifications as never,
   );
   const actor = {
     id: 'collector',
@@ -29,6 +31,7 @@ describe('ContributionTransactionsService', () => {
     tx.project.updateMany.mockResolvedValue({ count: 1 });
     tx.collection.create.mockResolvedValue({ id: 'collection-1' });
     tx.user.findFirst.mockResolvedValue({ id: 'member-1' });
+    tx.project.findUniqueOrThrow.mockResolvedValue({ title: 'New roof' });
   });
 
   it('creates a project transaction and increments the project total atomically', async () => {
@@ -65,6 +68,17 @@ describe('ContributionTransactionsService', () => {
         entity: 'PROJECT_CONTRIBUTION',
         action: 'CREATE',
         masjidId: 'masjid-1',
+      }),
+      tx,
+    );
+    // The member is told, in the same transaction, what it was for.
+    expect(notifications.paymentNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memberId: 'member-1',
+        kind: 'PAYMENT_RECORDED',
+        entity: 'PROJECT_CONTRIBUTION',
+        entityId: 'contribution-1',
+        paymentFor: { purpose: 'PROJECT', projectTitle: 'New roof' },
       }),
       tx,
     );
@@ -106,6 +120,11 @@ describe('ContributionTransactionsService', () => {
         entity: 'COLLECTION_CONTRIBUTION',
         action: 'CREATE',
       }),
+      tx,
+    );
+    // No member picked: the notice is skipped inside paymentNotice.
+    expect(notifications.paymentNotice).toHaveBeenCalledWith(
+      expect.objectContaining({ memberId: null }),
       tx,
     );
   });

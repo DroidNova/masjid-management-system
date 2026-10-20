@@ -407,5 +407,13 @@
   "historyFieldTarget": "लक्ष्य",
   "historyFieldSpent": "खर्च",
   "historyFieldKind": "किस्म",
-  "historyFieldPerFamily": "हर परिवार"
+  "historyFieldPerFamily": "हर परिवार",
+  "notificationsTitle": "सूचनाएँ",
+  "notificationsEmpty": "अभी कोई सूचना नहीं",
+  "notificationsEmptyHint": "जब आपके नाम पर पैसा दर्ज होगा, यहाँ दिखेगा।",
+  "noticeRecorded": "{name} ने आपसे {what} के लिए {amount} दर्ज किया",
+  "noticeChanged": "{name} ने {what} की आपकी {amount} की एंट्री बदली",
+  "noticeChangedNow": "अब {amount}",
+  "noticeCancelled": "{name} ने {what} की आपकी {amount} की एंट्री रद्द की",
+  "noticeNew": "नया"
 }

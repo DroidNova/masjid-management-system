@@ -43,6 +43,8 @@ class AppIcons {
   static const IconData info = Icons.info_rounded;
   /// Who added and changed a record.
   static const IconData history = Icons.manage_history_rounded;
+  static const IconData notifications = Icons.notifications_none_rounded;
+  static const IconData notificationsNew = Icons.notifications_active_rounded;
 
   // Start and login.
   static const IconData login = Icons.login_rounded;

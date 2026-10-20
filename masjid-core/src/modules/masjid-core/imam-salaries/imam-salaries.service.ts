@@ -40,6 +40,10 @@ import { pageArgs, paged } from '../../../common/pagination';
 import { requireMasjidId } from '../../../common/tenant';
 import { isPrismaError } from '../prisma-errors';
 import { currentIndiaMonth } from './salary-roster';
+import {
+  NOTIFICATION_KIND,
+  NotificationsService,
+} from '../notifications/notifications.service';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -121,6 +125,7 @@ export class ImamSalariesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Masjid id -> "year-month" already checked by [ensureCurrentMonth]. */
@@ -636,6 +641,23 @@ export class ImamSalariesService {
         entityId: payment.id,
         summary: `Payment ${formatMoney(payment.amount)} ${payment.paymentMode} from ${payment.memberName} for ${payment.paymentForMonth}/${payment.paymentForYear}`,
         after: { ...payment, masjidId, collectedById: actor.id },
+      },
+      tx,
+    );
+    await this.notifications.paymentNotice(
+      {
+        masjidId,
+        memberId: assignment.memberId,
+        actor,
+        kind: NOTIFICATION_KIND.PAYMENT_RECORDED,
+        entity: AUDIT_ENTITY.SALARY_PAYMENT,
+        entityId: payment.id,
+        amount: payment.amount,
+        paymentFor: {
+          purpose: 'SALARY',
+          month: payment.paymentForMonth,
+          year: payment.paymentForYear,
+        },
       },
       tx,
     );

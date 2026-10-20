@@ -280,7 +280,11 @@ describe('ImamSalariesService money math', () => {
   beforeEach(() => {
     fake = createFakePrisma(heads);
     audit = { record: jest.fn() };
-    service = new ImamSalariesService(fake.db as never, audit as never);
+    service = new ImamSalariesService(
+      fake.db as never,
+      audit as never,
+      { paymentNotice: jest.fn() } as never,
+    );
   });
 
   const createMonth = (amountPerHead: number) =>
@@ -639,7 +643,11 @@ describe('ImamSalariesService: salary carries on by itself', () => {
     jest.clearAllMocks();
     // 10 Oct 2026 in India.
     jest.useFakeTimers().setSystemTime(new Date('2026-10-10T06:00:00Z'));
-    service = new ImamSalariesService(prisma as never, audit as never);
+    service = new ImamSalariesService(
+      prisma as never,
+      audit as never,
+      { paymentNotice: jest.fn() } as never,
+    );
     tx.user.findMany.mockResolvedValue([
       { id: 'u1', fullName: 'Ahmed', phone: '+911' },
       { id: 'u2', fullName: 'Bilal', phone: '+912' },
@@ -756,7 +764,11 @@ describe('ImamSalariesService: one amount for several months', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ImamSalariesService(prisma as never, {} as never);
+    service = new ImamSalariesService(
+      prisma as never,
+      {} as never,
+      {} as never,
+    );
     pay = jest
       .spyOn(
         service as unknown as { payAssignment: () => unknown },

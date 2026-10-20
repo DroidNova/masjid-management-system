@@ -1360,4 +1360,37 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get historyFieldPerFamily => 'हर परिवार';
+
+  @override
+  String get notificationsTitle => 'सूचनाएँ';
+
+  @override
+  String get notificationsEmpty => 'अभी कोई सूचना नहीं';
+
+  @override
+  String get notificationsEmptyHint =>
+      'जब आपके नाम पर पैसा दर्ज होगा, यहाँ दिखेगा।';
+
+  @override
+  String noticeRecorded(String name, String amount, String what) {
+    return '$name ने आपसे $what के लिए $amount दर्ज किया';
+  }
+
+  @override
+  String noticeChanged(String name, String amount, String what) {
+    return '$name ने $what की आपकी $amount की एंट्री बदली';
+  }
+
+  @override
+  String noticeChangedNow(String amount) {
+    return 'अब $amount';
+  }
+
+  @override
+  String noticeCancelled(String name, String amount, String what) {
+    return '$name ने $what की आपकी $amount की एंट्री रद्द की';
+  }
+
+  @override
+  String get noticeNew => 'नया';
 }

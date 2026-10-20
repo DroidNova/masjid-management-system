@@ -39,6 +39,7 @@ import 'package:masjid_core_frontend/features/masjid_request/presentation/track_
 import 'package:masjid_core_frontend/features/namaz_time/data/models/namaz_time_model.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/namaz_times_screen.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/update_namaz_time_screen.dart';
+import 'package:masjid_core_frontend/features/notifications/presentation/notifications_screen.dart';
 import 'package:masjid_core_frontend/features/profile/presentation/change_password_screen.dart';
 import 'package:masjid_core_frontend/features/profile/presentation/profile_screen.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
@@ -310,6 +311,13 @@ final List<RouteBase> _routes = <RouteBase>[
   GoRoute(
     path: '/contributions',
     builder: (context, state) => const MyContributionsScreen(showAppBar: true),
+  ),
+  GoRoute(
+    path: '/notifications',
+    builder: (context, state) => const PermissionGate(
+      isAllowed: PermissionHelper.canViewNotifications,
+      child: NotificationsScreen(),
+    ),
   ),
   // Record who gave: a collection gift, or with ?project=<id> a project one.
   GoRoute(

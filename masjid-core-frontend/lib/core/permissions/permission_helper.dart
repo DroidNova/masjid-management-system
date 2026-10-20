@@ -29,6 +29,7 @@ class AppPermissions {
   static const String ownContributionsRead = 'own_contributions.read';
   static const String recordHistoryRead = 'record_history.read';
   static const String auditRead = 'audit.read';
+  static const String notificationsRead = 'notifications.read';
   static const String imamSalaryRead = 'imam_salary.read';
   static const String imamSalaryManage = 'imam_salary.manage';
   static const String platformUsersRead = 'platform.users.read';
@@ -104,6 +105,10 @@ class PermissionHelper {
   /// Who added and changed a project or one of the user's own payments.
   static bool canViewRecordHistory(List<String> permissions) =>
       hasIn(permissions, AppPermissions.recordHistoryRead);
+
+  /// The bell: notices about money recorded in the user's name.
+  static bool canViewNotifications(List<String> permissions) =>
+      hasIn(permissions, AppPermissions.notificationsRead);
 
   /// The same for every record of the masjid (imam and committee).
   static bool canViewAllRecordHistory(List<String> permissions) =>

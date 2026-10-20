@@ -730,5 +730,59 @@
   "historyFieldTarget": "Target",
   "historyFieldSpent": "Spent",
   "historyFieldKind": "Kind",
-  "historyFieldPerFamily": "Per family"
+  "historyFieldPerFamily": "Per family",
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "No notifications yet",
+  "notificationsEmptyHint": "When money is recorded in your name, it shows here.",
+  "noticeRecorded": "{name} recorded {amount} from you for {what}",
+  "@noticeRecorded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeChanged": "{name} changed your {amount} entry for {what}",
+  "@noticeChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeChangedNow": "Now {amount}",
+  "@noticeChangedNow": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeCancelled": "{name} cancelled your {amount} entry for {what}",
+  "@noticeCancelled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeNew": "New"
 }

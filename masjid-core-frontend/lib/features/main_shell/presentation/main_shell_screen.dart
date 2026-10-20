@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/main_shell/main_tabs.dart';
+import 'package:masjid_core_frontend/features/notifications/presentation/notification_bell.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -47,6 +48,7 @@ class MainShellScreen extends ConsumerWidget {
         );
       },
       title: Text(current == MainTab.home ? name : current.label(l10n)),
+      actions: const <Widget>[NotificationBell()],
       header: MasjidHeader(name: name),
       body: navigationShell,
     );

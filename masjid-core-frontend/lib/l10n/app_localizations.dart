@@ -2552,6 +2552,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Per family'**
   String get historyFieldPerFamily;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When money is recorded in your name, it shows here.'**
+  String get notificationsEmptyHint;
+
+  /// No description provided for @noticeRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} recorded {amount} from you for {what}'**
+  String noticeRecorded(String name, String amount, String what);
+
+  /// No description provided for @noticeChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed your {amount} entry for {what}'**
+  String noticeChanged(String name, String amount, String what);
+
+  /// No description provided for @noticeChangedNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now {amount}'**
+  String noticeChangedNow(String amount);
+
+  /// No description provided for @noticeCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} cancelled your {amount} entry for {what}'**
+  String noticeCancelled(String name, String amount, String what);
+
+  /// No description provided for @noticeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get noticeNew;
 }
 
 class _AppLocalizationsDelegate

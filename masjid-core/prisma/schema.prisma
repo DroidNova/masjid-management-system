@@ -593,3 +593,28 @@ model AuditLog {
   @@index([masjidId, entity, createdAt])
   @@index([entity, entityId])
 }
+
+/// A message for one person inside the app (the bell). Written in the same
+/// transaction as the change it reports, so a payment and its notice can
+/// never disagree. `data` holds the amounts and what the money was for; the
+/// app turns it into words in the reader's language. No foreign keys, like
+/// AuditLog.
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  masjidId  String    @db.Uuid
+  /// Who reads it.
+  userId    String    @db.Uuid
+  /// PAYMENT_RECORDED, PAYMENT_CHANGED, PAYMENT_CANCELLED (see src/modules/masjid-core/notifications)
+  kind      String
+  /// The record it is about, to open its history (an AuditLog entity).
+  entity    String
+  entityId  String    @db.Uuid
+  /// Who did it, as the name was then.
+  actorName String
+  data      Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}

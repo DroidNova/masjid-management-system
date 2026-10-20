@@ -63,6 +63,8 @@ export const PERMISSIONS = {
    * own payments; AUDIT_READ opens every record (checked in RecordHistoryService).
    */
   RECORD_HISTORY_READ: 'record_history.read',
+  /** My notices (the bell), and marking them read. */
+  NOTIFICATIONS_READ: 'notifications.read',
 
   // Imam salary ledger
   IMAM_SALARY_READ: 'imam_salary.read',
@@ -105,6 +107,7 @@ const EVERYONE: Permission[] = [
   P.PROJECTS_READ,
   P.OWN_CONTRIBUTIONS_READ,
   P.RECORD_HISTORY_READ,
+  P.NOTIFICATIONS_READ,
   P.MASJID_LEAVE,
 ];
 

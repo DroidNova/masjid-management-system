@@ -1360,4 +1360,37 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get historyFieldPerFamily => 'فی خاندان';
+
+  @override
+  String get notificationsTitle => 'اطلاعات';
+
+  @override
+  String get notificationsEmpty => 'ابھی کوئی اطلاع نہیں';
+
+  @override
+  String get notificationsEmptyHint =>
+      'جب آپ کے نام پر رقم درج ہوگی، یہاں دکھے گی۔';
+
+  @override
+  String noticeRecorded(String name, String amount, String what) {
+    return '$name نے آپ سے $what کے لیے $amount درج کیا';
+  }
+
+  @override
+  String noticeChanged(String name, String amount, String what) {
+    return '$name نے $what کا آپ کا $amount کا اندراج بدلا';
+  }
+
+  @override
+  String noticeChangedNow(String amount) {
+    return 'اب $amount';
+  }
+
+  @override
+  String noticeCancelled(String name, String amount, String what) {
+    return '$name نے $what کا آپ کا $amount کا اندراج منسوخ کیا';
+  }
+
+  @override
+  String get noticeNew => 'نیا';
 }

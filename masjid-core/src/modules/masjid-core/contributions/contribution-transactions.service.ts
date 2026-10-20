@@ -22,6 +22,10 @@ import {
 } from './dto/create-contribution.dto';
 import { pageArgs, paged } from '../../../common/pagination';
 import { dateRange } from '../shared-date';
+import {
+  NOTIFICATION_KIND,
+  NotificationsService,
+} from '../notifications/notifications.service';
 
 const contributionSelect = {
   id: true,
@@ -58,6 +62,7 @@ export class ContributionTransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async createProjectContribution(
@@ -96,6 +101,25 @@ export class ContributionTransactionsService {
         },
         tx,
       );
+      if (dto.memberId) {
+        const { title } = await tx.project.findUniqueOrThrow({
+          where: { id: projectId },
+          select: { title: true },
+        });
+        await this.notifications.paymentNotice(
+          {
+            masjidId,
+            memberId: dto.memberId,
+            actor,
+            kind: NOTIFICATION_KIND.PAYMENT_RECORDED,
+            entity: AUDIT_ENTITY.PROJECT_CONTRIBUTION,
+            entityId: contribution.id,
+            amount: contribution.amount,
+            paymentFor: { purpose: 'PROJECT', projectTitle: title },
+          },
+          tx,
+        );
+      }
       return successResponse(
         'Project contribution added successfully',
         this.serialize(contribution),
@@ -183,6 +207,22 @@ export class ContributionTransactionsService {
           entityId: contribution.id,
           summary: `Collection contribution ${contribution.collectionType} ${formatMoney(contribution.amount)} ${contribution.paymentMode} from ${contribution.contributorName}`,
           after: { ...contribution, masjidId, collectionId: collection.id },
+        },
+        tx,
+      );
+      await this.notifications.paymentNotice(
+        {
+          masjidId,
+          memberId: dto.memberId ?? null,
+          actor,
+          kind: NOTIFICATION_KIND.PAYMENT_RECORDED,
+          entity: AUDIT_ENTITY.COLLECTION_CONTRIBUTION,
+          entityId: contribution.id,
+          amount: contribution.amount,
+          paymentFor: {
+            purpose: 'DONATION',
+            collectionType: contribution.collectionType,
+          },
         },
         tx,
       );

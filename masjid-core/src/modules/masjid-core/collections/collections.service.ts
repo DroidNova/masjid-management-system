@@ -6,7 +6,17 @@ import {
   AUDIT_ENTITY,
   AuditService,
 } from '../../../common/audit/audit.service';
-import { formatMoney, toAmount } from '../../../common/money';
+import {
+  formatMoney,
+  money,
+  MoneyInput,
+  toAmount,
+} from '../../../common/money';
+import {
+  NOTIFICATION_KIND,
+  NotificationKind,
+  NotificationsService,
+} from '../notifications/notifications.service';
 import { requireMasjidId } from '../../../common/tenant';
 import { Prisma } from '../../../generated/prisma/client';
 import { FinanceEntryStatus } from '../../../generated/prisma/enums';
@@ -47,6 +57,7 @@ export class CollectionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async findMyMasjidCollections(
@@ -166,6 +177,13 @@ export class CollectionsService {
         },
         tx,
       );
+      const amountChanged = !money(before.amount).equals(updated.amount);
+      await this.tellGiver(tx, masjidId, before.id, actor, {
+        kind: NOTIFICATION_KIND.PAYMENT_CHANGED,
+        amount: before.amount,
+        ...(amountChanged ? { newAmount: updated.amount } : {}),
+        collectionType: updated.type,
+      });
       return updated;
     });
     this.logger.log({
@@ -213,6 +231,11 @@ export class CollectionsService {
           },
           tx,
         );
+        await this.tellGiver(tx, masjidId, before.id, actor, {
+          kind: NOTIFICATION_KIND.PAYMENT_CANCELLED,
+          amount: before.amount,
+          collectionType: before.type,
+        });
         return { collection: cancelled, changed: true };
       },
     );
@@ -224,6 +247,42 @@ export class CollectionsService {
       });
     }
     return this.toResponse(collection);
+  }
+
+  /**
+   * When this entry was made for a member's gift, tells that member it was
+   * changed or cancelled (inside the same transaction).
+   */
+  private async tellGiver(
+    tx: Prisma.TransactionClient,
+    masjidId: string,
+    collectionId: string,
+    actor: AuthenticatedUser,
+    change: {
+      kind: NotificationKind;
+      amount: MoneyInput;
+      newAmount?: MoneyInput;
+      collectionType: string;
+    },
+  ): Promise<void> {
+    const contribution = await tx.collectionContribution.findUnique({
+      where: { collectionId },
+      select: { id: true, memberId: true },
+    });
+    if (!contribution?.memberId) return;
+    const { collectionType, ...amounts } = change;
+    await this.notifications.paymentNotice(
+      {
+        masjidId,
+        memberId: contribution.memberId,
+        actor,
+        entity: AUDIT_ENTITY.COLLECTION_CONTRIBUTION,
+        entityId: contribution.id,
+        ...amounts,
+        paymentFor: { purpose: 'DONATION', collectionType },
+      },
+      tx,
+    );
   }
 
   /** The collection with this id in this masjid; 404 otherwise (also for another masjid's id). */

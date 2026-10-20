@@ -116,6 +116,66 @@
         ]
       }
     },
+    "/notifications/my": {
+      "get": {
+        "operationId": "NotificationsController_listMine",
+        "parameters": [],
+        "responses": {
+          "403": {
+            "description": "Requires permission: notifications.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My notices, newest first",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/my/unread-count": {
+      "get": {
+        "operationId": "NotificationsController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "403": {
+            "description": "Requires permission: notifications.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "How many of my notices are not read yet",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/my/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "403": {
+            "description": "Requires permission: notifications.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all my notices as read",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
     "/admin/users": {
       "get": {
         "operationId": "AdminController_listUsers",

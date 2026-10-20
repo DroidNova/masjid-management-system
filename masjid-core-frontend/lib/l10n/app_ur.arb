@@ -407,5 +407,13 @@
   "historyFieldTarget": "ہدف",
   "historyFieldSpent": "خرچ",
   "historyFieldKind": "قسم",
-  "historyFieldPerFamily": "فی خاندان"
+  "historyFieldPerFamily": "فی خاندان",
+  "notificationsTitle": "اطلاعات",
+  "notificationsEmpty": "ابھی کوئی اطلاع نہیں",
+  "notificationsEmptyHint": "جب آپ کے نام پر رقم درج ہوگی، یہاں دکھے گی۔",
+  "noticeRecorded": "{name} نے آپ سے {what} کے لیے {amount} درج کیا",
+  "noticeChanged": "{name} نے {what} کا آپ کا {amount} کا اندراج بدلا",
+  "noticeChangedNow": "اب {amount}",
+  "noticeCancelled": "{name} نے {what} کا آپ کا {amount} کا اندراج منسوخ کیا",
+  "noticeNew": "نیا"
 }
