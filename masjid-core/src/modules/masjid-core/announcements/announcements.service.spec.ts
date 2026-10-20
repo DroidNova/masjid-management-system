@@ -3,7 +3,11 @@ import { AnnouncementsService } from './announcements.service';
 
 describe('AnnouncementsService', () => {
   const prisma = {
-    announcement: { findFirst: jest.fn(), update: jest.fn() },
+    announcement: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
+    },
   };
   const service = new AnnouncementsService(prisma as never);
   const actor = { id: 'admin-1', masjidId: 'masjid-1' } as never;
@@ -21,6 +25,21 @@ describe('AnnouncementsService', () => {
     });
 
   beforeEach(() => jest.clearAllMocks());
+
+  it('keeps a new announcement members only unless Everyone is chosen', async () => {
+    prisma.announcement.create.mockResolvedValue({ id: 'a-1' });
+
+    await service.create({ title: 'Meeting', message: 'Tonight' }, actor);
+    await service.create(
+      { title: 'Eid', message: '7:30', isPublic: true },
+      actor,
+    );
+
+    const data = prisma.announcement.create.mock.calls.map(
+      (call: [{ data: { isPublic: boolean } }]) => call[0].data.isPublic,
+    );
+    expect(data).toEqual([false, true]);
+  });
 
   it('reads one announcement with one scoped query', async () => {
     prisma.announcement.findFirst.mockResolvedValue({ id: 'a-1' });

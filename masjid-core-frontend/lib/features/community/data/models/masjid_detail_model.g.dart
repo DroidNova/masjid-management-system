@@ -9,6 +9,7 @@ part of 'masjid_detail_model.dart';
 _MasjidDetailModel _$MasjidDetailModelFromJson(Map<String, dynamic> json) =>
     _MasjidDetailModel(
       id: json['id'] as String,
+      publicCode: json['publicCode'] as String?,
       name: json['name'] as String,
       country: json['country'] as String?,
       locality: json['locality'] as String?,
@@ -30,6 +31,7 @@ _MasjidDetailModel _$MasjidDetailModelFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$MasjidDetailModelToJson(_MasjidDetailModel instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'publicCode': instance.publicCode,
       'name': instance.name,
       'country': instance.country,
       'locality': instance.locality,

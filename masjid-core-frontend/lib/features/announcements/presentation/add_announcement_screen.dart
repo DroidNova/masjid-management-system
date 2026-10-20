@@ -8,7 +8,8 @@ import 'package:masjid_core_frontend/features/announcements/presentation/widgets
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
-/// Writes a new piece of news; it is visible to everyone once saved.
+/// Writes a new piece of news. Members see it once saved; people outside
+/// the masjid only when the poster chose "Everyone".
 class AddAnnouncementScreen extends ConsumerWidget {
   const AddAnnouncementScreen({super.key});
 
@@ -17,6 +18,7 @@ class AddAnnouncementScreen extends ConsumerWidget {
     WidgetRef ref,
     String title,
     String message,
+    bool isPublic,
   ) async {
     final l10n = AppLocalizations.of(context);
     final saved = await ref
@@ -26,6 +28,7 @@ class AddAnnouncementScreen extends ConsumerWidget {
             title: title,
             message: message,
             isActive: true,
+            isPublic: isPublic,
           ),
         );
     if (!saved || !context.mounted) return;
@@ -50,7 +53,8 @@ class AddAnnouncementScreen extends ConsumerWidget {
         child: NewsForm(
           saving: state.isLoading,
           error: error == null ? null : errorText(l10n, error),
-          onSave: (title, message) => _save(context, ref, title, message),
+          onSave: (title, message, isPublic) =>
+              _save(context, ref, title, message, isPublic),
         ),
       ),
     );

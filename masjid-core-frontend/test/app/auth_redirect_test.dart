@@ -50,6 +50,18 @@ void main() {
       );
     });
 
+    test('can open public masjid pages without login', () {
+      for (final path in ['/visit', '/visit/K7M2QX', '/visit/K7M2QX/news']) {
+        expect(_go(const AuthSignedOut(), path), isNull, reason: path);
+      }
+      // Only the /visit pages, not anything that merely starts alike.
+      expect(_go(const AuthSignedOut(), '/visitors'), '/auth');
+      expect(
+        _go(const AuthSignedOut(), '/splash?from=%2Fvisit%2FK7M2QX'),
+        '/visit/K7M2QX',
+      );
+    });
+
     test('is sent to login from any other page', () {
       expect(_go(const AuthSignedOut(), '/main/home'), '/auth');
       expect(_go(const AuthSignedOut(), '/super-admin'), '/auth');

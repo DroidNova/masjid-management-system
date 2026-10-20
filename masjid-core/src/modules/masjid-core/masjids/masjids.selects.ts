@@ -9,6 +9,8 @@ const imamUserSelect = {
 
 export const masjidProfileSelect = {
   id: true,
+  /** Shared with people outside the masjid (public page). */
+  publicCode: true,
   name: true,
   country: true,
   locality: true,

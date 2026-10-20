@@ -10,6 +10,9 @@ abstract class CreateAnnouncementRequest with _$CreateAnnouncementRequest {
     required String title,
     required String message,
     @Default(true) bool isActive,
+
+    /// Members only unless the poster chose "Everyone".
+    @Default(false) bool isPublic,
   }) = _CreateAnnouncementRequest;
 
   /// From raw form text (trimmed).
@@ -17,10 +20,12 @@ abstract class CreateAnnouncementRequest with _$CreateAnnouncementRequest {
     required String title,
     required String message,
     required bool isActive,
+    required bool isPublic,
   }) => CreateAnnouncementRequest(
     title: title.trim(),
     message: message.trim(),
     isActive: isActive,
+    isPublic: isPublic,
   );
 
   factory CreateAnnouncementRequest.fromJson(Map<String, dynamic> json) =>

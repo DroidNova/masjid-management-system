@@ -46,6 +46,7 @@ import {
   requestUserSelect,
 } from './masjid-requests.selects';
 import { pageArgs, paged } from '../../../common/pagination';
+import { uniqueMasjidCode } from '../../../common/masjid-code';
 
 /** Committee member as stored in the request's committeeMembers JSON. */
 type CommitteeMember = {
@@ -302,6 +303,7 @@ export class MasjidRequestsService {
 
       const masjid = await tx.masjid.create({
         data: {
+          publicCode: await uniqueMasjidCode(tx),
           name: request.masjidName,
           locality: request.locality,
           district: request.district,

@@ -59,6 +59,8 @@ import 'package:masjid_core_frontend/features/super_admin/presentation/super_adm
 import 'package:masjid_core_frontend/features/super_admin/presentation/super_admin_shell_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_user_detail_screen.dart';
 import 'package:masjid_core_frontend/features/super_admin/presentation/users/admin_users_screen.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/find_masjid_screen.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/public_masjid_screen.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -81,6 +83,16 @@ const String languageLocation = '/language';
 
 /// Design-system gallery; registered only outside production builds.
 const String designGalleryLocation = '/dev/gallery';
+
+/// Public masjid pages (`/visit`, `/visit/<code>`, `/visit/<code>/news`):
+/// open with or without login.
+const String visitLocation = '/visit';
+
+/// True for pages anyone can open without logging in.
+bool isPublicLocation(String path) =>
+    publicLocations.contains(path) ||
+    path == visitLocation ||
+    path.startsWith('$visitLocation/');
 
 /// Login pages: a signed-in user is sent home from these.
 const Set<String> _loginLocations = <String>{
@@ -105,13 +117,13 @@ String? authRedirect(AuthState state, Uri uri) {
       ).toString();
 
     case AuthSignedOut():
-      if (publicLocations.contains(path)) return null;
+      if (isPublicLocation(path)) return null;
       // Back to the public page they opened or refreshed (website), except
       // the mid-login steps, whose data a refresh loses.
       final from = path == '/splash' ? uri.queryParameters['from'] : null;
       final fromPath = from == null ? null : Uri.parse(from).path;
       if (fromPath != null &&
-          publicLocations.contains(fromPath) &&
+          isPublicLocation(fromPath) &&
           fromPath != '/login-otp' &&
           fromPath != '/login-password') {
         return from;
@@ -311,6 +323,20 @@ final List<RouteBase> _routes = <RouteBase>[
   GoRoute(
     path: '/contributions',
     builder: (context, state) => const MyContributionsScreen(showAppBar: true),
+  ),
+  GoRoute(
+    path: visitLocation,
+    builder: (context, state) => const FindMasjidScreen(),
+  ),
+  GoRoute(
+    path: '$visitLocation/:code',
+    builder: (context, state) =>
+        PublicMasjidScreen(code: state.pathParameters['code'] ?? ''),
+  ),
+  GoRoute(
+    path: '$visitLocation/:code/news',
+    builder: (context, state) =>
+        PublicNewsScreen(code: state.pathParameters['code'] ?? ''),
   ),
   GoRoute(
     path: '/notifications',

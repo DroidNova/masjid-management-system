@@ -1393,4 +1393,93 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get noticeNew => 'نیا';
+
+  @override
+  String get audienceTitle => 'اسے کون دیکھ سکتا ہے؟';
+
+  @override
+  String get audienceMembers => 'صرف ارکان';
+
+  @override
+  String get audienceMembersHint => 'اس مسجد کے لوگ';
+
+  @override
+  String get audienceEveryone => 'سب لوگ';
+
+  @override
+  String get audienceEveryoneHint => 'اس مسجد سے باہر کے لوگ بھی';
+
+  @override
+  String get audienceEveryoneWarning =>
+      'اسے سب لوگ دیکھ سکیں گے، وہ بھی جو اس مسجد کے رکن نہیں ہیں، بغیر لاگ اِن کے۔ پیسے، نام یا فون نمبر جیسی نجی باتیں نہ لکھیں۔';
+
+  @override
+  String get seeMasjidTimes => 'مسجد کے اوقات دیکھیں';
+
+  @override
+  String get findMasjid => 'مسجد تلاش کریں';
+
+  @override
+  String get findMasjidHint => 'نماز کے اوقات دیکھنے کے لیے مسجد تلاش کریں';
+
+  @override
+  String get masjidsIFollow => 'میری فالو کی ہوئی مسجدیں';
+
+  @override
+  String get otherMasjids => 'دوسری مسجدیں';
+
+  @override
+  String get masjidCodeLabel => 'مسجد کوڈ';
+
+  @override
+  String get masjidCodeHint => '6 حروف اور ہندسے، مسجد سے ملیں گے';
+
+  @override
+  String get openMasjid => 'کھولیں';
+
+  @override
+  String get orSearchMasjid => 'یا نام یا جگہ سے تلاش کریں';
+
+  @override
+  String get searchMasjidHint => 'مسجد کا نام، گاؤں یا شہر';
+
+  @override
+  String get noMasjidFound => 'کوئی مسجد نہیں ملی۔ دوسرا نام یا جگہ لکھیں۔';
+
+  @override
+  String get masjidCodeNotFound =>
+      'اس کوڈ کی کوئی مسجد نہیں۔ کوڈ دیکھیں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String masjidCodeIs(String code) {
+    return 'کوڈ: $code';
+  }
+
+  @override
+  String get followMasjid => 'اس مسجد کو فالو کریں';
+
+  @override
+  String get followingMasjid => 'فالو کر رہے ہیں';
+
+  @override
+  String get followingMasjidHint =>
+      'یہ آپ کے ہوم پر دکھے گی۔ بند کرنے کے لیے دوبارہ دبائیں۔';
+
+  @override
+  String get noPublicNews => 'ابھی سب کے لیے کوئی خبر نہیں';
+
+  @override
+  String get masjidCodeShareHelp =>
+      'یہ کوڈ بھیجیں۔ پھر کوئی بھی آپ کی نماز کے اوقات اور \'سب لوگ\' والی خبریں دیکھ سکے گا، اور کچھ نہیں۔';
+
+  @override
+  String masjidCodeShareText(String code, String masjid) {
+    return '$masjid کی نماز کے اوقات اور خبریں مسجد ایپ میں دیکھیں۔ مسجد کوڈ: $code';
+  }
+
+  @override
+  String get share => 'بھیجیں';
+
+  @override
+  String get codeCopied => 'کوڈ کاپی ہو گیا';
 }

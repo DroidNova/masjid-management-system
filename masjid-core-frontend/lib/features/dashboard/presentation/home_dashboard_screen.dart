@@ -14,6 +14,7 @@ import 'package:masjid_core_frontend/features/dashboard/data/models/finance_summ
 import 'package:masjid_core_frontend/features/dashboard/presentation/widgets/next_namaz_card.dart';
 import 'package:masjid_core_frontend/features/main_shell/main_tabs.dart';
 import 'package:masjid_core_frontend/features/namaz_time/application/prayer_schedule.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/followed_masjids_section.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -154,6 +155,7 @@ class _HomeContent extends ConsumerWidget {
                           : null,
                     ),
                   ],
+                  const FollowedMasjidsSection(),
                   const SizedBox(height: AppSpace.xl),
                 ],
               );

@@ -14,6 +14,7 @@ class AnnouncementCard extends StatefulWidget {
     this.onEdit,
     this.onDelete,
     this.today,
+    this.showAudience = true,
   });
 
   final AnnouncementModel announcement;
@@ -23,6 +24,9 @@ class AnnouncementCard extends StatefulWidget {
 
   /// Overrides "now" in tests.
   final DateTime? today;
+
+  /// The "Everyone" badge; off on the public page, where all news is public.
+  final bool showAudience;
 
   /// Messages longer than this many lines start folded.
   static const int foldedLines = 5;
@@ -90,6 +94,12 @@ class _AnnouncementCardState extends State<AnnouncementCard> {
                             StatusBadge(
                               kind: StatusKind.waiting,
                               label: l10n.newLabel,
+                            ),
+                          // Members see which news also reaches outsiders.
+                          if (item.isPublic && widget.showAudience)
+                            StatusBadge(
+                              kind: StatusKind.neutral,
+                              label: l10n.audienceEveryone,
                             ),
                         ],
                       ),

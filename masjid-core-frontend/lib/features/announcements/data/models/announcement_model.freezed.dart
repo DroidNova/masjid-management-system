@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AnnouncementModel {
 
- String get id; String? get masjidId; String get title; String get message; bool get isActive; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String? get masjidId; String get title; String get message; bool get isActive;/// Also shown outside the masjid (public page). Members only when false.
+ bool get isPublic; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of AnnouncementModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +29,16 @@ $AnnouncementModelCopyWith<AnnouncementModel> get copyWith => _$AnnouncementMode
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AnnouncementModel&&(identical(other.id, id) || other.id == id)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AnnouncementModel&&(identical(other.id, id) || other.id == id)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,masjidId,title,message,isActive,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,masjidId,title,message,isActive,isPublic,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'AnnouncementModel(id: $id, masjidId: $masjidId, title: $title, message: $message, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'AnnouncementModel(id: $id, masjidId: $masjidId, title: $title, message: $message, isActive: $isActive, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +49,7 @@ abstract mixin class $AnnouncementModelCopyWith<$Res>  {
   factory $AnnouncementModelCopyWith(AnnouncementModel value, $Res Function(AnnouncementModel) _then) = _$AnnouncementModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String? masjidId, String title, String message, bool isActive, DateTime? createdAt, DateTime? updatedAt
+ String id, String? masjidId, String title, String message, bool isActive, bool isPublic, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -65,13 +66,14 @@ class _$AnnouncementModelCopyWithImpl<$Res>
 
 /// Create a copy of AnnouncementModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? masjidId = freezed,Object? title = null,Object? message = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? masjidId = freezed,Object? title = null,Object? message = null,Object? isActive = null,Object? isPublic = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,masjidId: freezed == masjidId ? _self.masjidId : masjidId // ignore: cast_nullable_to_non_nullable
 as String?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -159,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  bool isPublic,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AnnouncementModel() when $default != null:
-return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -180,10 +182,10 @@ return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  bool isPublic,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AnnouncementModel():
-return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +202,10 @@ return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? masjidId,  String title,  String message,  bool isActive,  bool isPublic,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AnnouncementModel() when $default != null:
-return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -215,7 +217,7 @@ return $default(_that.id,_that.masjidId,_that.title,_that.message,_that.isActive
 @JsonSerializable()
 
 class _AnnouncementModel implements AnnouncementModel {
-  const _AnnouncementModel({required this.id, this.masjidId, this.title = '', this.message = '', this.isActive = true, this.createdAt, this.updatedAt});
+  const _AnnouncementModel({required this.id, this.masjidId, this.title = '', this.message = '', this.isActive = true, this.isPublic = false, this.createdAt, this.updatedAt});
   factory _AnnouncementModel.fromJson(Map<String, dynamic> json) => _$AnnouncementModelFromJson(json);
 
 @override final  String id;
@@ -223,6 +225,8 @@ class _AnnouncementModel implements AnnouncementModel {
 @override@JsonKey() final  String title;
 @override@JsonKey() final  String message;
 @override@JsonKey() final  bool isActive;
+/// Also shown outside the masjid (public page). Members only when false.
+@override@JsonKey() final  bool isPublic;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -239,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AnnouncementModel&&(identical(other.id, id) || other.id == id)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AnnouncementModel&&(identical(other.id, id) || other.id == id)&&(identical(other.masjidId, masjidId) || other.masjidId == masjidId)&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,masjidId,title,message,isActive,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,masjidId,title,message,isActive,isPublic,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'AnnouncementModel(id: $id, masjidId: $masjidId, title: $title, message: $message, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'AnnouncementModel(id: $id, masjidId: $masjidId, title: $title, message: $message, isActive: $isActive, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -259,7 +263,7 @@ abstract mixin class _$AnnouncementModelCopyWith<$Res> implements $AnnouncementM
   factory _$AnnouncementModelCopyWith(_AnnouncementModel value, $Res Function(_AnnouncementModel) _then) = __$AnnouncementModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? masjidId, String title, String message, bool isActive, DateTime? createdAt, DateTime? updatedAt
+ String id, String? masjidId, String title, String message, bool isActive, bool isPublic, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -276,13 +280,14 @@ class __$AnnouncementModelCopyWithImpl<$Res>
 
 /// Create a copy of AnnouncementModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? masjidId = freezed,Object? title = null,Object? message = null,Object? isActive = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? masjidId = freezed,Object? title = null,Object? message = null,Object? isActive = null,Object? isPublic = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_AnnouncementModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,masjidId: freezed == masjidId ? _self.masjidId : masjidId // ignore: cast_nullable_to_non_nullable
 as String?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

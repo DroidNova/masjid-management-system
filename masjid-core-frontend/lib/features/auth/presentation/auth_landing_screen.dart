@@ -103,7 +103,20 @@ class AuthLandingScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppSpace.l),
+                  const SizedBox(height: AppSpace.m),
+                  // Times and public news of any masjid, without login.
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 380),
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/visit'),
+                      icon: const Icon(AppIcons.mosque),
+                      label: Text(
+                        l10n.seeMasjidTimes,
+                        style: textTheme.titleMedium,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 420),
                     child: TextButton.icon(

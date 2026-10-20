@@ -17,6 +17,7 @@ const announcementSelect = {
   title: true,
   message: true,
   isActive: true,
+  isPublic: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.AnnouncementSelect;
@@ -80,6 +81,8 @@ export class AnnouncementsService {
         title: dto.title,
         message: dto.message,
         isActive: dto.isActive ?? true,
+        // Members only unless the poster chose "Everyone".
+        isPublic: dto.isPublic ?? false,
       },
       select: announcementSelect,
     });
@@ -196,6 +199,10 @@ export class AnnouncementsService {
 
     if (dto.isActive !== undefined) {
       data.isActive = dto.isActive;
+    }
+
+    if (dto.isPublic !== undefined) {
+      data.isPublic = dto.isPublic;
     }
 
     return data;

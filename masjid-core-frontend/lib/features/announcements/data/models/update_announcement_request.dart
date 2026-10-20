@@ -16,6 +16,7 @@ abstract class UpdateAnnouncementRequest with _$UpdateAnnouncementRequest {
     String? title,
     String? message,
     bool? isActive,
+    bool? isPublic,
   }) = _UpdateAnnouncementRequest;
 
   /// From raw form text (trimmed).
@@ -23,10 +24,12 @@ abstract class UpdateAnnouncementRequest with _$UpdateAnnouncementRequest {
     required String title,
     required String message,
     required bool isActive,
+    required bool isPublic,
   }) => UpdateAnnouncementRequest(
     title: title.trim(),
     message: message.trim(),
     isActive: isActive,
+    isPublic: isPublic,
   );
 
   factory UpdateAnnouncementRequest.fromJson(Map<String, dynamic> json) =>

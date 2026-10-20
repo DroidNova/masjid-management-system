@@ -11,7 +11,9 @@ void main() {
   Future<void> open(WidgetTester tester, RecordHistory history) async {
     await pumpUi(
       tester,
-      const Scaffold(body: Center(child: RecordHistoryButton(target: target))),
+      const Scaffold(
+        body: Center(child: RecordHistoryButton(target: target)),
+      ),
       overrides: [
         recordHistoryProvider(target).overrideWith((ref) async => history),
       ],

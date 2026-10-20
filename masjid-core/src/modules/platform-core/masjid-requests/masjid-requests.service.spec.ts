@@ -75,6 +75,9 @@ function createFakePrisma() {
       },
     },
     masjid: {
+      // The public code check before create.
+      findUnique: async ({ where }: { where: Row }) =>
+        masjids.find((m) => m.publicCode === where.publicCode) ?? null,
       create: async ({ data }: { data: Row }) => {
         const row: Row = { id: `masjid-${masjids.length + 1}`, ...data };
         masjids.push(row);
@@ -204,6 +207,8 @@ describe('MasjidRequestsService approval', () => {
     const cm2 = users.find((u) => u.phone === CM2_PHONE)!;
     expect(imam.email).toBe('imam@example.com');
     expect(masjids[0].imamUserId).toBe(imam.id);
+    // Every approved masjid gets a public code (see src/common/masjid-code.ts).
+    expect(masjids[0].publicCode).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
     expect(users.map((u) => u.masjidId)).toEqual([
       'masjid-1',
       'masjid-1',

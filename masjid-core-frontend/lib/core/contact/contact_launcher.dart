@@ -30,6 +30,16 @@ class ContactLauncher {
     return _open(Uri.parse('sms:$digits?body=$text'));
   }
 
+  /// [message] ready to send to anyone the person picks: WhatsApp if the
+  /// phone has it, else the SMS app. On the website, WhatsApp's share link.
+  static Future<bool> share(String message) async {
+    final text = Uri.encodeComponent(message);
+    if (kIsWeb) return _open(Uri.parse('https://wa.me/?text=$text'));
+    final whatsApp = Uri.parse('whatsapp://send?text=$text');
+    if (await _can(whatsApp) && await _open(whatsApp)) return true;
+    return _open(Uri.parse('sms:?body=$text'));
+  }
+
   static Future<bool> _can(Uri uri) async {
     try {
       return await canLaunchUrl(uri);

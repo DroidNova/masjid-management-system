@@ -12,6 +12,7 @@ _UpdateAnnouncementRequest _$UpdateAnnouncementRequestFromJson(
   title: json['title'] as String?,
   message: json['message'] as String?,
   isActive: json['isActive'] as bool?,
+  isPublic: json['isPublic'] as bool?,
 );
 
 Map<String, dynamic> _$UpdateAnnouncementRequestToJson(
@@ -20,4 +21,5 @@ Map<String, dynamic> _$UpdateAnnouncementRequestToJson(
   'title': ?instance.title,
   'message': ?instance.message,
   'isActive': ?instance.isActive,
+  'isPublic': ?instance.isPublic,
 };

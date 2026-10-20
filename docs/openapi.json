@@ -176,6 +176,82 @@
         ]
       }
     },
+    "/public/masjids/search": {
+      "get": {
+        "description": "Public endpoint. Returns { items } (at most 20), not paged.",
+        "operationId": "PublicMasjidsController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Barota",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Find approved masjids by name or place (at least 2 letters)",
+        "tags": [
+          "Public masjid pages"
+        ]
+      }
+    },
+    "/public/masjids/{code}": {
+      "get": {
+        "description": "Public endpoint. Only approved masjids; unknown code: 404 MASJID_NOT_FOUND.",
+        "operationId": "PublicMasjidsController_page",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Public page of a masjid: place, namaz times, latest public news",
+        "tags": [
+          "Public masjid pages"
+        ]
+      }
+    },
+    "/public/masjids/{code}/announcements": {
+      "get": {
+        "description": "Public endpoint. Members-only announcements never appear.",
+        "operationId": "PublicMasjidsController_announcements",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Public announcements of a masjid, newest first",
+        "tags": [
+          "Public masjid pages"
+        ]
+      }
+    },
     "/admin/users": {
       "get": {
         "operationId": "AdminController_listUsers",
@@ -4481,6 +4557,12 @@
             "type": "boolean",
             "example": true,
             "default": true
+          },
+          "isPublic": {
+            "type": "boolean",
+            "example": false,
+            "default": false,
+            "description": "Also show it to people outside the masjid (public page, no login). Members only when false."
           }
         },
         "required": [
@@ -4504,6 +4586,12 @@
           "isActive": {
             "type": "boolean",
             "example": false
+          },
+          "isPublic": {
+            "type": "boolean",
+            "example": false,
+            "default": false,
+            "description": "Also show it to people outside the masjid (public page, no login). Members only when false."
           }
         }
       },

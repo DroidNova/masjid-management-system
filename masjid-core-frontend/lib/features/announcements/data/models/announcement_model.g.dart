@@ -13,6 +13,7 @@ _AnnouncementModel _$AnnouncementModelFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
       isActive: json['isActive'] as bool? ?? true,
+      isPublic: json['isPublic'] as bool? ?? false,
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
@@ -28,6 +29,7 @@ Map<String, dynamic> _$AnnouncementModelToJson(_AnnouncementModel instance) =>
       'title': instance.title,
       'message': instance.message,
       'isActive': instance.isActive,
+      'isPublic': instance.isPublic,
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
     };

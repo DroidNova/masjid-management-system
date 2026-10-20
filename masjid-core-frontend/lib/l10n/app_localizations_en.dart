@@ -1398,4 +1398,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noticeNew => 'New';
+
+  @override
+  String get audienceTitle => 'Who can see this?';
+
+  @override
+  String get audienceMembers => 'Members only';
+
+  @override
+  String get audienceMembersHint => 'People of this masjid';
+
+  @override
+  String get audienceEveryone => 'Everyone';
+
+  @override
+  String get audienceEveryoneHint => 'Also people outside this masjid';
+
+  @override
+  String get audienceEveryoneWarning =>
+      'Everyone will be able to see this, also people who are not members of this masjid, without logging in. Do not write private things such as money, names or phone numbers.';
+
+  @override
+  String get seeMasjidTimes => 'See masjid times';
+
+  @override
+  String get findMasjid => 'Find a masjid';
+
+  @override
+  String get findMasjidHint => 'Find a masjid to follow its namaz times';
+
+  @override
+  String get masjidsIFollow => 'Masjids I follow';
+
+  @override
+  String get otherMasjids => 'Other masjids';
+
+  @override
+  String get masjidCodeLabel => 'Masjid code';
+
+  @override
+  String get masjidCodeHint => '6 letters and numbers, from the masjid';
+
+  @override
+  String get openMasjid => 'Open';
+
+  @override
+  String get orSearchMasjid => 'Or search by name or place';
+
+  @override
+  String get searchMasjidHint => 'Masjid name, village or city';
+
+  @override
+  String get noMasjidFound => 'No masjid found. Try another name or place.';
+
+  @override
+  String get masjidCodeNotFound =>
+      'No masjid with this code. Check the code and try again.';
+
+  @override
+  String masjidCodeIs(String code) {
+    return 'Code: $code';
+  }
+
+  @override
+  String get followMasjid => 'Follow this masjid';
+
+  @override
+  String get followingMasjid => 'Following';
+
+  @override
+  String get followingMasjidHint =>
+      'It shows on your Home. Tap again to stop following.';
+
+  @override
+  String get noPublicNews => 'No news for everyone yet';
+
+  @override
+  String get masjidCodeShareHelp =>
+      'Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.';
+
+  @override
+  String masjidCodeShareText(String code, String masjid) {
+    return 'See the namaz times and news of $masjid in the Masjid app. Masjid code: $code';
+  }
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get codeCopied => 'Code copied';
 }

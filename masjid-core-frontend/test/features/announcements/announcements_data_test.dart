@@ -42,11 +42,14 @@ void main() {
         title: '  Eid ',
         message: ' At 7 ',
         isActive: true,
+        isPublic: false,
       ).toJson();
       expect(json, <String, dynamic>{
         'title': 'Eid',
         'message': 'At 7',
         'isActive': true,
+        // Members only unless "Everyone" was chosen.
+        'isPublic': false,
       });
     });
 

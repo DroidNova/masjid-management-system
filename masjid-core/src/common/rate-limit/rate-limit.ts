@@ -23,6 +23,8 @@ export const RATE_LIMITS = {
   publicSubmit: { default: { limit: 5, ttl: 10 * MINUTE } },
   /** Public application tracking by phone number. */
   publicLookup: { default: { limit: 10, ttl: MINUTE } },
+  /** Public masjid pages and search (no login). */
+  publicRead: { default: { limit: 60, ttl: MINUTE } },
 } as const;
 
 @Module({

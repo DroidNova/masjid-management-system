@@ -119,6 +119,10 @@ const ROUTES_WITHOUT_PERMISSION = new Set([
   'HealthController.getHealth',
   'MasjidRequestsController.create',
   'MasjidRequestsController.track',
+  // Public masjid pages: only what an outsider may see (no login).
+  'PublicMasjidsController.search',
+  'PublicMasjidsController.page',
+  'PublicMasjidsController.announcements',
 ]);
 
 function findControllerFiles(dir: string): string[] {

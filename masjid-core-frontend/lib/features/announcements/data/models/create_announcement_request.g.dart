@@ -12,6 +12,7 @@ _CreateAnnouncementRequest _$CreateAnnouncementRequestFromJson(
   title: json['title'] as String,
   message: json['message'] as String,
   isActive: json['isActive'] as bool? ?? true,
+  isPublic: json['isPublic'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$CreateAnnouncementRequestToJson(
@@ -20,4 +21,5 @@ Map<String, dynamic> _$CreateAnnouncementRequestToJson(
   'title': instance.title,
   'message': instance.message,
   'isActive': instance.isActive,
+  'isPublic': instance.isPublic,
 };

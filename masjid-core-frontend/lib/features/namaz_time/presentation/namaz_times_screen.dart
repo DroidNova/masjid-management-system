@@ -79,7 +79,7 @@ class NamazTimesScreen extends ConsumerWidget {
                       child: ReadAloudButton(text: spoken),
                     ),
                   for (final (prayer, text) in rows)
-                    _PrayerRow(
+                    PrayerTimeRow(
                       prayer: prayer,
                       time: parseNamazTime(text),
                       isNext: prayer == nextToday,
@@ -114,8 +114,11 @@ class NamazTimesScreen extends ConsumerWidget {
   }
 }
 
-class _PrayerRow extends StatelessWidget {
-  const _PrayerRow({
+/// One prayer: its picture, name and time; the next one is highlighted.
+/// Also used on the public masjid page.
+class PrayerTimeRow extends StatelessWidget {
+  const PrayerTimeRow({
+    super.key,
     required this.prayer,
     required this.time,
     required this.isNext,

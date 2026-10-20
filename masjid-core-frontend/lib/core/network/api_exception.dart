@@ -21,6 +21,7 @@ class ApiErrorCodes {
   static const String invalidCredentials = 'INVALID_CREDENTIALS';
   static const String otpChallengeInvalid = 'OTP_CHALLENGE_INVALID';
   static const String notFound = 'NOT_FOUND';
+  static const String masjidNotFound = 'MASJID_NOT_FOUND';
   static const String masjidUserAlreadyLinked = 'MASJID_USER_ALREADY_LINKED';
   static const String announcementNotFound = 'ANNOUNCEMENT_NOT_FOUND';
   static const String imamSalaryNotFound = 'IMAM_SALARY_NOT_FOUND';

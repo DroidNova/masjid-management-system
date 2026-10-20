@@ -26,6 +26,7 @@ class EditAnnouncementScreen extends ConsumerWidget {
     WidgetRef ref,
     String title,
     String message,
+    bool isPublic,
   ) async {
     final l10n = AppLocalizations.of(context);
     final saved = await ref
@@ -36,6 +37,7 @@ class EditAnnouncementScreen extends ConsumerWidget {
             title: title,
             message: message,
             isActive: true,
+            isPublic: isPublic,
           ),
         );
     if (!saved || !context.mounted) return;
@@ -60,9 +62,11 @@ class EditAnnouncementScreen extends ConsumerWidget {
       body = NewsForm(
         initialTitle: current.title,
         initialMessage: current.message,
+        initialIsPublic: current.isPublic,
         saving: saveState.isLoading,
         error: saveError == null ? null : errorText(l10n, saveError),
-        onSave: (title, message) => _save(context, ref, title, message),
+        onSave: (title, message, isPublic) =>
+            _save(context, ref, title, message, isPublic),
       );
     } else if (loaded.hasError) {
       body = ErrorState(

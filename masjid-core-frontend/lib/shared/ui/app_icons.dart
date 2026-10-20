@@ -16,6 +16,9 @@ class AppIcons {
   static const IconData money = Icons.account_balance_wallet_rounded;
   static const IconData projects = Icons.construction_rounded;
   static const IconData people = Icons.groups_rounded;
+
+  /// Seen by everyone, also outside the masjid.
+  static const IconData everyone = Icons.public_rounded;
   static const IconData salary = Icons.currency_rupee_rounded;
   static const IconData myPayments = Icons.receipt_long_rounded;
   static const IconData imam = Icons.person_pin_rounded;
@@ -41,6 +44,7 @@ class AppIcons {
   static const IconData problem = Icons.error_rounded;
   static const IconData warning = Icons.warning_rounded;
   static const IconData info = Icons.info_rounded;
+
   /// Who added and changed a record.
   static const IconData history = Icons.manage_history_rounded;
   static const IconData notifications = Icons.notifications_none_rounded;

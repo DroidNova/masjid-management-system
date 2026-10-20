@@ -58,9 +58,7 @@ void main() {
     );
 
     expect(
-      find.text(
-        'Karim recorded ₹500 from you for Imam salary (October 2026)',
-      ),
+      find.text('Karim recorded ₹500 from you for Imam salary (October 2026)'),
       findsOneWidget,
     );
     expect(find.text('New'), findsOneWidget);

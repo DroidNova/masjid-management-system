@@ -32,4 +32,14 @@ export class UpdateAnnouncementDto {
   @IsOptional()
   @IsBoolean({ message: 'isActive must be a boolean' })
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    default: false,
+    description:
+      'Also show it to people outside the masjid (public page, no login). Members only when false.',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isPublic must be a boolean' })
+  isPublic?: boolean;
 }

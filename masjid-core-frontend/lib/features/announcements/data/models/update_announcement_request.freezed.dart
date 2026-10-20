@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpdateAnnouncementRequest {
 
- String? get title; String? get message; bool? get isActive;
+ String? get title; String? get message; bool? get isActive; bool? get isPublic;
 /// Create a copy of UpdateAnnouncementRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UpdateAnnouncementRequestCopyWith<UpdateAnnouncementRequest> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateAnnouncementRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateAnnouncementRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,message,isActive);
+int get hashCode => Object.hash(runtimeType,title,message,isActive,isPublic);
 
 @override
 String toString() {
-  return 'UpdateAnnouncementRequest(title: $title, message: $message, isActive: $isActive)';
+  return 'UpdateAnnouncementRequest(title: $title, message: $message, isActive: $isActive, isPublic: $isPublic)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UpdateAnnouncementRequestCopyWith<$Res>  {
   factory $UpdateAnnouncementRequestCopyWith(UpdateAnnouncementRequest value, $Res Function(UpdateAnnouncementRequest) _then) = _$UpdateAnnouncementRequestCopyWithImpl;
 @useResult
 $Res call({
- String? title, String? message, bool? isActive
+ String? title, String? message, bool? isActive, bool? isPublic
 });
 
 
@@ -65,11 +65,12 @@ class _$UpdateAnnouncementRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateAnnouncementRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = freezed,Object? message = freezed,Object? isActive = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = freezed,Object? message = freezed,Object? isActive = freezed,Object? isPublic = freezed,}) {
   return _then(_self.copyWith(
 title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool?,isPublic: freezed == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
@@ -155,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? title,  String? message,  bool? isActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? title,  String? message,  bool? isActive,  bool? isPublic)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpdateAnnouncementRequest() when $default != null:
-return $default(_that.title,_that.message,_that.isActive);case _:
+return $default(_that.title,_that.message,_that.isActive,_that.isPublic);case _:
   return orElse();
 
 }
@@ -176,10 +177,10 @@ return $default(_that.title,_that.message,_that.isActive);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? title,  String? message,  bool? isActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? title,  String? message,  bool? isActive,  bool? isPublic)  $default,) {final _that = this;
 switch (_that) {
 case _UpdateAnnouncementRequest():
-return $default(_that.title,_that.message,_that.isActive);case _:
+return $default(_that.title,_that.message,_that.isActive,_that.isPublic);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +197,10 @@ return $default(_that.title,_that.message,_that.isActive);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? title,  String? message,  bool? isActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? title,  String? message,  bool? isActive,  bool? isPublic)?  $default,) {final _that = this;
 switch (_that) {
 case _UpdateAnnouncementRequest() when $default != null:
-return $default(_that.title,_that.message,_that.isActive);case _:
+return $default(_that.title,_that.message,_that.isActive,_that.isPublic);case _:
   return null;
 
 }
@@ -211,12 +212,13 @@ return $default(_that.title,_that.message,_that.isActive);case _:
 
 @JsonSerializable(includeIfNull: false)
 class _UpdateAnnouncementRequest implements UpdateAnnouncementRequest {
-  const _UpdateAnnouncementRequest({this.title, this.message, this.isActive});
+  const _UpdateAnnouncementRequest({this.title, this.message, this.isActive, this.isPublic});
   factory _UpdateAnnouncementRequest.fromJson(Map<String, dynamic> json) => _$UpdateAnnouncementRequestFromJson(json);
 
 @override final  String? title;
 @override final  String? message;
 @override final  bool? isActive;
+@override final  bool? isPublic;
 
 /// Create a copy of UpdateAnnouncementRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +233,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateAnnouncementRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateAnnouncementRequest&&(identical(other.title, title) || other.title == title)&&(identical(other.message, message) || other.message == message)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,message,isActive);
+int get hashCode => Object.hash(runtimeType,title,message,isActive,isPublic);
 
 @override
 String toString() {
-  return 'UpdateAnnouncementRequest(title: $title, message: $message, isActive: $isActive)';
+  return 'UpdateAnnouncementRequest(title: $title, message: $message, isActive: $isActive, isPublic: $isPublic)';
 }
 
 
@@ -251,7 +253,7 @@ abstract mixin class _$UpdateAnnouncementRequestCopyWith<$Res> implements $Updat
   factory _$UpdateAnnouncementRequestCopyWith(_UpdateAnnouncementRequest value, $Res Function(_UpdateAnnouncementRequest) _then) = __$UpdateAnnouncementRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String? title, String? message, bool? isActive
+ String? title, String? message, bool? isActive, bool? isPublic
 });
 
 
@@ -268,11 +270,12 @@ class __$UpdateAnnouncementRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateAnnouncementRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = freezed,Object? message = freezed,Object? isActive = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = freezed,Object? message = freezed,Object? isActive = freezed,Object? isPublic = freezed,}) {
   return _then(_UpdateAnnouncementRequest(
 title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool?,isPublic: freezed == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }

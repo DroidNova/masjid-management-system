@@ -8,6 +8,9 @@ part 'masjid_detail_model.g.dart';
 abstract class MasjidDetailModel with _$MasjidDetailModel {
   const factory MasjidDetailModel({
     required String id,
+
+    /// The code people outside the masjid use to find its public page.
+    String? publicCode,
     required String name,
     String? country,
     String? locality,

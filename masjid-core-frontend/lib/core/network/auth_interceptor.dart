@@ -179,6 +179,8 @@ class AuthInterceptor extends Interceptor {
     if (path.contains('/auth/')) {
       return _publicPaths.any(path.endsWith);
     }
+    // Public masjid pages: same answer for everyone, never a token.
+    if (path.startsWith('/public/')) return true;
     // Submitting and tracking a masjid request need no login.
     return options.method == 'POST' &&
         (path.endsWith('/masjid-requests') ||

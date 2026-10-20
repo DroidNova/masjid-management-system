@@ -12,6 +12,9 @@ abstract class AnnouncementModel with _$AnnouncementModel {
     @Default('') String title,
     @Default('') String message,
     @Default(true) bool isActive,
+
+    /// Also shown outside the masjid (public page). Members only when false.
+    @Default(false) bool isPublic,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _AnnouncementModel;

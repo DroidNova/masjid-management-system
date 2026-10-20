@@ -224,6 +224,9 @@ model OtpChallenge {
 
 model Masjid {
   id               String       @id @default(uuid()) @db.Uuid
+  /// Short code people outside the masjid use to find it (6 characters,
+  /// no look-alikes such as 0/O or 1/I). See src/common/masjid-code.ts.
+  publicCode       String       @unique
   name             String
   country          String       @default("India")
   state            String
@@ -513,12 +516,16 @@ model Announcement {
   title     String
   message   String
   isActive  Boolean  @default(true)
+  /// Also shown to people outside the masjid (followers, no login). Off
+  /// unless the poster chooses "Everyone".
+  isPublic  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   masjid Masjid @relation(fields: [masjidId], references: [id], onDelete: Cascade)
 
   @@index([masjidId, isActive, createdAt])
+  @@index([masjidId, isPublic, isActive, createdAt])
   @@index([masjidId, createdAt])
 }
 

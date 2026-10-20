@@ -784,5 +784,49 @@
       }
     }
   },
-  "noticeNew": "New"
+  "noticeNew": "New",
+  "audienceTitle": "Who can see this?",
+  "audienceMembers": "Members only",
+  "audienceMembersHint": "People of this masjid",
+  "audienceEveryone": "Everyone",
+  "audienceEveryoneHint": "Also people outside this masjid",
+  "audienceEveryoneWarning": "Everyone will be able to see this, also people who are not members of this masjid, without logging in. Do not write private things such as money, names or phone numbers.",
+  "seeMasjidTimes": "See masjid times",
+  "findMasjid": "Find a masjid",
+  "findMasjidHint": "Find a masjid to follow its namaz times",
+  "masjidsIFollow": "Masjids I follow",
+  "otherMasjids": "Other masjids",
+  "masjidCodeLabel": "Masjid code",
+  "masjidCodeHint": "6 letters and numbers, from the masjid",
+  "openMasjid": "Open",
+  "orSearchMasjid": "Or search by name or place",
+  "searchMasjidHint": "Masjid name, village or city",
+  "noMasjidFound": "No masjid found. Try another name or place.",
+  "masjidCodeNotFound": "No masjid with this code. Check the code and try again.",
+  "masjidCodeIs": "Code: {code}",
+  "@masjidCodeIs": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "followMasjid": "Follow this masjid",
+  "followingMasjid": "Following",
+  "followingMasjidHint": "It shows on your Home. Tap again to stop following.",
+  "noPublicNews": "No news for everyone yet",
+  "masjidCodeShareHelp": "Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.",
+  "masjidCodeShareText": "See the namaz times and news of {masjid} in the Masjid app. Masjid code: {code}",
+  "@masjidCodeShareText": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "masjid": {
+        "type": "String"
+      }
+    }
+  },
+  "share": "Share",
+  "codeCopied": "Code copied"
 }

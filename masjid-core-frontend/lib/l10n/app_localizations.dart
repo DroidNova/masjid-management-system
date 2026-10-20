@@ -2600,6 +2600,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New'**
   String get noticeNew;
+
+  /// No description provided for @audienceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can see this?'**
+  String get audienceTitle;
+
+  /// No description provided for @audienceMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members only'**
+  String get audienceMembers;
+
+  /// No description provided for @audienceMembersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People of this masjid'**
+  String get audienceMembersHint;
+
+  /// No description provided for @audienceEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get audienceEveryone;
+
+  /// No description provided for @audienceEveryoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Also people outside this masjid'**
+  String get audienceEveryoneHint;
+
+  /// No description provided for @audienceEveryoneWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone will be able to see this, also people who are not members of this masjid, without logging in. Do not write private things such as money, names or phone numbers.'**
+  String get audienceEveryoneWarning;
+
+  /// No description provided for @seeMasjidTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'See masjid times'**
+  String get seeMasjidTimes;
+
+  /// No description provided for @findMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a masjid'**
+  String get findMasjid;
+
+  /// No description provided for @findMasjidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a masjid to follow its namaz times'**
+  String get findMasjidHint;
+
+  /// No description provided for @masjidsIFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjids I follow'**
+  String get masjidsIFollow;
+
+  /// No description provided for @otherMasjids.
+  ///
+  /// In en, this message translates to:
+  /// **'Other masjids'**
+  String get otherMasjids;
+
+  /// No description provided for @masjidCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid code'**
+  String get masjidCodeLabel;
+
+  /// No description provided for @masjidCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'6 letters and numbers, from the masjid'**
+  String get masjidCodeHint;
+
+  /// No description provided for @openMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openMasjid;
+
+  /// No description provided for @orSearchMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Or search by name or place'**
+  String get orSearchMasjid;
+
+  /// No description provided for @searchMasjidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Masjid name, village or city'**
+  String get searchMasjidHint;
+
+  /// No description provided for @noMasjidFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No masjid found. Try another name or place.'**
+  String get noMasjidFound;
+
+  /// No description provided for @masjidCodeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No masjid with this code. Check the code and try again.'**
+  String get masjidCodeNotFound;
+
+  /// No description provided for @masjidCodeIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Code: {code}'**
+  String masjidCodeIs(String code);
+
+  /// No description provided for @followMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow this masjid'**
+  String get followMasjid;
+
+  /// No description provided for @followingMasjid.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get followingMasjid;
+
+  /// No description provided for @followingMasjidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It shows on your Home. Tap again to stop following.'**
+  String get followingMasjidHint;
+
+  /// No description provided for @noPublicNews.
+  ///
+  /// In en, this message translates to:
+  /// **'No news for everyone yet'**
+  String get noPublicNews;
+
+  /// No description provided for @masjidCodeShareHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.'**
+  String get masjidCodeShareHelp;
+
+  /// No description provided for @masjidCodeShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'See the namaz times and news of {masjid} in the Masjid app. Masjid code: {code}'**
+  String masjidCodeShareText(String code, String masjid);
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @codeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get codeCopied;
 }
 
 class _AppLocalizationsDelegate

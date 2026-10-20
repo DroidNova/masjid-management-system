@@ -10,6 +10,7 @@ import 'package:masjid_core_frontend/features/community/application/community_co
 import 'package:masjid_core_frontend/features/community/data/models/community_user_model.dart';
 import 'package:masjid_core_frontend/features/community/data/models/masjid_detail_model.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/followed_masjids_section.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -87,6 +88,10 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     _MasjidCard(masjid: data.masjid, count: data.users.length),
+                    if (data.masjid.publicCode case final code?) ...<Widget>[
+                      const SizedBox(height: AppSpace.m),
+                      MasjidCodeCard(code: code, masjidName: data.masjid.name),
+                    ],
                     const SizedBox(height: AppSpace.l),
                     TextField(
                       textInputAction: TextInputAction.search,
