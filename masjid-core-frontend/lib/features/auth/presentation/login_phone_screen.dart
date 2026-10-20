@@ -75,41 +75,42 @@ class _LoginPhoneScreenState extends ConsumerState<LoginPhoneScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.login)),
+      // Continue stays pinned above the system buttons; the rest fits the
+      // screen (compact on short ones) and scrolls only if it must.
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: PageBody.form(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ScreenHeader(icon: AppIcons.phone, title: l10n.yourPhoneNumber),
-                PhoneEntry(
-                  country: _country,
-                  digits: _digits,
-                  enabled: !_isSubmitting,
-                  onSubmit: _continue,
-                  onCountryChanged: (country) => setState(() {
-                    _country = country;
-                    _digits = '';
-                  }),
-                  onDigitsChanged: (digits) => setState(() {
-                    _digits = digits;
-                    _error = null;
-                  }),
-                ),
-                const SizedBox(height: AppSpace.l),
-                if (error != null) ...<Widget>[
-                  MessageBanner(text: error),
-                  const SizedBox(height: AppSpace.l),
-                ],
-                BusyButton(
-                  label: l10n.continueLabel,
-                  icon: AppIcons.next,
-                  busy: _isSubmitting,
-                  onPressed: _isValid ? _continue : null,
-                ),
-              ],
+        child: KeypadPageLayout(
+          content: (compact) => <Widget>[
+            ScreenHeader(
+              icon: AppIcons.phone,
+              title: l10n.yourPhoneNumber,
+              compact: compact,
             ),
+            PhoneEntry(
+              compact: compact,
+              country: _country,
+              digits: _digits,
+              enabled: !_isSubmitting,
+              onSubmit: _continue,
+              onCountryChanged: (country) => setState(() {
+                _country = country;
+                _digits = '';
+              }),
+              onDigitsChanged: (digits) => setState(() {
+                _digits = digits;
+                _error = null;
+              }),
+            ),
+            if (error != null) ...<Widget>[
+              const SizedBox(height: AppSpace.l),
+              MessageBanner(text: error),
+            ],
+          ],
+          action: BusyButton(
+            label: l10n.continueLabel,
+            icon: AppIcons.next,
+            busy: _isSubmitting,
+            onPressed: _isValid ? _continue : null,
           ),
         ),
       ),

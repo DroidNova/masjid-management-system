@@ -19,7 +19,12 @@ class NumberKeypad extends StatelessWidget {
     this.autofocus = true,
     this.enabled = true,
     this.onSubmit,
+    this.compact = false,
   });
+
+  /// Shorter keys (54 instead of 64) so short screens fit; still well above
+  /// the 48 px touch minimum.
+  final bool compact;
 
   /// Called with a digit, [extraKey], or [backspace].
   final ValueChanged<String> onKey;
@@ -101,7 +106,7 @@ class NumberKeypad extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.m),
             onTap: enabled ? () => _press(value ?? label) : null,
             child: SizedBox(
-              height: 64,
+              height: compact ? 54 : 64,
               child: Center(
                 child: icon != null
                     ? Icon(icon, size: 28, semanticLabel: l10n.deleteDigit)

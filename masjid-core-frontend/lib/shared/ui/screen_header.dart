@@ -5,7 +5,9 @@ import 'package:masjid_core_frontend/shared/ui/tone_icon.dart';
 
 /// The picture, title, and one short line at the top of a single-task
 /// screen (enter phone, enter code...). The picture says what the screen
-/// is for before any reading.
+/// is for before any reading. [compact] (short screens, see
+/// [isShortForKeypad]) uses a smaller picture and less space, so a keypad
+/// screen fits without scrolling.
 class ScreenHeader extends StatelessWidget {
   const ScreenHeader({
     super.key,
@@ -14,7 +16,10 @@ class ScreenHeader extends StatelessWidget {
     this.subtitle,
     this.tone = AppTones.brand,
     this.trailing,
+    this.compact = false,
   });
+
+  final bool compact;
 
   final IconData icon;
   final String title;
@@ -33,14 +38,18 @@ class ScreenHeader extends StatelessWidget {
     return FadeSlideIn(
       child: Column(
         children: <Widget>[
-          // Room for the glow, which spills 14 px around the picture.
-          const SizedBox(height: 14),
-          Breathing(
-            color: tone.color,
-            size: 116,
-            child: ToneIcon(icon: icon, tone: tone, size: 88, circle: true),
-          ),
-          const SizedBox(height: AppSpace.l + 6),
+          if (compact)
+            ToneIcon(icon: icon, tone: tone, size: 64, circle: true)
+          else ...<Widget>[
+            // Room for the glow, which spills 14 px around the picture.
+            const SizedBox(height: 14),
+            Breathing(
+              color: tone.color,
+              size: 116,
+              child: ToneIcon(icon: icon, tone: tone, size: 88, circle: true),
+            ),
+          ],
+          SizedBox(height: compact ? AppSpace.m : AppSpace.l + 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -67,9 +76,14 @@ class ScreenHeader extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: AppSpace.xl),
+          SizedBox(height: compact ? AppSpace.l : AppSpace.xl),
         ],
       ),
     );
   }
 }
+
+/// True when a keypad screen's scrolling area is too short for the full
+/// header and keypad (most phones with the 3-button bar). Pass the
+/// area's height from a [LayoutBuilder].
+bool isShortForKeypad(double height) => height < 640;

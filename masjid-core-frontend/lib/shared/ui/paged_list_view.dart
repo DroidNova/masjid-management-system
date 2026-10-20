@@ -162,7 +162,12 @@ class PagedListView<T> extends StatelessWidget {
           onNotification: _onScroll,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.only(top: AppSpace.l, bottom: bottomPadding),
+            // Plus the system navigation bar, so the last row can scroll
+            // clear of it (zero above the tab bar or inside SafeArea).
+            padding: EdgeInsets.only(
+              top: AppSpace.l,
+              bottom: bottomPadding + MediaQuery.paddingOf(context).bottom,
+            ),
             children: <Widget>[
               for (final widget in header) centered(widget),
               ...rows,

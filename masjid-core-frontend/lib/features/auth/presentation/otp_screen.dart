@@ -120,65 +120,59 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.login)),
+      // Fits the screen (compact on short ones); "Change number" stays at
+      // the bottom, clear of the system buttons.
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: PageBody.form(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ScreenHeader(
-                  icon: AppIcons.code,
-                  title: l10n.enterCode,
-                  subtitle: l10n.codeSentTo(AppFormat.phone(widget.phone)),
-                ),
-                CodeBoxes(
-                  length: _otpLength,
-                  code: _code,
-                  hasError: error != null,
-                ),
-                const SizedBox(height: AppSpace.l),
-                if (_verifying)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const SizedBox.square(
-                        dimension: 22,
-                        child: CircularProgressIndicator(strokeWidth: 3),
-                      ),
-                      const SizedBox(width: AppSpace.m),
-                      Text(l10n.pleaseWait),
-                    ],
-                  ),
-                if (error != null)
-                  MessageBanner(
-                    text: error,
-                    action: _expired
-                        ? BusyButton(
-                            label: l10n.sendNewCode,
-                            icon: AppIcons.send,
-                            busy: _resending,
-                            onPressed: _sendNewCode,
-                          )
-                        : null,
-                  ),
-                if (_newCodeSent)
-                  MessageBanner(text: l10n.newCodeSent, kind: StatusKind.done),
-                const SizedBox(height: AppSpace.l),
-                Center(
-                  child: NumberKeypad(
-                    onKey: _onKey,
-                    enabled: !_verifying && !_resending,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.m),
-                TextButton.icon(
-                  onPressed: () => context.go('/login-phone'),
-                  icon: const Icon(AppIcons.phone),
-                  label: Text(l10n.changeNumber),
-                ),
-              ],
+        child: KeypadPageLayout(
+          content: (compact) => <Widget>[
+            ScreenHeader(
+              icon: AppIcons.code,
+              title: l10n.enterCode,
+              subtitle: l10n.codeSentTo(AppFormat.phone(widget.phone)),
+              compact: compact,
             ),
+            CodeBoxes(length: _otpLength, code: _code, hasError: error != null),
+            const SizedBox(height: AppSpace.l),
+            if (_verifying)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const SizedBox.square(
+                    dimension: 22,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  const SizedBox(width: AppSpace.m),
+                  Text(l10n.pleaseWait),
+                ],
+              ),
+            if (error != null)
+              MessageBanner(
+                text: error,
+                action: _expired
+                    ? BusyButton(
+                        label: l10n.sendNewCode,
+                        icon: AppIcons.send,
+                        busy: _resending,
+                        onPressed: _sendNewCode,
+                      )
+                    : null,
+              ),
+            if (_newCodeSent)
+              MessageBanner(text: l10n.newCodeSent, kind: StatusKind.done),
+            const SizedBox(height: AppSpace.l),
+            Center(
+              child: NumberKeypad(
+                onKey: _onKey,
+                enabled: !_verifying && !_resending,
+                compact: compact,
+              ),
+            ),
+          ],
+          action: TextButton.icon(
+            onPressed: () => context.go('/login-phone'),
+            icon: const Icon(AppIcons.phone),
+            label: Text(l10n.changeNumber),
           ),
         ),
       ),

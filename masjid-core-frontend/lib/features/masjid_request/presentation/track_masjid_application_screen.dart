@@ -64,51 +64,48 @@ class _TrackMasjidApplicationScreenState
                 onPressed: () => context.go('/auth'),
               ),
       ),
+      // Check stays pinned above the system buttons; the rest fits the
+      // screen (compact on short ones), and results scroll above Check.
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: PageBody.form(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ScreenHeader(
-                  icon: AppIcons.track,
-                  tone: AppTones.namaz,
-                  title: l10n.trackRequest,
-                  subtitle: l10n.trackHelp,
-                ),
-                PhoneEntry(
-                  country: _country,
-                  digits: _digits,
-                  enabled: !isLoading,
-                  onSubmit: _track,
-                  onCountryChanged: (country) => setState(() {
-                    _country = country;
-                    _digits = '';
-                  }),
-                  onDigitsChanged: (digits) => setState(() => _digits = digits),
-                ),
-                const SizedBox(height: AppSpace.l),
-                BusyButton(
-                  label: l10n.check,
-                  icon: AppIcons.search,
-                  busy: isLoading,
-                  color: AppTones.namaz.color,
-                  onPressed: PhoneEntry.isValid(_country, _digits)
-                      ? _track
-                      : null,
-                ),
-                const SizedBox(height: AppSpace.xl),
-                if (result != null && !result.isLoading)
-                  FadeSlideIn(
-                    key: _resultsKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _results(l10n, result),
-                    ),
-                  ),
-              ],
+        child: KeypadPageLayout(
+          content: (compact) => <Widget>[
+            ScreenHeader(
+              icon: AppIcons.track,
+              tone: AppTones.namaz,
+              title: l10n.trackRequest,
+              subtitle: l10n.trackHelp,
+              compact: compact,
             ),
+            PhoneEntry(
+              compact: compact,
+              country: _country,
+              digits: _digits,
+              enabled: !isLoading,
+              onSubmit: _track,
+              onCountryChanged: (country) => setState(() {
+                _country = country;
+                _digits = '';
+              }),
+              onDigitsChanged: (digits) => setState(() => _digits = digits),
+            ),
+            if (result != null && !result.isLoading) ...<Widget>[
+              const SizedBox(height: AppSpace.xl),
+              FadeSlideIn(
+                key: _resultsKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _results(l10n, result),
+                ),
+              ),
+            ],
+          ],
+          action: BusyButton(
+            label: l10n.check,
+            icon: AppIcons.search,
+            busy: isLoading,
+            color: AppTones.namaz.color,
+            onPressed: PhoneEntry.isValid(_country, _digits) ? _track : null,
           ),
         ),
       ),

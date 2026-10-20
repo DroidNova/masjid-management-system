@@ -58,11 +58,19 @@ class PageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The app draws behind the system navigation bar (edge-to-edge). Keep
+    // the end of the page above it: the 3-button bar is tall, the gesture
+    // bar thin. Zero inside SafeArea, a ListView, or above the tab bar,
+    // where the space is already taken care of.
+    final systemBar = MediaQuery.paddingOf(context).bottom;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Padding(padding: padding, child: child),
+        child: Padding(
+          padding: padding.add(EdgeInsets.only(bottom: systemBar)),
+          child: child,
+        ),
       ),
     );
   }

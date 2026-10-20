@@ -21,7 +21,11 @@ class PhoneEntry extends StatelessWidget {
     this.autofocus = true,
     this.enabled = true,
     this.onSubmit,
+    this.compact = false,
   });
+
+  /// Shorter keypad keys; see [NumberKeypad.compact].
+  final bool compact;
 
   final CountryCode country;
   final String digits;
@@ -129,6 +133,7 @@ class PhoneEntry extends StatelessWidget {
           autofocus: autofocus,
           enabled: enabled,
           onSubmit: onSubmit,
+          compact: compact,
           onKey: (key) => onDigitsChanged(
             applyKey(digits, key, maxLength: maxLengthFor(country)),
           ),
