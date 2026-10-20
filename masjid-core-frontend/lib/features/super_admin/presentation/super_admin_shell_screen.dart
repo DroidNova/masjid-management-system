@@ -16,7 +16,7 @@ class SuperAdminShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final labels = <String>[
-      l10n.tabDashboard,
+      l10n.tabHome,
       l10n.tabRequests,
       l10n.tabMasjids,
       l10n.tabUsers,

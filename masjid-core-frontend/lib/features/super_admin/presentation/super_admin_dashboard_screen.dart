@@ -175,10 +175,17 @@ class _Numbers extends StatelessWidget {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              '$count',
-                              style: textTheme.headlineMedium?.copyWith(
-                                color: tone.color,
+                            child: Semantics(
+                              label: '$count',
+                              excludeSemantics: true,
+                              child: CountUp(
+                                value: count.toDouble(),
+                                builder: (context, shown) => Text(
+                                  '${shown.round()}',
+                                  style: textTheme.headlineMedium?.copyWith(
+                                    color: tone.color,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
