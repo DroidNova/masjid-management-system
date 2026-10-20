@@ -5,13 +5,93 @@ import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/features/visit/application/followed_masjids.dart';
 import 'package:masjid_core_frontend/features/visit/data/public_masjid_api.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/public_masjid_screen.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
+/// Where finding a masjid opens (a code or search).
+const String findMasjidLocation = '/visit/find';
+
+/// "Masjid times" (`/visit`): with followed masjids, straight to their
+/// times and news (chips on top switch between several; the search icon
+/// finds another). With none, finding a masjid. Works without login.
+class VisitScreen extends ConsumerStatefulWidget {
+  const VisitScreen({super.key});
+
+  @override
+  ConsumerState<VisitScreen> createState() => _VisitScreenState();
+}
+
+class _VisitScreenState extends ConsumerState<VisitScreen> {
+  String? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final followed = ref.watch(followedMasjidsProvider);
+    if (followed.isEmpty) return const FindMasjidScreen();
+
+    // The chosen one, or the newest followed when it was unfollowed.
+    final code = followed.any((masjid) => masjid.code == _selected)
+        ? _selected!
+        : followed.first.code;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.seeMasjidTimes),
+        actions: <Widget>[
+          IconButton(
+            tooltip: l10n.findMasjid,
+            onPressed: () => context.push(findMasjidLocation),
+            icon: const Icon(AppIcons.search),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (followed.length > 1)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.l,
+                  AppSpace.s,
+                  AppSpace.l,
+                  AppSpace.xs,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    for (final masjid in followed)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                          end: AppSpace.s,
+                        ),
+                        child: ChoiceChip(
+                          avatar: const Icon(AppIcons.mosque, size: 20),
+                          label: Text(masjid.name),
+                          selected: masjid.code == code,
+                          onSelected: (_) =>
+                              setState(() => _selected = masjid.code),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: PublicMasjidView(key: ValueKey(code), code: code),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Find a masjid to see its namaz times and public news: type its code
 /// (from the masjid's notice board or a WhatsApp message) or search by
-/// name or place. Masjids followed on this phone are listed first. Works
-/// without login.
+/// name or place. Works without login.
 class FindMasjidScreen extends ConsumerStatefulWidget {
   const FindMasjidScreen({super.key});
 
@@ -62,7 +142,6 @@ class _FindMasjidScreenState extends ConsumerState<FindMasjidScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final followed = ref.watch(followedMasjidsProvider);
     final results = _results;
     final searchError = _searchError;
 
@@ -73,18 +152,6 @@ class _FindMasjidScreenState extends ConsumerState<FindMasjidScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (followed.isNotEmpty) ...<Widget>[
-                SectionHeader(
-                  title: l10n.masjidsIFollow,
-                  icon: AppIcons.mosque,
-                ),
-                for (final masjid in followed)
-                  MasjidLinkTile(
-                    masjid: masjid,
-                    onTap: () => context.push('/visit/${masjid.code}'),
-                  ),
-                const SizedBox(height: AppSpace.l),
-              ],
               Text(l10n.masjidCodeLabel, style: textTheme.titleMedium),
               const SizedBox(height: AppSpace.s),
               TextField(

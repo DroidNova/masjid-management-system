@@ -326,6 +326,11 @@ final List<RouteBase> _routes = <RouteBase>[
   ),
   GoRoute(
     path: visitLocation,
+    builder: (context, state) => const VisitScreen(),
+  ),
+  // Before '/visit/:code', which would otherwise take "find" as a code.
+  GoRoute(
+    path: findMasjidLocation,
     builder: (context, state) => const FindMasjidScreen(),
   ),
   GoRoute(

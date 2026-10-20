@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masjid_core_frontend/core/network/api_exception.dart';
 import 'package:masjid_core_frontend/features/announcements/presentation/widgets/news_form.dart';
 import 'package:masjid_core_frontend/features/visit/application/followed_masjids.dart';
 import 'package:masjid_core_frontend/features/visit/data/public_masjid_api.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/find_masjid_screen.dart';
 import 'package:masjid_core_frontend/features/visit/presentation/public_masjid_screen.dart';
 
 import '../shared/ui/ui_test_helpers.dart';
@@ -135,6 +138,63 @@ void main() {
         find.text('No masjid with this code. Check the code and try again.'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('Masjid times', () {
+    PublicMasjidPage pageOf(String code, String name, String news) =>
+        PublicMasjidPage.fromJson(<String, dynamic>{
+          'publicCode': code,
+          'name': name,
+          'latestAnnouncements': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'a-$code',
+              'title': news,
+              'message': '...',
+              'createdAt': '2026-10-20T10:00:00.000Z',
+            },
+          ],
+        });
+
+    testWidgets('with nothing followed, asks for a code', (tester) async {
+      await pumpUi(tester, const VisitScreen());
+
+      expect(find.text('Masjid code'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('opens straight on the followed masjids, switching by chip', (
+      tester,
+    ) async {
+      final followed = <Map<String, dynamic>>[
+        <String, dynamic>{'code': 'AAA222', 'name': 'Noor Masjid'},
+        <String, dynamic>{'code': 'BBB333', 'name': 'Jama Masjid'},
+      ];
+      await pumpUi(
+        tester,
+        const VisitScreen(),
+        size: const Size(400, 1600),
+        prefs: <String, Object>{'visit.followedMasjids': jsonEncode(followed)},
+        overrides: [
+          publicMasjidPageProvider('AAA222').overrideWith(
+            (ref) async => pageOf('AAA222', 'Noor Masjid', 'Noor news'),
+          ),
+          publicMasjidPageProvider('BBB333').overrideWith(
+            (ref) async => pageOf('BBB333', 'Jama Masjid', 'Jama news'),
+          ),
+        ],
+      );
+
+      // No search form and no extra tap: the first masjid's news is here.
+      expect(find.text('Masjid code'), findsNothing);
+      expect(find.text('Noor news'), findsOneWidget);
+      expect(find.byType(ChoiceChip), findsNWidgets(2));
+      expect(find.byTooltip('Find a masjid'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Jama Masjid'));
+      await tester.pumpAndSettle();
+      expect(find.text('Jama news'), findsOneWidget);
+      expect(find.text('Noor news'), findsNothing);
     });
   });
 

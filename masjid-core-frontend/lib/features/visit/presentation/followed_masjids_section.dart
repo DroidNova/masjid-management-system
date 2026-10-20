@@ -27,11 +27,11 @@ class FollowedMasjidsSection extends ConsumerWidget {
           title: l10n.otherMasjids,
           icon: AppIcons.mosque,
           actionLabel: followed.isEmpty ? null : l10n.findMasjid,
-          onAction: () => context.push('/visit'),
+          onAction: () => context.push(findMasjidLocation),
         ),
         if (followed.isEmpty)
           OutlinedButton.icon(
-            onPressed: () => context.push('/visit'),
+            onPressed: () => context.push(findMasjidLocation),
             icon: const Icon(AppIcons.search),
             label: Text(l10n.findMasjidHint),
           )

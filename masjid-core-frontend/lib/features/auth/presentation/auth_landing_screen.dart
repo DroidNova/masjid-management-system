@@ -92,31 +92,31 @@ class AuthLandingScreen extends ConsumerWidget {
                         Expanded(
                           child: FadeSlideIn(
                             delay: const Duration(milliseconds: 330),
+                            // Daily use; registering a masjid is rare
+                            // and is a link below.
                             child: ActionTile(
-                              icon: AppIcons.registerMasjid,
-                              label: l10n.registerMasjid,
+                              icon: AppIcons.mosque,
+                              label: l10n.seeMasjidTimes,
                               tone: AppTones.namaz,
-                              onTap: () => context.push('/masjid-request'),
+                              onTap: () => context.push('/visit'),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppSpace.m),
-                  // Times and public news of any masjid, without login.
+                  const SizedBox(height: AppSpace.l),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 380),
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push('/visit'),
-                      icon: const Icon(AppIcons.mosque),
+                    child: TextButton.icon(
+                      onPressed: () => context.push('/masjid-request'),
+                      icon: const Icon(AppIcons.registerMasjid),
                       label: Text(
-                        l10n.seeMasjidTimes,
+                        l10n.registerMasjid,
                         style: textTheme.titleMedium,
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpace.s),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 420),
                     child: TextButton.icon(

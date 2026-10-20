@@ -9,6 +9,7 @@ import 'package:masjid_core_frontend/features/namaz_time/application/prayer_sche
 import 'package:masjid_core_frontend/features/namaz_time/presentation/namaz_times_screen.dart';
 import 'package:masjid_core_frontend/features/visit/application/followed_masjids.dart';
 import 'package:masjid_core_frontend/features/visit/data/public_masjid_api.dart';
+import 'package:masjid_core_frontend/features/visit/presentation/find_masjid_screen.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -23,38 +24,54 @@ class PublicMasjidScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final name = ref
+        .watch(publicMasjidPageProvider(code))
+        .valueOrNull
+        ?.masjid
+        .name;
+    return Scaffold(
+      appBar: AppBar(title: Text(name ?? l10n.findMasjid)),
+      body: SafeArea(top: false, child: PublicMasjidView(code: code)),
+    );
+  }
+}
+
+/// The public page's content (loading, not found, or the masjid), without
+/// a frame: [PublicMasjidScreen] and the Masjid times screen show it.
+class PublicMasjidView extends ConsumerWidget {
+  const PublicMasjidView({super.key, required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final page = ref.watch(publicMasjidPageProvider(code));
     final data = page.valueOrNull;
 
-    final Widget body;
     if (data != null) {
-      body = _PageContent(
+      return _PageContent(
         page: data,
         onRefresh: () => ref.refresh(publicMasjidPageProvider(code).future),
       );
-    } else if (page.hasError) {
+    }
+    if (page.hasError) {
       final error = page.error;
-      body = error is ApiException && error.code == ApiErrorCodes.masjidNotFound
+      return error is ApiException && error.code == ApiErrorCodes.masjidNotFound
           ? EmptyState(
               icon: AppIcons.mosque,
               title: l10n.masjidCodeNotFound,
               actionLabel: l10n.findMasjid,
               actionIcon: AppIcons.search,
-              onAction: () => context.pushReplacement('/visit'),
+              onAction: () => context.pushReplacement(findMasjidLocation),
             )
           : ErrorState(
               error: error!,
               onRetry: () => ref.invalidate(publicMasjidPageProvider(code)),
             );
-    } else {
-      body = const SingleChildScrollView(
-        child: PageBody.form(child: SkeletonList(itemCount: 4)),
-      );
     }
-
-    return Scaffold(
-      appBar: AppBar(title: Text(data?.masjid.name ?? l10n.findMasjid)),
-      body: SafeArea(top: false, child: body),
+    return const SingleChildScrollView(
+      child: PageBody.form(child: SkeletonList(itemCount: 4)),
     );
   }
 }
