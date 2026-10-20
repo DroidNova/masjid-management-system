@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
+import 'package:masjid_core_frontend/features/main_shell/back_to_home.dart';
 import 'package:masjid_core_frontend/features/main_shell/main_tabs.dart';
 import 'package:masjid_core_frontend/features/notifications/presentation/notification_bell.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
@@ -34,23 +35,29 @@ class MainShellScreen extends ConsumerWidget {
         ? l10n.appTitle
         : masjidName.trim();
 
-    return AdaptiveScaffold(
-      destinations: tabs
-          .map((tab) => AppDestination(icon: tab.icon, label: tab.label(l10n)))
-          .toList(),
-      selectedIndex: selected < 0 ? 0 : selected,
-      onSelected: (index) {
-        final branch = tabs[index].branch;
-        navigationShell.goBranch(
-          branch,
-          // Tapping the open tab again returns it to its first page.
-          initialLocation: branch == navigationShell.currentIndex,
-        );
-      },
-      title: Text(current == MainTab.home ? name : current.label(l10n)),
-      actions: const <Widget>[NotificationBell()],
-      header: MasjidHeader(name: name),
-      body: navigationShell,
+    return BackToHome(
+      navigationShell: navigationShell,
+      homeBranch: MainTab.home.branch,
+      child: AdaptiveScaffold(
+        destinations: tabs
+            .map(
+              (tab) => AppDestination(icon: tab.icon, label: tab.label(l10n)),
+            )
+            .toList(),
+        selectedIndex: selected < 0 ? 0 : selected,
+        onSelected: (index) {
+          final branch = tabs[index].branch;
+          navigationShell.goBranch(
+            branch,
+            // Tapping the open tab again returns it to its first page.
+            initialLocation: branch == navigationShell.currentIndex,
+          );
+        },
+        title: Text(current == MainTab.home ? name : current.label(l10n)),
+        actions: const <Widget>[NotificationBell()],
+        header: MasjidHeader(name: name),
+        body: navigationShell,
+      ),
     );
   }
 }

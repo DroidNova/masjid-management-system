@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:masjid_core_frontend/features/main_shell/back_to_home.dart';
 import 'package:masjid_core_frontend/features/main_shell/presentation/main_shell_screen.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
@@ -24,20 +25,23 @@ class SuperAdminShellScreen extends StatelessWidget {
     ];
     final index = navigationShell.currentIndex;
 
-    return AdaptiveScaffold(
-      destinations: <AppDestination>[
-        AppDestination(icon: AppIcons.dashboard, label: labels[0]),
-        AppDestination(icon: AppIcons.requests, label: labels[1]),
-        AppDestination(icon: AppIcons.mosque, label: labels[2]),
-        AppDestination(icon: AppIcons.people, label: labels[3]),
-        AppDestination(icon: AppIcons.profile, label: labels[4]),
-      ],
-      selectedIndex: index,
-      onSelected: (tab) =>
-          navigationShell.goBranch(tab, initialLocation: tab == index),
-      title: Text(index == 0 ? l10n.superAdmin : labels[index]),
-      header: MasjidHeader(name: l10n.superAdmin, icon: AppIcons.admin),
-      body: navigationShell,
+    return BackToHome(
+      navigationShell: navigationShell,
+      child: AdaptiveScaffold(
+        destinations: <AppDestination>[
+          AppDestination(icon: AppIcons.dashboard, label: labels[0]),
+          AppDestination(icon: AppIcons.requests, label: labels[1]),
+          AppDestination(icon: AppIcons.mosque, label: labels[2]),
+          AppDestination(icon: AppIcons.people, label: labels[3]),
+          AppDestination(icon: AppIcons.profile, label: labels[4]),
+        ],
+        selectedIndex: index,
+        onSelected: (tab) =>
+            navigationShell.goBranch(tab, initialLocation: tab == index),
+        title: Text(index == 0 ? l10n.superAdmin : labels[index]),
+        header: MasjidHeader(name: l10n.superAdmin, icon: AppIcons.admin),
+        body: navigationShell,
+      ),
     );
   }
 }
