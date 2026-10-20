@@ -306,7 +306,7 @@
   "family": "خاندان",
   "familyHeadHelp": "خاندان کا سربراہ خاندان کی طرف سے امام کی تنخواہ دیتا ہے۔",
   "familyMembersCount": "{count, plural, =1{خاندان میں 1 فرد} other{خاندان میں {count} افراد}}",
-  "familyMembersOptional": "خاندان کے افراد (ضروری نہیں)",
+  "familyMembersOptional": "خاندان میں کتنے افراد (ضروری نہیں)",
   "masjidId": "مسجد آئی ڈی",
   "myPaymentsLoadFailed": "آپ کا حساب نہیں کھل سکا۔",
   "noFamilyForRole": "یہاں صرف ممبروں کا خاندان ہوتا ہے۔",
@@ -440,5 +440,6 @@
   "followingMasjidDone": "{masjid} کو فالو کر رہے ہیں",
   "stopFollowing": "فالو بند کریں",
   "stopFollowingQuestion": "{masjid} کو فالو کرنا بند کریں؟",
-  "stopFollowingMessage": "یہ مسجد کے اوقات اور ہوم پر نہیں دکھے گی۔ آپ کبھی بھی دوبارہ فالو کر سکتے ہیں۔"
+  "stopFollowingMessage": "یہ مسجد کے اوقات اور ہوم پر نہیں دکھے گی۔ آپ کبھی بھی دوبارہ فالو کر سکتے ہیں۔",
+  "scrollToChoose": "گھما کر چنیں"
 }

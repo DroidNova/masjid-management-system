@@ -1003,7 +1003,7 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get familyMembersOptional => 'परिवार के सदस्य (ज़रूरी नहीं)';
+  String get familyMembersOptional => 'परिवार में कितने लोग (ज़रूरी नहीं)';
 
   @override
   String get masjidId => 'मस्जिद आईडी';
@@ -1480,4 +1480,7 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get stopFollowingMessage =>
       'यह मस्जिद के वक़्त और होम पर नहीं दिखेगी। आप कभी भी फिर फ़ॉलो कर सकते हैं।';
+
+  @override
+  String get scrollToChoose => 'घुमाकर चुनें';
 }

@@ -515,7 +515,7 @@
       }
     }
   },
-  "familyMembersOptional": "Family members (optional)",
+  "familyMembersOptional": "Number of family members (optional)",
   "masjidId": "Masjid ID",
   "myPaymentsLoadFailed": "Could not load your payments.",
   "noFamilyForRole": "Only members have a family here.",
@@ -840,5 +840,6 @@
       }
     }
   },
-  "stopFollowingMessage": "It will no longer show in Masjid times or on Home. You can follow it again any time."
+  "stopFollowingMessage": "It will no longer show in Masjid times or on Home. You can follow it again any time.",
+  "scrollToChoose": "Scroll to choose"
 }

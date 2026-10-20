@@ -1006,7 +1006,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get familyMembersOptional => 'Family members (optional)';
+  String get familyMembersOptional => 'Number of family members (optional)';
 
   @override
   String get masjidId => 'Masjid ID';
@@ -1485,4 +1485,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get stopFollowingMessage =>
       'It will no longer show in Masjid times or on Home. You can follow it again any time.';
+
+  @override
+  String get scrollToChoose => 'Scroll to choose';
 }

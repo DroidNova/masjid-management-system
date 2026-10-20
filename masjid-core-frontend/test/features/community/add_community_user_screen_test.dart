@@ -113,7 +113,7 @@ void main() {
     // Only one role is allowed, so no role choice is shown.
     expect(find.byType(ChoiceChip), findsNothing);
     await _tap(tester, find.text('Family head'));
-    await _type(tester, 'Family members (optional)', '5');
+    await _type(tester, 'Number of family members (optional)', '5');
     await _save(tester);
 
     final request =

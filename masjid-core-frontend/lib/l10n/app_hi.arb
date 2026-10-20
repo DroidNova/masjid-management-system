@@ -306,7 +306,7 @@
   "family": "परिवार",
   "familyHeadHelp": "परिवार का मुखिया परिवार की ओर से इमाम की तनख्वाह देता है।",
   "familyMembersCount": "{count, plural, =1{परिवार में 1 सदस्य} other{परिवार में {count} सदस्य}}",
-  "familyMembersOptional": "परिवार के सदस्य (ज़रूरी नहीं)",
+  "familyMembersOptional": "परिवार में कितने लोग (ज़रूरी नहीं)",
   "masjidId": "मस्जिद आईडी",
   "myPaymentsLoadFailed": "आपके पैसे का हिसाब नहीं खुल सका।",
   "noFamilyForRole": "यहाँ सिर्फ़ सदस्यों का परिवार होता है।",
@@ -440,5 +440,6 @@
   "followingMasjidDone": "{masjid} को फ़ॉलो कर रहे हैं",
   "stopFollowing": "फ़ॉलो बंद करें",
   "stopFollowingQuestion": "{masjid} को फ़ॉलो करना बंद करें?",
-  "stopFollowingMessage": "यह मस्जिद के वक़्त और होम पर नहीं दिखेगी। आप कभी भी फिर फ़ॉलो कर सकते हैं।"
+  "stopFollowingMessage": "यह मस्जिद के वक़्त और होम पर नहीं दिखेगी। आप कभी भी फिर फ़ॉलो कर सकते हैं।",
+  "scrollToChoose": "घुमाकर चुनें"
 }

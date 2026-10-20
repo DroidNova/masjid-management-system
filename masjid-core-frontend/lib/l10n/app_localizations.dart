@@ -1939,7 +1939,7 @@ abstract class AppLocalizations {
   /// No description provided for @familyMembersOptional.
   ///
   /// In en, this message translates to:
-  /// **'Family members (optional)'**
+  /// **'Number of family members (optional)'**
   String get familyMembersOptional;
 
   /// No description provided for @masjidId.
@@ -2750,6 +2750,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It will no longer show in Masjid times or on Home. You can follow it again any time.'**
   String get stopFollowingMessage;
+
+  /// No description provided for @scrollToChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll to choose'**
+  String get scrollToChoose;
 }
 
 class _AppLocalizationsDelegate

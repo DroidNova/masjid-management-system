@@ -364,15 +364,14 @@ class _PersonFormScreenState extends ConsumerState<PersonFormScreen> {
                             setState(() => _familyHead = value),
                       ),
                       if (_familyHead)
-                        AppFormField(
+                        // Type it, or scroll the wheel (1 to 50).
+                        NumberFormField(
                           controller: _familyCount,
                           label: l10n.familyMembersOptional,
                           icon: AppIcons.people,
-                          keyboardType: TextInputType.number,
-                          maxLength: 3,
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
+                          min: 1,
+                          max: 50,
+                          startAt: 4,
                         ),
                     ] else if (_editing)
                       Text(

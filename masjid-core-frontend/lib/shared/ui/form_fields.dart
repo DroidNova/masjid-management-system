@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/models/country_code.dart';
 import 'package:masjid_core_frontend/shared/ui/app_icons.dart';
+import 'package:masjid_core_frontend/shared/ui/app_sheet.dart';
 import 'package:masjid_core_frontend/shared/ui/country_picker.dart';
 import 'package:masjid_core_frontend/shared/ui/tokens.dart';
 import 'package:masjid_core_frontend/shared/utils/country_code_utils.dart';
@@ -67,7 +69,8 @@ class AppFormField extends StatelessWidget {
   }
 }
 
-/// Age as a whole number; [validator] checks the range.
+/// Age as a whole number; [validator] checks the range. Type it, or scroll
+/// the wheel (see [NumberFormField]).
 class AgeFormField extends StatelessWidget {
   const AgeFormField({
     super.key,
@@ -82,18 +85,128 @@ class AgeFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormField(
+    return NumberFormField(
       controller: controller,
       label: label,
       icon: AppIcons.age,
       validator: validator,
-      keyboardType: TextInputType.number,
-      maxLength: 3,
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
-      ],
+      min: 1,
+      max: 120,
+      startAt: 30,
     );
   }
+}
+
+/// A whole number that can be typed (digits only) or picked: the button at
+/// the end opens a scroll wheel from [min] to [max], starting at the
+/// current value or [startAt]. Numbers beyond the wheel can still be typed.
+class NumberFormField extends StatelessWidget {
+  const NumberFormField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.icon,
+    required this.min,
+    required this.max,
+    required this.startAt,
+    this.validator,
+    this.maxLength = 3,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final int min;
+  final int max;
+  final int startAt;
+  final FormFieldValidator<String>? validator;
+  final int maxLength;
+
+  Future<void> _pick(BuildContext context) async {
+    FocusScope.of(context).unfocus();
+    final current = int.tryParse(controller.text.trim());
+    final picked = await showNumberWheel(
+      context,
+      title: label,
+      min: min,
+      max: max,
+      initial: (current ?? startAt).clamp(min, max),
+    );
+    if (picked != null) controller.text = '$picked';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.l),
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.next,
+        maxLength: maxLength,
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          counterText: '',
+          suffixIcon: IconButton(
+            tooltip: l10n.scrollToChoose,
+            onPressed: () => _pick(context),
+            icon: const Icon(Icons.unfold_more_rounded),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A sheet with a scroll wheel of numbers; returns the chosen one, or null
+/// when closed without Done.
+Future<int?> showNumberWheel(
+  BuildContext context, {
+  required String title,
+  required int min,
+  required int max,
+  required int initial,
+}) {
+  var chosen = initial;
+  final controller = FixedExtentScrollController(initialItem: initial - min);
+  return showAppSheet<int>(
+    context,
+    builder: (sheetContext) {
+      final l10n = AppLocalizations.of(sheetContext);
+      final textTheme = Theme.of(sheetContext).textTheme;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(title, textAlign: TextAlign.center, style: textTheme.titleLarge),
+          const SizedBox(height: AppSpace.m),
+          SizedBox(
+            height: 220,
+            child: CupertinoPicker(
+              scrollController: controller,
+              itemExtent: 48,
+              onSelectedItemChanged: (index) => chosen = min + index,
+              children: <Widget>[
+                for (var value = min; value <= max; value++)
+                  Center(child: Text('$value', style: textTheme.headlineSmall)),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpace.l),
+          FilledButton(
+            onPressed: () => Navigator.of(sheetContext).pop(chosen),
+            child: Text(l10n.done),
+          ),
+        ],
+      );
+    },
+  ).whenComplete(controller.dispose);
 }
 
 /// Country button plus phone number. The number is checked against the
