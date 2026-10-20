@@ -122,7 +122,7 @@ class PagedListView<T> extends StatelessWidget {
             centered(
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-                child: FadeSlideIn.stagger(
+                child: _Entrance(
                   index: index++,
                   child: itemBuilder(context, item),
                 ),
@@ -154,17 +154,20 @@ class PagedListView<T> extends StatelessWidget {
       },
     );
 
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: _onScroll,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(top: AppSpace.l, bottom: bottomPadding),
-          children: <Widget>[
-            for (final widget in header) centered(widget),
-            ...rows,
-          ],
+    return _EntranceWindow(
+      hasRows: value.valueOrNull?.items.isNotEmpty ?? false,
+      child: RefreshIndicator(
+        onRefresh: onRefresh,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(top: AppSpace.l, bottom: bottomPadding),
+            children: <Widget>[
+              for (final widget in header) centered(widget),
+              ...rows,
+            ],
+          ),
         ),
       ),
     );
@@ -189,3 +192,59 @@ EmptyState listEmptyState({
   actionIcon: AppIcons.add,
   onAction: onAction,
 );
+
+/// Remembers when the list first showed rows. Only rows built in the first
+/// moments after that ease in; rows that appear later because of scrolling
+/// show at once, so a fast scroll never shows empty space.
+class _EntranceWindow extends StatefulWidget {
+  const _EntranceWindow({required this.hasRows, required this.child});
+
+  final bool hasRows;
+  final Widget child;
+
+  @override
+  State<_EntranceWindow> createState() => _EntranceWindowState();
+}
+
+class _EntranceWindowState extends State<_EntranceWindow> {
+  DateTime? _firstRows;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.hasRows) _firstRows ??= DateTime.now();
+    return _EntranceScope(firstRows: _firstRows, child: widget.child);
+  }
+}
+
+class _EntranceScope extends InheritedWidget {
+  const _EntranceScope({required this.firstRows, required super.child});
+
+  final DateTime? firstRows;
+
+  static const Duration window = Duration(milliseconds: 600);
+
+  /// True while the first rows are being shown.
+  bool get opening {
+    final first = firstRows;
+    return first != null && DateTime.now().difference(first) < window;
+  }
+
+  @override
+  bool updateShouldNotify(_EntranceScope oldWidget) =>
+      firstRows != oldWidget.firstRows;
+}
+
+/// One row: eases in only as part of the first screenful.
+class _Entrance extends StatelessWidget {
+  const _Entrance({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<_EntranceScope>();
+    if (index >= 8 || scope == null || !scope.opening) return child;
+    return FadeSlideIn.stagger(index: index, child: child);
+  }
+}

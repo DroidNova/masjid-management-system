@@ -19,12 +19,12 @@ class FadeSlideIn extends StatefulWidget {
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.duration = const Duration(milliseconds: 480),
+    this.duration = const Duration(milliseconds: 380),
     this.offset = 28,
     this.scale = 1,
   });
 
-  /// The usual delay for the [index]th item of a list: 55 ms apart, capped
+  /// The usual delay for the [index]th item of a list: 40 ms apart, capped
   /// so long lists never wait.
   FadeSlideIn.stagger({
     Key? key,
@@ -34,7 +34,7 @@ class FadeSlideIn extends StatefulWidget {
     double offset = 28,
   }) : this(
          key: key,
-         delay: base + Duration(milliseconds: 55 * math.min(index, 9)),
+         delay: base + Duration(milliseconds: 40 * math.min(index, 7)),
          offset: offset,
          child: child,
        );
