@@ -88,10 +88,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     _MasjidCard(masjid: data.masjid, count: data.users.length),
-                    if (data.masjid.publicCode case final code?) ...<Widget>[
-                      const SizedBox(height: AppSpace.m),
-                      MasjidCodeCard(code: code, masjidName: data.masjid.name),
-                    ],
                     const SizedBox(height: AppSpace.l),
                     TextField(
                       textInputAction: TextInputAction.search,
@@ -248,6 +244,8 @@ class _MasjidCard extends StatelessWidget {
               Text(l10n.peopleCount(count)),
             ],
           ),
+          if (masjid.publicCode case final code?)
+            MasjidCodeRow(code: code, masjidName: masjid.name),
         ],
       ),
     );

@@ -18,6 +18,7 @@ const basicUserSelect = {
 
 const dashboardMasjidSelect = {
   id: true,
+  publicCode: true,
   name: true,
   country: true,
   locality: true,

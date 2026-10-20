@@ -795,7 +795,6 @@
   "findMasjid": "Find a masjid",
   "findMasjidHint": "Find a masjid to follow its namaz times",
   "otherMasjids": "Other masjids",
-  "masjidCodeLabel": "Masjid code",
   "noMasjidFound": "No masjid found. Try another name or place.",
   "masjidCodeNotFound": "No masjid with this code. Check the code and try again.",
   "masjidCodeIs": "Code: {code}",
@@ -808,7 +807,6 @@
   },
   "followMasjid": "Follow this masjid",
   "noPublicNews": "No news for everyone yet",
-  "masjidCodeShareHelp": "Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.",
   "masjidCodeShareText": "See the namaz times and news of {masjid} in the Masjid app. Masjid code: {code}",
   "@masjidCodeShareText": {
     "placeholders": {

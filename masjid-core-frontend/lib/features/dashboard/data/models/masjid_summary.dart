@@ -3,6 +3,7 @@ import 'package:masjid_core_frontend/features/dashboard/data/models/model_parsin
 class MasjidSummary {
   const MasjidSummary({
     this.id,
+    this.publicCode,
     this.name,
     this.country,
     this.locality,
@@ -18,6 +19,7 @@ class MasjidSummary {
   factory MasjidSummary.fromJson(Map<String, dynamic> json) {
     return MasjidSummary(
       id: parseString(json['id']),
+      publicCode: parseString(json['publicCode']),
       name: parseString(json['name']),
       country: parseString(json['country']),
       locality: parseString(json['locality']),
@@ -32,6 +34,9 @@ class MasjidSummary {
   }
 
   final String? id;
+
+  /// The code people outside the masjid use (public page).
+  final String? publicCode;
   final String? name;
   final String? country;
   final String? locality;

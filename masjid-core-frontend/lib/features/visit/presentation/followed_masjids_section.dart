@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:masjid_core_frontend/core/contact/contact_launcher.dart';
+import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/namaz_time/application/prayer_schedule.dart';
 import 'package:masjid_core_frontend/features/namaz_time/presentation/widgets/prayer_labels.dart';
 import 'package:masjid_core_frontend/features/visit/application/followed_masjids.dart';
@@ -12,14 +13,24 @@ import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 /// Home's "Other masjids": the masjids followed on this phone with their
-/// next namaz, and a way to find another one.
+/// next namaz, and a way to find another one. The person's own masjid is
+/// left out (it may have been followed before logging in); Home already
+/// shows it.
 class FollowedMasjidsSection extends ConsumerWidget {
   const FollowedMasjidsSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final followed = ref.watch(followedMasjidsProvider);
+    final ownCode = ref.watch(
+      dashboardControllerProvider.select(
+        (dashboard) => dashboard.valueOrNull?.masjid?.publicCode,
+      ),
+    );
+    final followed = ref
+        .watch(followedMasjidsProvider)
+        .where((masjid) => masjid.code != ownCode)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -79,10 +90,11 @@ class _NextNamaz extends ConsumerWidget {
   }
 }
 
-/// The masjid's own code, for members to share: anyone with it sees the
-/// namaz times and the news posted for Everyone, nothing else.
-class MasjidCodeCard extends StatelessWidget {
-  const MasjidCodeCard({
+/// The masjid's own code in one line, white on the masjid's card, with
+/// Share (WhatsApp or SMS) and Copy. Anyone with the code sees only the
+/// namaz times and the news posted for Everyone.
+class MasjidCodeRow extends StatelessWidget {
+  const MasjidCodeRow({
     super.key,
     required this.code,
     required this.masjidName,
@@ -94,72 +106,43 @@ class MasjidCodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
     final shown = displayMasjidCode(code);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                const ToneIcon(icon: AppIcons.everyone, tone: AppTones.namaz),
-                const SizedBox(width: AppSpace.m),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(l10n.masjidCodeLabel, style: textTheme.titleMedium),
-                      Text(
-                        shown,
-                        textDirection: TextDirection.ltr,
-                        style: textTheme.headlineSmall?.copyWith(
-                          letterSpacing: 4,
-                          color: AppTones.namaz.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return Row(
+      children: <Widget>[
+        const Icon(Icons.tag_rounded, size: 22),
+        const SizedBox(width: AppSpace.s),
+        Expanded(
+          child: Text(
+            l10n.masjidCodeIs(shown),
+            textDirection: TextDirection.ltr,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              letterSpacing: 1,
             ),
-            const SizedBox(height: AppSpace.s),
-            Text(
-              l10n.masjidCodeShareHelp,
-              style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpace.m),
-            Wrap(
-              spacing: AppSpace.s,
-              runSpacing: AppSpace.s,
-              children: <Widget>[
-                FilledButton.icon(
-                  onPressed: () => ContactLauncher.share(
-                    l10n.masjidCodeShareText(masjidName, shown),
-                  ),
-                  icon: const Icon(AppIcons.send),
-                  label: Text(l10n.share),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: code));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(l10n.codeCopied)));
-                    }
-                  },
-                  icon: const Icon(Icons.copy_rounded),
-                  label: Text(l10n.copy),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
-      ),
+        IconButton(
+          tooltip: l10n.share,
+          color: Colors.white,
+          onPressed: () => ContactLauncher.share(
+            l10n.masjidCodeShareText(masjidName, shown),
+          ),
+          icon: const Icon(Icons.share_rounded),
+        ),
+        IconButton(
+          tooltip: l10n.copy,
+          color: Colors.white,
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: code));
+            if (context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.codeCopied)));
+            }
+          },
+          icon: const Icon(Icons.copy_rounded),
+        ),
+      ],
     );
   }
 }

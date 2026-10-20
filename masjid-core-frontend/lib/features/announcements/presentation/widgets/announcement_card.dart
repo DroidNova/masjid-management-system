@@ -99,6 +99,7 @@ class _AnnouncementCardState extends State<AnnouncementCard> {
                           if (item.isPublic && widget.showAudience)
                             StatusBadge(
                               kind: StatusKind.neutral,
+                              icon: AppIcons.everyone,
                               label: l10n.audienceEveryone,
                             ),
                         ],

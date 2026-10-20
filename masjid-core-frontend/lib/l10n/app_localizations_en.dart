@@ -1431,9 +1431,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otherMasjids => 'Other masjids';
 
   @override
-  String get masjidCodeLabel => 'Masjid code';
-
-  @override
   String get noMasjidFound => 'No masjid found. Try another name or place.';
 
   @override
@@ -1450,10 +1447,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPublicNews => 'No news for everyone yet';
-
-  @override
-  String get masjidCodeShareHelp =>
-      'Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.';
 
   @override
   String masjidCodeShareText(String code, String masjid) {

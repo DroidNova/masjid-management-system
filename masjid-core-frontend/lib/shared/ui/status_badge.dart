@@ -23,10 +23,18 @@ enum StatusKind {
 
 /// A small pill: icon + one word (Paid, Due, Active...).
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.kind, required this.label});
+  const StatusBadge({
+    super.key,
+    required this.kind,
+    required this.label,
+    this.icon,
+  });
 
   final StatusKind kind;
   final String label;
+
+  /// Replaces the kind's own picture when the word needs its own.
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +53,7 @@ class StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(kind.icon, size: 18, color: tone.color),
+          Icon(icon ?? kind.icon, size: 18, color: tone.color),
           const SizedBox(width: AppSpace.xs),
           // Wraps instead of overflowing in a narrow place.
           Flexible(

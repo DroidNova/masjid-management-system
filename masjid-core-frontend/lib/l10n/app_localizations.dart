@@ -2661,12 +2661,6 @@ abstract class AppLocalizations {
   /// **'Other masjids'**
   String get otherMasjids;
 
-  /// No description provided for @masjidCodeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Masjid code'**
-  String get masjidCodeLabel;
-
   /// No description provided for @noMasjidFound.
   ///
   /// In en, this message translates to:
@@ -2696,12 +2690,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No news for everyone yet'**
   String get noPublicNews;
-
-  /// No description provided for @masjidCodeShareHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Share this code. Anyone can then see your namaz times and the news you post for Everyone, nothing else.'**
-  String get masjidCodeShareHelp;
 
   /// No description provided for @masjidCodeShareText.
   ///
