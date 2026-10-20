@@ -41,6 +41,8 @@ class AppIcons {
   static const IconData problem = Icons.error_rounded;
   static const IconData warning = Icons.warning_rounded;
   static const IconData info = Icons.info_rounded;
+  /// Who added and changed a record.
+  static const IconData history = Icons.manage_history_rounded;
 
   // Start and login.
   static const IconData login = Icons.login_rounded;

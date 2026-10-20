@@ -2450,6 +2450,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Salary: all paid'**
   String get salaryAllPaid;
+
+  /// No description provided for @historyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Who added this'**
+  String get historyButton;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// No description provided for @historyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added by {name}'**
+  String historyAdded(String name);
+
+  /// No description provided for @historyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed by {name}'**
+  String historyChanged(String name);
+
+  /// No description provided for @historyCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by {name}'**
+  String historyCancelled(String name);
+
+  /// No description provided for @historyAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Added automatically'**
+  String get historyAutomatic;
+
+  /// No description provided for @historyCollectedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Money received by {name}'**
+  String historyCollectedBy(String name);
+
+  /// No description provided for @historyBeforeTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Added on {date}, before history was kept'**
+  String historyBeforeTracking(String date);
+
+  /// No description provided for @historyLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the history'**
+  String get historyLoadFailed;
+
+  /// No description provided for @historyFieldAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get historyFieldAmount;
+
+  /// No description provided for @historyFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get historyFieldName;
+
+  /// No description provided for @historyFieldNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get historyFieldNote;
+
+  /// No description provided for @historyFieldDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get historyFieldDate;
+
+  /// No description provided for @historyFieldTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get historyFieldTarget;
+
+  /// No description provided for @historyFieldSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get historyFieldSpent;
+
+  /// No description provided for @historyFieldKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get historyFieldKind;
+
+  /// No description provided for @historyFieldPerFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Per family'**
+  String get historyFieldPerFamily;
 }
 
 class _AppLocalizationsDelegate

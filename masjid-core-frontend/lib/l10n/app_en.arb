@@ -678,5 +678,57 @@
   "giverPersonHint": "It shows in their payments",
   "giverNoName": "No name",
   "giverNoNameHint": "Box, crowd, or not known",
-  "salaryAllPaid": "Salary: all paid"
+  "salaryAllPaid": "Salary: all paid",
+  "historyButton": "Who added this",
+  "historyTitle": "History",
+  "historyAdded": "Added by {name}",
+  "@historyAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyChanged": "Changed by {name}",
+  "@historyChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCancelled": "Cancelled by {name}",
+  "@historyCancelled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyAutomatic": "Added automatically",
+  "historyCollectedBy": "Money received by {name}",
+  "@historyCollectedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyBeforeTracking": "Added on {date}, before history was kept",
+  "@historyBeforeTracking": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "historyLoadFailed": "Could not load the history",
+  "historyFieldAmount": "Amount",
+  "historyFieldName": "Name",
+  "historyFieldNote": "Note",
+  "historyFieldDate": "Date",
+  "historyFieldTarget": "Target",
+  "historyFieldSpent": "Spent",
+  "historyFieldKind": "Kind",
+  "historyFieldPerFamily": "Per family"
 }

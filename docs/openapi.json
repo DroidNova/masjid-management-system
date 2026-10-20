@@ -1,6 +1,55 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/audit-log/record/{entity}/{id}": {
+      "get": {
+        "operationId": "AuditController_findRecordHistory",
+        "parameters": [
+          {
+            "name": "entity",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "PROJECT",
+                "PROJECT_CONTRIBUTION",
+                "COLLECTION_CONTRIBUTION",
+                "SALARY_PAYMENT",
+                "SALARY_MONTH",
+                "COLLECTION",
+                "EXPENSE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires permission: record_history.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who added and changed one record, oldest first. Members can open projects and their own payments only.",
+        "tags": [
+          "Audit log"
+        ]
+      }
+    },
     "/audit-log/my-masjid": {
       "get": {
         "operationId": "AuditController_findMyMasjidLog",
@@ -1354,6 +1403,63 @@
         ]
       }
     },
+    "/imam-salaries/payments/spread": {
+      "post": {
+        "operationId": "ImamSalariesController_spreadPayment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadSalaryPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.manage"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
+    "/imam-salaries/members/{memberId}/dues": {
+      "get": {
+        "operationId": "ImamSalariesController_memberDues",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Requires permission: imam_salary.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Imam Salary Ledger"
+        ]
+      }
+    },
     "/announcements/my-masjid": {
       "get": {
         "operationId": "AnnouncementsController_findMyMasjidAnnouncements",
@@ -2449,11 +2555,10 @@
             "name": "monthsBack",
             "required": false,
             "in": "query",
-            "description": "Imam salary months to include",
+            "description": "Only the latest N salary months. Leave out for every month (paged).",
             "schema": {
               "minimum": 1,
               "maximum": 24,
-              "default": 6,
               "type": "number"
             }
           }
@@ -2511,7 +2616,7 @@
     },
     "/masjid-requests": {
       "post": {
-        "description": "Public endpoint. No bearer token is required.",
+        "description": "Public endpoint. No bearer token is required. Imam or committee member phone already in a masjid: 409 USER_IN_ANOTHER_MASJID (message names them as entered on the request; errors.phones lists the numbers).",
         "operationId": "MasjidRequestsController_create",
         "parameters": [],
         "requestBody": {
@@ -4255,6 +4360,45 @@
         },
         "required": [
           "assignmentId",
+          "amount",
+          "paymentMode",
+          "paidAt"
+        ]
+      },
+      "SpreadSalaryPaymentDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "example": "3f1c2a4e-8b7d-4c1e-9a2b-5d6e7f8a9b0c",
+            "description": "Family head (user id)"
+          },
+          "amount": {
+            "type": "number",
+            "example": 1500,
+            "minimum": 0.01,
+            "description": "Must not exceed everything the family still owes."
+          },
+          "paymentMode": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "ONLINE"
+            ],
+            "example": "CASH"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-06-05T10:30:00.000Z"
+          },
+          "note": {
+            "type": "string",
+            "example": "Paid after Jumma",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "memberId",
           "amount",
           "paymentMode",
           "paidAt"

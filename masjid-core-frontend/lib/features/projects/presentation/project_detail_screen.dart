@@ -8,6 +8,8 @@ import 'package:masjid_core_frontend/features/projects/application/project_detai
 import 'package:masjid_core_frontend/features/projects/application/project_editor_controller.dart';
 import 'package:masjid_core_frontend/features/projects/data/models/project_model.dart';
 import 'package:masjid_core_frontend/features/projects/presentation/widgets/project_card.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
+import 'package:masjid_core_frontend/features/record_history/presentation/record_history_button.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -87,7 +89,16 @@ class ProjectDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(project?.title ?? l10n.tabProjects)),
+      appBar: AppBar(
+        title: Text(project?.title ?? l10n.tabProjects),
+        actions: <Widget>[
+          // Everyone may see who started and changed a project.
+          if (PermissionHelper.canViewRecordHistory(permissions))
+            RecordHistoryButton(
+              target: (entity: HistoryEntity.project, id: projectId),
+            ),
+        ],
+      ),
       body: SafeArea(top: false, child: body),
     );
   }

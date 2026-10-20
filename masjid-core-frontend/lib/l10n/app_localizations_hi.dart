@@ -1299,4 +1299,65 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get salaryAllPaid => 'तनख़्वाह: सब जमा';
+
+  @override
+  String get historyButton => 'किसने जोड़ा';
+
+  @override
+  String get historyTitle => 'इतिहास';
+
+  @override
+  String historyAdded(String name) {
+    return '$name ने जोड़ा';
+  }
+
+  @override
+  String historyChanged(String name) {
+    return '$name ने बदला';
+  }
+
+  @override
+  String historyCancelled(String name) {
+    return '$name ने रद्द किया';
+  }
+
+  @override
+  String get historyAutomatic => 'अपने आप जुड़ा';
+
+  @override
+  String historyCollectedBy(String name) {
+    return 'पैसा $name ने लिया';
+  }
+
+  @override
+  String historyBeforeTracking(String date) {
+    return '$date को जोड़ा, इतिहास रखने से पहले';
+  }
+
+  @override
+  String get historyLoadFailed => 'इतिहास नहीं खुल सका';
+
+  @override
+  String get historyFieldAmount => 'रकम';
+
+  @override
+  String get historyFieldName => 'नाम';
+
+  @override
+  String get historyFieldNote => 'नोट';
+
+  @override
+  String get historyFieldDate => 'तारीख';
+
+  @override
+  String get historyFieldTarget => 'लक्ष्य';
+
+  @override
+  String get historyFieldSpent => 'खर्च';
+
+  @override
+  String get historyFieldKind => 'किस्म';
+
+  @override
+  String get historyFieldPerFamily => 'हर परिवार';
 }

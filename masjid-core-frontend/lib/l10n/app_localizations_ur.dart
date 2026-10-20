@@ -1299,4 +1299,65 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get salaryAllPaid => 'تنخواہ: سب جمع';
+
+  @override
+  String get historyButton => 'کس نے درج کیا';
+
+  @override
+  String get historyTitle => 'تاریخچہ';
+
+  @override
+  String historyAdded(String name) {
+    return '$name نے درج کیا';
+  }
+
+  @override
+  String historyChanged(String name) {
+    return '$name نے بدلا';
+  }
+
+  @override
+  String historyCancelled(String name) {
+    return '$name نے منسوخ کیا';
+  }
+
+  @override
+  String get historyAutomatic => 'خود بخود درج ہوا';
+
+  @override
+  String historyCollectedBy(String name) {
+    return 'رقم $name نے لی';
+  }
+
+  @override
+  String historyBeforeTracking(String date) {
+    return '$date کو درج ہوا، تاریخچہ رکھنے سے پہلے';
+  }
+
+  @override
+  String get historyLoadFailed => 'تاریخچہ نہیں کھل سکا';
+
+  @override
+  String get historyFieldAmount => 'رقم';
+
+  @override
+  String get historyFieldName => 'نام';
+
+  @override
+  String get historyFieldNote => 'نوٹ';
+
+  @override
+  String get historyFieldDate => 'تاریخ';
+
+  @override
+  String get historyFieldTarget => 'ہدف';
+
+  @override
+  String get historyFieldSpent => 'خرچ';
+
+  @override
+  String get historyFieldKind => 'قسم';
+
+  @override
+  String get historyFieldPerFamily => 'فی خاندان';
 }

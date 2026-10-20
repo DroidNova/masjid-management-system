@@ -58,6 +58,11 @@ export const PERMISSIONS = {
   AUDIT_READ: 'audit.read',
   /** A user's own contribution and imam-salary payment history. */
   OWN_CONTRIBUTIONS_READ: 'own_contributions.read',
+  /**
+   * Who added and changed one record. Everyone can open projects and their
+   * own payments; AUDIT_READ opens every record (checked in RecordHistoryService).
+   */
+  RECORD_HISTORY_READ: 'record_history.read',
 
   // Imam salary ledger
   IMAM_SALARY_READ: 'imam_salary.read',
@@ -99,6 +104,7 @@ const EVERYONE: Permission[] = [
   P.FINANCE_READ,
   P.PROJECTS_READ,
   P.OWN_CONTRIBUTIONS_READ,
+  P.RECORD_HISTORY_READ,
   P.MASJID_LEAVE,
 ];
 

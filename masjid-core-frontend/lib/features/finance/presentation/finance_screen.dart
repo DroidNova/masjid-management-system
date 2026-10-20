@@ -13,6 +13,7 @@ import 'package:masjid_core_frontend/features/finance/data/models/finance_entry_
 import 'package:masjid_core_frontend/features/finance/data/models/finance_summary_model.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/widgets/money_entry_tile.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -177,6 +178,9 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         onCancel: canAdd && !entry.isCancelled
             ? () => _cancel((notifier) => notifier.cancelCollection(entry.id))
             : null,
+        history: _canSeeHistory
+            ? (entity: HistoryEntity.collection, id: entry.id)
+            : null,
       ),
     );
   }
@@ -212,9 +216,17 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         onCancel: canAdd && !entry.isCancelled
             ? () => _cancel((notifier) => notifier.cancelExpense(entry.id))
             : null,
+        history: _canSeeHistory
+            ? (entity: HistoryEntity.expense, id: entry.id)
+            : null,
       ),
     );
   }
+
+  /// Imam and committee see who added each entry; members see the totals.
+  bool get _canSeeHistory => PermissionHelper.canViewAllRecordHistory(
+    ref.watch(currentPermissionsProvider),
+  );
 
   /// Runs a cancel; on failure throws the server's error for the dialog.
   Future<void> _cancel(

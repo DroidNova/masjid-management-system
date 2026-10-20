@@ -4,6 +4,7 @@ import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/contributions/application/my_contributions_controllers.dart';
 import 'package:masjid_core_frontend/features/contributions/data/models/my_imam_salary_payment.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/giver_tile.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -41,6 +42,7 @@ class ImamSalaryPaymentHistoryScreen extends ConsumerWidget {
           amount: payment.amount,
           paymentMode: payment.paymentMode,
           note: payment.note,
+          history: (entity: HistoryEntity.salaryPayment, id: payment.id),
         ),
       ),
     );

@@ -390,5 +390,22 @@
   "giverPersonHint": "ان کی ادائیگی میں دکھے گا",
   "giverNoName": "نام نہیں",
   "giverNoNameHint": "بکس، مجمع، یا معلوم نہیں",
-  "salaryAllPaid": "تنخواہ: سب جمع"
+  "salaryAllPaid": "تنخواہ: سب جمع",
+  "historyButton": "کس نے درج کیا",
+  "historyTitle": "تاریخچہ",
+  "historyAdded": "{name} نے درج کیا",
+  "historyChanged": "{name} نے بدلا",
+  "historyCancelled": "{name} نے منسوخ کیا",
+  "historyAutomatic": "خود بخود درج ہوا",
+  "historyCollectedBy": "رقم {name} نے لی",
+  "historyBeforeTracking": "{date} کو درج ہوا، تاریخچہ رکھنے سے پہلے",
+  "historyLoadFailed": "تاریخچہ نہیں کھل سکا",
+  "historyFieldAmount": "رقم",
+  "historyFieldName": "نام",
+  "historyFieldNote": "نوٹ",
+  "historyFieldDate": "تاریخ",
+  "historyFieldTarget": "ہدف",
+  "historyFieldSpent": "خرچ",
+  "historyFieldKind": "قسم",
+  "historyFieldPerFamily": "فی خاندان"
 }

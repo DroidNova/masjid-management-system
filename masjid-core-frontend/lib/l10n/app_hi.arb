@@ -390,5 +390,22 @@
   "giverPersonHint": "उनके भुगतान में दिखेगा",
   "giverNoName": "नाम नहीं",
   "giverNoNameHint": "बक्सा, भीड़, या पता नहीं",
-  "salaryAllPaid": "तनख़्वाह: सब जमा"
+  "salaryAllPaid": "तनख़्वाह: सब जमा",
+  "historyButton": "किसने जोड़ा",
+  "historyTitle": "इतिहास",
+  "historyAdded": "{name} ने जोड़ा",
+  "historyChanged": "{name} ने बदला",
+  "historyCancelled": "{name} ने रद्द किया",
+  "historyAutomatic": "अपने आप जुड़ा",
+  "historyCollectedBy": "पैसा {name} ने लिया",
+  "historyBeforeTracking": "{date} को जोड़ा, इतिहास रखने से पहले",
+  "historyLoadFailed": "इतिहास नहीं खुल सका",
+  "historyFieldAmount": "रकम",
+  "historyFieldName": "नाम",
+  "historyFieldNote": "नोट",
+  "historyFieldDate": "तारीख",
+  "historyFieldTarget": "लक्ष्य",
+  "historyFieldSpent": "खर्च",
+  "historyFieldKind": "किस्म",
+  "historyFieldPerFamily": "हर परिवार"
 }

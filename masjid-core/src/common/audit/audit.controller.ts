@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Query,
   Req,
   UseGuards,
@@ -9,6 +11,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiPropertyOptional,
   ApiResponse,
   ApiTags,
@@ -24,6 +27,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { requireMasjidId } from '../tenant';
 import { AUDIT_ENTITY } from './audit.service';
 import { pageMeta } from '../pagination';
+import {
+  HISTORY_ENTITIES,
+  type HistoryEntity,
+  RecordHistoryService,
+} from './record-history.service';
+import { ApiException } from '../exceptions/api.exception';
+import { ERROR_CODES } from '../constants/error-codes.constant';
 
 export class AuditLogQueryDto {
   @ApiPropertyOptional({ enum: Object.values(AUDIT_ENTITY) })
@@ -52,7 +62,33 @@ export class AuditLogQueryDto {
 @UseGuards(JwtAuthGuard)
 @Controller('audit-log')
 export class AuditController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly history: RecordHistoryService,
+  ) {}
+
+  @Get('record/:entity/:id')
+  @RequirePermissions(PERMISSIONS.RECORD_HISTORY_READ)
+  @ApiOperation({
+    summary:
+      'Who added and changed one record, oldest first. Members can open projects and their own payments only.',
+  })
+  @ApiParam({ name: 'entity', enum: HISTORY_ENTITIES })
+  @ApiResponse({ status: HttpStatus.OK })
+  async findRecordHistory(
+    @Req() req: Request & { user: AuthenticatedUser },
+    @Param('entity') entity: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    if (!(HISTORY_ENTITIES as readonly string[]).includes(entity)) {
+      throw new ApiException(
+        'Unknown record type',
+        HttpStatus.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      );
+    }
+    return this.history.find(entity as HistoryEntity, id, req.user);
+  }
 
   @Get('my-masjid')
   @RequirePermissions(PERMISSIONS.AUDIT_READ)

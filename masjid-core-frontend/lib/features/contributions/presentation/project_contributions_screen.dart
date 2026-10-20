@@ -7,6 +7,7 @@ import 'package:masjid_core_frontend/features/contributions/application/contribu
 import 'package:masjid_core_frontend/features/contributions/data/models/project_contribution.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/giver_tile.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -46,9 +47,9 @@ class _ProjectContributionsScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final canAdd = PermissionHelper.canRecordContributions(
-      ref.watch(currentPermissionsProvider),
-    );
+    final permissions = ref.watch(currentPermissionsProvider);
+    final canAdd = PermissionHelper.canRecordContributions(permissions);
+    final canSeeHistory = PermissionHelper.canViewAllRecordHistory(permissions);
     // The title passed from the project page is used as is; only a fresh
     // URL loads it.
     final title =
@@ -121,6 +122,9 @@ class _ProjectContributionsScreenState
           amount: item.amount,
           paymentMode: item.paymentMode,
           note: item.note,
+          history: canSeeHistory
+              ? (entity: HistoryEntity.projectContribution, id: item.id)
+              : null,
         ),
       ),
     );

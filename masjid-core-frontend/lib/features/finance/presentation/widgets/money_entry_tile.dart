@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
+import 'package:masjid_core_frontend/features/record_history/presentation/record_history_button.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 /// One money in or out entry: the kind's picture, its name (or title), and
 /// the amount in green "+" or red "−". A cancelled entry is grey with a
 /// badge. Tapping opens the details, where [onCancel] (if allowed) cancels
-/// it behind the hold-to-confirm dialog.
+/// it behind the hold-to-confirm dialog. With [history], a small icon under
+/// the amount shows who added, changed or cancelled it.
 class MoneyEntryTile extends StatelessWidget {
   const MoneyEntryTile({
     super.key,
@@ -19,6 +22,7 @@ class MoneyEntryTile extends StatelessWidget {
     this.date,
     this.cancelled = false,
     this.onCancel,
+    this.history,
   });
 
   final String type;
@@ -31,6 +35,9 @@ class MoneyEntryTile extends StatelessWidget {
 
   /// Cancels the entry; throws on failure (the dialog shows why).
   final Future<void> Function()? onCancel;
+
+  /// The record behind this entry, for the "who added this" icon.
+  final HistoryTarget? history;
 
   String _name(AppLocalizations l10n) {
     final custom = title?.trim() ?? '';
@@ -182,21 +189,35 @@ class MoneyEntryTile extends StatelessWidget {
               ),
               const SizedBox(width: AppSpace.s),
               // At the end of the row; shrinks only for very big amounts.
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 160),
-                child: Text(
-                  AmountText.format(
-                    amount,
-                    kind: isExpense ? AmountKind.moneyOut : AmountKind.moneyIn,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Text(
+                      AmountText.format(
+                        amount,
+                        kind: isExpense
+                            ? AmountKind.moneyOut
+                            : AmountKind.moneyIn,
+                      ),
+                      textDirection: TextDirection.ltr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleLarge?.copyWith(
+                        color: tone.color,
+                        decoration: cancelled
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
                   ),
-                  textDirection: TextDirection.ltr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: tone.color,
-                    decoration: cancelled ? TextDecoration.lineThrough : null,
-                  ),
-                ),
+                  if (history case final target?)
+                    RecordHistoryButton(
+                      target: target,
+                      color: AppColors.textSecondary,
+                    ),
+                ],
               ),
             ],
           ),

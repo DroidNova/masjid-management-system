@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:masjid_core_frontend/core/contact/contact_launcher.dart';
 import 'package:masjid_core_frontend/core/errors/error_text.dart';
 import 'package:masjid_core_frontend/core/format/formatters.dart';
+import 'package:masjid_core_frontend/core/permissions/permission_helper.dart';
 import 'package:masjid_core_frontend/features/auth/application/auth_controller.dart';
 import 'package:masjid_core_frontend/features/contributions/presentation/widgets/giver_tile.dart';
 import 'package:masjid_core_frontend/features/dashboard/application/dashboard_controller.dart';
 import 'package:masjid_core_frontend/features/imam_salary/application/imam_salary_controllers.dart';
 import 'package:masjid_core_frontend/features/imam_salary/data/models/imam_salary_models.dart';
 import 'package:masjid_core_frontend/features/imam_salary/presentation/widgets/salary_sheets.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
+import 'package:masjid_core_frontend/features/record_history/presentation/record_history_button.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -232,16 +235,29 @@ List<Widget> _monthHeader(
           ),
         ];
       }
+      final canSeeHistory = PermissionHelper.canViewAllRecordHistory(
+        ref.watch(currentPermissionsProvider),
+      );
       return <Widget>[
         SalaryHero(month: salary),
-        if (canManage)
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              onPressed: () => showRaiseAmountSheet(context, salary),
-              icon: const Icon(Icons.trending_up_rounded),
-              label: Text(l10n.raiseAmount),
-            ),
+        if (canManage || canSeeHistory)
+          // Wraps with a large device font instead of overflowing.
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              if (canSeeHistory)
+                RecordHistoryButton(
+                  target: (entity: HistoryEntity.salaryMonth, id: salary.id),
+                  color: AppColors.textSecondary,
+                ),
+              if (canManage)
+                TextButton.icon(
+                  onPressed: () => showRaiseAmountSheet(context, salary),
+                  icon: const Icon(Icons.trending_up_rounded),
+                  label: Text(l10n.raiseAmount),
+                ),
+            ],
           ),
       ];
     },
@@ -390,6 +406,9 @@ class _CommitteeLedgerState extends ConsumerState<_CommitteeLedger> {
 
     if (_showPayments) {
       final controller = ref.read(salaryPaymentsProvider.notifier);
+      final canSeeHistory = PermissionHelper.canViewAllRecordHistory(
+        ref.watch(currentPermissionsProvider),
+      );
       return PagedListView<SalaryPayment>(
         value: ref.watch(salaryPaymentsProvider),
         header: header,
@@ -410,6 +429,9 @@ class _CommitteeLedgerState extends ConsumerState<_CommitteeLedger> {
           amount: payment.amount,
           paymentMode: payment.paymentMode,
           note: payment.note,
+          history: canSeeHistory
+              ? (entity: HistoryEntity.salaryPayment, id: payment.id)
+              : null,
         ),
       );
     }
@@ -713,6 +735,13 @@ class MySalaryMonthCard extends StatelessWidget {
                               : '${AppFormat.rupees(payment.amount)} · ${AppFormat.date(payment.paidAt!)}',
                           style: secondary,
                         ),
+                      ),
+                      RecordHistoryButton(
+                        target: (
+                          entity: HistoryEntity.salaryPayment,
+                          id: payment.id,
+                        ),
+                        color: AppColors.textSecondary,
                       ),
                     ],
                   ),

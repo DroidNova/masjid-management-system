@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
+import 'package:masjid_core_frontend/features/record_history/presentation/record_history_button.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
 /// One gift: the giver's avatar and name, what it was for, cash or online,
-/// and the amount in green.
+/// and the amount in green. With [history], a small icon under the amount
+/// shows who entered it.
 class GiverTile extends StatelessWidget {
   const GiverTile({
     super.key,
@@ -14,6 +17,7 @@ class GiverTile extends StatelessWidget {
     this.phone,
     this.kind,
     this.note,
+    this.history,
   });
 
   final String name;
@@ -24,6 +28,9 @@ class GiverTile extends StatelessWidget {
   /// The collection kind; null for project contributions.
   final String? kind;
   final String? note;
+
+  /// The record behind this gift, for the "who added this" icon.
+  final HistoryTarget? history;
 
   @override
   Widget build(BuildContext context) {
@@ -78,13 +85,23 @@ class GiverTile extends StatelessWidget {
             ),
             const SizedBox(width: AppSpace.s),
             // At the end of the row; shrinks only for very big amounts.
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: AmountText(
-                amount,
-                kind: AmountKind.moneyIn,
-                size: AmountSize.small,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  child: AmountText(
+                    amount,
+                    kind: AmountKind.moneyIn,
+                    size: AmountSize.small,
+                  ),
+                ),
+                if (history case final target?)
+                  RecordHistoryButton(
+                    target: target,
+                    color: AppColors.textSecondary,
+                  ),
+              ],
             ),
           ],
         ),

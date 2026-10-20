@@ -1304,4 +1304,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salaryAllPaid => 'Salary: all paid';
+
+  @override
+  String get historyButton => 'Who added this';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String historyAdded(String name) {
+    return 'Added by $name';
+  }
+
+  @override
+  String historyChanged(String name) {
+    return 'Changed by $name';
+  }
+
+  @override
+  String historyCancelled(String name) {
+    return 'Cancelled by $name';
+  }
+
+  @override
+  String get historyAutomatic => 'Added automatically';
+
+  @override
+  String historyCollectedBy(String name) {
+    return 'Money received by $name';
+  }
+
+  @override
+  String historyBeforeTracking(String date) {
+    return 'Added on $date, before history was kept';
+  }
+
+  @override
+  String get historyLoadFailed => 'Could not load the history';
+
+  @override
+  String get historyFieldAmount => 'Amount';
+
+  @override
+  String get historyFieldName => 'Name';
+
+  @override
+  String get historyFieldNote => 'Note';
+
+  @override
+  String get historyFieldDate => 'Date';
+
+  @override
+  String get historyFieldTarget => 'Target';
+
+  @override
+  String get historyFieldSpent => 'Spent';
+
+  @override
+  String get historyFieldKind => 'Kind';
+
+  @override
+  String get historyFieldPerFamily => 'Per family';
 }

@@ -570,7 +570,8 @@ model Expense {
 
 /// Who changed what. Written for every create, update and cancel of money
 /// records and for membership changes, so committee decisions are traceable.
-/// Rows are never updated or deleted. No foreign keys, so history survives
+/// Rows are never updated or deleted: a database trigger rejects it
+/// (migration 20261020090000_audit_log_append_only). No foreign keys, so history survives
 /// even if a user or masjid is removed.
 model AuditLog {
   id        String   @id @default(uuid()) @db.Uuid

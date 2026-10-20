@@ -9,6 +9,8 @@ import 'package:masjid_core_frontend/features/contributions/data/models/my_imam_
 import 'package:masjid_core_frontend/features/contributions/data/models/project_contribution.dart';
 import 'package:masjid_core_frontend/features/finance/presentation/money_categories.dart';
 import 'package:masjid_core_frontend/features/imam_salary/presentation/imam_salary_screen.dart';
+import 'package:masjid_core_frontend/features/record_history/data/record_history.dart';
+import 'package:masjid_core_frontend/features/record_history/presentation/record_history_button.dart';
 import 'package:masjid_core_frontend/l10n/app_localizations.dart';
 import 'package:masjid_core_frontend/shared/ui/ui.dart';
 
@@ -125,6 +127,7 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
           title: item.project?.title ?? l10n.tabProjects,
           amount: item.amount,
           paymentMode: item.paymentMode,
+          history: (entity: HistoryEntity.projectContribution, id: item.id),
         ),
       ),
       _Section.donations => PagedListView<CollectionContribution>(
@@ -147,6 +150,7 @@ class _MyContributionsScreenState extends ConsumerState<MyContributionsScreen> {
           title: moneyCategoryLabel(l10n, item.collectionType),
           amount: item.amount,
           paymentMode: item.paymentMode,
+          history: (entity: HistoryEntity.collectionContribution, id: item.id),
         ),
       ),
     };
@@ -339,7 +343,8 @@ class _SalaryMonthTile extends StatelessWidget {
   }
 }
 
-/// One gift of mine: what it was for, cash or online, and the amount.
+/// One gift of mine: what it was for, cash or online, the amount, and
+/// who entered it (the history icon).
 class _GiftTile extends StatelessWidget {
   const _GiftTile({
     required this.icon,
@@ -347,6 +352,7 @@ class _GiftTile extends StatelessWidget {
     required this.title,
     required this.amount,
     required this.paymentMode,
+    required this.history,
   });
 
   final IconData icon;
@@ -354,6 +360,7 @@ class _GiftTile extends StatelessWidget {
   final String title;
   final double amount;
   final String paymentMode;
+  final HistoryTarget history;
 
   @override
   Widget build(BuildContext context) {
@@ -381,13 +388,22 @@ class _GiftTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpace.s),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: AmountText(
-                amount,
-                kind: AmountKind.moneyIn,
-                size: AmountSize.small,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  child: AmountText(
+                    amount,
+                    kind: AmountKind.moneyIn,
+                    size: AmountSize.small,
+                  ),
+                ),
+                RecordHistoryButton(
+                  target: history,
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ),
           ],
         ),
